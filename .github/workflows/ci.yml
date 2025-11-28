@@ -3,9 +3,9 @@ name: Sector Mind CI
 # Se ejecuta cuando haces push a la rama main o pull request
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "trunk" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "trunk" ]
 
 jobs:
   # TRABAJO 1: VERIFICAR BACKEND (FLASK)
@@ -35,8 +35,8 @@ jobs:
       run: |
         # Ejecuta el script de gestión de base de datos para crear la estructura antes de testear
         python -m backend.manage_db
-        # Ejecuta los tests
-        pytest tests/
+        # Ejecuta los tests en la ruta correcta y con PYTHONPATH adecuado
+        PYTHONPATH=. pytest backend/tests
 
   # TRABAJO 2: VERIFICAR IA (RASA)
   test-rasa:
