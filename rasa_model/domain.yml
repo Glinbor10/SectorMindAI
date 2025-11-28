@@ -1,0 +1,77 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - reservar_cita
+  - elegir_negocio
+  - elegir_servicio
+  - elegir_fecha
+  - bot_challenge
+
+entities:
+  - negocio
+  - servicio
+  - fecha
+
+slots:
+  # --- AQUÍ ESTABA EL ERROR. AHORA TIENEN MAPPINGS ---
+  negocio:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: negocio
+
+  servicio:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: servicio
+
+  fecha:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: fecha
+
+  disponibilidad:
+    type: any
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+responses:
+  utter_greet:
+    - text: "¡Hola! Soy Sector Mind AI. ¿En qué negocio quieres reservar hoy?"
+
+  utter_goodbye:
+    - text: "¡Hasta luego! Gracias por usar nuestro servicio."
+
+  utter_iamabot:
+    - text: "Soy un bot, impulsado por Rasa."
+
+  utter_ask_negocio:
+    - text: "¿Me puedes decir el nombre del negocio?"
+
+  utter_ask_servicio:
+    - text: "¿Qué servicio te gustaría reservar?"
+
+  utter_ask_fecha:
+    - text: "¿Para qué fecha y hora?"
+
+  utter_ask_confirmacion:
+    - text: "¿Confirmas la reserva?"
+
+actions:
+  - action_validar_entidades
+  - action_mostrar_disponibilidad
+  - action_reservar_cita
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

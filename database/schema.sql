@@ -1,38 +1,55 @@
--- Tabla para los negocios registrados
-CREATE TABLE negocios (
+-- TABLA DE USUARIOS
+CREATE TABLE usuarios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT NOT NULL,
-    tipo_negocio TEXT NOT NULL, -- "peluqueria", "dentista", etc.
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    rol TEXT NOT NULL DEFAULT 'cliente', -- 'cliente' o 'propietario'
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tabla para los servicios que ofrece cada negocio
+-- TABLA DE NEGOCIOS (Actualizada)
+CREATE TABLE negocios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    tipo_negocio TEXT NOT NULL,
+    -- Nuevos campos de personalización
+    direccion TEXT,
+    descripcion TEXT,
+    foto_url TEXT, -- URL de la imagen principal
+    -- Vínculo con el dueño
+    propietario_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (propietario_id) REFERENCES usuarios(id)
+);
+
+-- TABLA DE SERVICIOS
 CREATE TABLE servicios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     negocio_id INTEGER NOT NULL,
     nombre TEXT NOT NULL,
     precio DECIMAL(10, 2),
-    duracion_minutos INTEGER NOT NULL, -- Ej: 30 (para 30 minutos)
+    duracion_minutos INTEGER NOT NULL,
     FOREIGN KEY (negocio_id) REFERENCES negocios(id)
 );
 
--- Tabla para los horarios de apertura de cada negocio
+-- TABLA DE HORARIOS
 CREATE TABLE horarios_negocio (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     negocio_id INTEGER NOT NULL,
-    dia_semana INTEGER NOT NULL, -- 0=Lunes, 1=Martes, ..., 6=Domingo
+    dia_semana INTEGER NOT NULL,
     hora_apertura TIME,
     hora_cierre TIME,
     FOREIGN KEY (negocio_id) REFERENCES negocios(id)
 );
 
--- Tabla para las citas confirmadas
+-- TABLA DE CITAS
 CREATE TABLE citas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     negocio_id INTEGER NOT NULL,
     servicio_id INTEGER NOT NULL,
-    fecha_hora_cita DATETIME NOT NULL, -- Hora de inicio de la cita
-    estado TEXT DEFAULT 'confirmado', -- "confirmado", "cancelado"
+    fecha_hora_cita DATETIME NOT NULL,
+    estado TEXT DEFAULT 'confirmado',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (negocio_id) REFERENCES negocios(id),
     FOREIGN KEY (servicio_id) REFERENCES servicios(id)

@@ -1,0 +1,71 @@
+version: "3.1"
+stories:
+
+# =================================================================
+# FLUJO 1: Reserva completa (El usuario da toda la info de golpe)
+# =================================================================
+- story: happy path completa
+  steps:
+    - intent: greet
+    - action: utter_greet
+    - intent: reservar_cita
+      entities:
+        - negocio: "Peluquería Estilo"
+        - servicio: "corte"
+    - slot_was_set:
+      - negocio: Peluquería Estilo
+    - slot_was_set:
+      - servicio: Corte de pelo
+    - action: action_validar_entidades # Valida si existen negocio y servicio
+    - intent: elegir_fecha
+      entities:
+        - fecha: "mañana"
+    - slot_was_set:
+      - fecha: "2025-11-29" # Ejemplo de fecha extraída (será una fecha real en el slot)
+    - action: action_mostrar_disponibilidad # Llama a Flask para ver huecos
+    # Ahora el bot preguntará al usuario qué hora de la lista prefiere
+    - intent: elegir_fecha # El usuario dice "el primero" o "a las 10:30"
+    - action: utter_ask_confirmacion
+    - intent: affirm
+    - action: action_reservar_cita # Llama a Flask para guardar la cita
+    - intent: goodbye
+    - action: utter_goodbye
+
+# =================================================================
+# FLUJO 2: Reserva simple (El bot pregunta por la info faltante)
+# =================================================================
+- story: reserva con preguntas guiadas
+  steps:
+    - intent: greet
+    - action: utter_greet
+    - intent: reservar_cita
+    - action: utter_ask_negocio # Bot pregunta por el negocio
+    - intent: elegir_negocio
+      entities:
+        - negocio: "Dentista Salud"
+    - slot_was_set:
+      - negocio: Dentista Salud
+    - action: utter_ask_servicio # Bot pregunta por el servicio
+    - intent: elegir_servicio
+      entities:
+        - servicio: "limpieza dental"
+    - slot_was_set:
+      - servicio: Limpieza dental
+    - action: action_validar_entidades # Valida que ambos slots son correctos
+    - action: utter_ask_fecha # Bot pregunta por la fecha
+    - intent: elegir_fecha
+      entities:
+        - fecha: "el martes"
+    - action: action_mostrar_disponibilidad
+    - intent: affirm # Asumiendo que el bot ofrece una lista de horas y el usuario dice "sí"
+    - action: action_reservar_cita
+    - intent: goodbye
+    - action: utter_goodbye
+
+# =================================================================
+# FLUJO 3: Despedida inmediata
+# =================================================================
+- story: solo despedida
+  steps:
+    - intent: goodbye
+    - action: utter_goodbye

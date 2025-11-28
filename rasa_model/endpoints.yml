@@ -1,0 +1,3 @@
+# Esto conecta Rasa Core con el servidor de acciones (Python)
+action_endpoint:
+  url: "http://localhost:5055/webhook"
