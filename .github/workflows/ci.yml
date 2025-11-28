@@ -3,9 +3,9 @@ name: Sector Mind CI
 # Se ejecuta cuando haces push a la rama main o pull request
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "trunk" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "trunk" ]
 
 jobs:
   # TRABAJO 1: VERIFICAR BACKEND (FLASK)
