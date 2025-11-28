@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalle del Negocio - Sector Mind AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -15,175 +14,85 @@
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-        .voice-wave { position: absolute; width: 150px; height: 150px; border-radius: 50%; background: rgba(99, 102, 241, 0.4); animation: ripple 1.5s infinite; }
-        @keyframes ripple { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
         .hidden { display: none !important; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
 
-    <!-- NAV BAR (IDENTICA A HOME) -->
+    <!-- Navbar -->
     <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <!-- Logo -->
-                <div class="flex items-center cursor-pointer" onclick="window.location.href='/'">
-                    <div class="bg-indigo-600 p-2 rounded-lg mr-3">
-                        <i data-lucide="brain-circuit" class="h-6 w-6 text-white"></i>
-                    </div>
-                    <span class="font-bold text-xl tracking-tight text-slate-900">Sector Mind AI</span>
-                </div>
-                
-                <div class="flex items-center space-x-4">
-                    <!-- Botones Visitante -->
-                    <div id="auth-buttons" class="flex gap-2">
-                        <button onclick="openAuthModal('login')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 transition">Iniciar Sesión</button>
-                        <button onclick="openAuthModal('register')" class="px-4 py-2 rounded-full bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition shadow-lg shadow-indigo-500/20">Registrarse</button>
-                    </div>
-
-                    <!-- Perfil Usuario Logueado -->
-                    <div id="user-profile" class="hidden items-center gap-3">
-                        <div class="text-right hidden sm:block">
-                            <p class="text-sm font-bold text-slate-900" id="user-name-display">Usuario</p>
-                            <p class="text-xs text-slate-500 capitalize" id="user-role-display">Cliente</p>
-                        </div>
-                        <div class="h-9 w-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold border border-indigo-200">
-                            <i data-lucide="user"></i>
-                        </div>
-                        <button onclick="logout()" class="text-xs text-red-500 hover:text-red-700 ml-2 font-medium border border-red-100 rounded px-2 py-1 bg-red-50">Salir</button>
-                    </div>
-                </div>
-            </div>
+        <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+            <a href="/" class="flex items-center text-slate-500 hover:text-indigo-600 transition font-medium"><i data-lucide="arrow-left" class="mr-2 w-5 h-5"></i> Volver</a>
+            <div id="user-status" class="text-sm font-medium text-slate-600"></div>
         </div>
     </nav>
 
-    <!-- Contenido Principal -->
+    <!-- Main -->
     <main class="max-w-5xl mx-auto px-4 py-8 fade-in">
-        
-        <!-- Botón Volver -->
-        <a href="/" class="inline-flex items-center text-slate-500 hover:text-indigo-600 transition font-medium mb-6">
-            <i data-lucide="arrow-left" class="mr-2 w-5 h-5"></i> Volver al listado
-        </a>
-
         <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-8">
-            
-            <!-- PORTADA -->
             <div class="h-64 md:h-80 relative bg-slate-200">
                 <img id="biz-img" src="" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
-                
                 <div class="absolute bottom-0 left-0 p-8 text-white w-full">
-                    <div class="flex justify-between items-end">
-                        <div>
-                            <span id="biz-type" class="uppercase text-xs font-bold tracking-widest bg-indigo-600 px-3 py-1 rounded mb-3 inline-block">Tipo</span>
-                            <h1 id="biz-name" class="text-4xl md:text-5xl font-extrabold mb-2">Cargando...</h1>
-                            <p class="text-white/80 flex items-center text-lg">
-                                <i data-lucide="map-pin" class="w-5 h-5 mr-2"></i> 
-                                <span id="biz-address">...</span>
-                            </p>
-                        </div>
-                        
-                        <!-- Nombre del Propietario (Desktop) -->
-                        <div class="hidden md:block text-right">
-                            <p class="text-xs uppercase tracking-widest opacity-70 mb-1">Propietario</p>
-                            <div class="flex items-center justify-end gap-3">
-                                <span id="biz-owner" class="font-bold text-lg">...</span>
-                                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                                    <i data-lucide="user-check" class="w-5 h-5"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <span id="biz-type" class="uppercase text-xs font-bold tracking-widest bg-indigo-600 px-3 py-1 rounded mb-3 inline-block">Tipo</span>
+                    <h1 id="biz-name" class="text-4xl md:text-5xl font-extrabold mb-2">Cargando...</h1>
+                    <p class="text-white/80 flex items-center text-lg"><i data-lucide="map-pin" class="w-5 h-5 mr-2"></i> <span id="biz-address">...</span></p>
                 </div>
             </div>
             
-            <!-- INFO -->
             <div class="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Info Izquierda -->
                 <div class="md:col-span-2">
-                    
-                    <!-- Propietario (Móvil) -->
-                    <div class="md:hidden mb-6 p-4 bg-slate-50 rounded-xl flex items-center gap-3 border border-slate-100">
-                        <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
-                            <i data-lucide="user-check"></i>
-                        </div>
-                        <div>
-                            <p class="text-xs uppercase text-slate-500 font-bold">Propietario</p>
-                            <p id="biz-owner-mobile" class="font-bold text-slate-900">...</p>
-                        </div>
+                    <!-- PROPIETARIO VISIBLE AQUÍ -->
+                    <div class="flex items-center mb-6 text-slate-500 text-sm bg-slate-50 p-3 rounded-xl border border-slate-100 w-fit">
+                        <i data-lucide="user-check" class="w-4 h-4 mr-2 text-indigo-500"></i>
+                        <span class="font-medium mr-1">Gerente:</span> 
+                        <span id="biz-owner" class="text-slate-700 font-bold">...</span>
                     </div>
 
                     <h2 class="text-xl font-bold mb-4">Sobre nosotros</h2>
-                    <p id="biz-desc" class="text-slate-600 leading-relaxed mb-8 text-lg">Cargando descripción...</p>
+                    <p id="biz-desc" class="text-slate-600 leading-relaxed mb-8 text-lg">Descripción...</p>
                     
-                    <h3 class="text-lg font-bold mb-3 flex items-center">
-                        <i data-lucide="list" class="w-5 h-5 mr-2 text-indigo-600"></i> Servicios
-                    </h3>
-                    <div id="services-list" class="space-y-3">
-                        <div class="animate-pulse bg-slate-100 h-12 rounded-xl"></div>
-                    </div>
+                    <h3 class="text-lg font-bold mb-3 flex items-center"><i data-lucide="list" class="w-5 h-5 mr-2 text-indigo-600"></i> Servicios</h3>
+                    <div id="services-list" class="space-y-3"><div class="animate-pulse bg-slate-100 h-10 rounded"></div></div>
                 </div>
 
-                <!-- PANTALLA IA (Panel Derecho) -->
+                <!-- Panel IA -->
                 <div class="bg-indigo-50 rounded-2xl p-6 border border-indigo-100 h-fit sticky top-24">
                     <div class="flex items-center gap-3 mb-4">
-                        <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg">
-                            <i data-lucide="bot"></i>
-                        </div>
+                        <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg"><i data-lucide="bot"></i></div>
                         <div>
-                            <!-- AQUÍ SE PONDRÁ EL NOMBRE DE LA IA DINÁMICAMENTE -->
-                            <p class="font-bold text-indigo-900" id="ai-name-display">Asistente AI</p>
+                            <!-- Nombre Personalizado -->
+                            <p class="font-bold text-indigo-900" id="ai-name">Asistente AI</p>
                             <p class="text-xs text-indigo-600 flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span> Online</p>
                         </div>
                     </div>
-                    <p class="text-sm text-indigo-800 mb-6">Inicia sesión para hablar con nuestra Inteligencia Artificial y reservar tu cita al instante.</p>
-                    
+                    <p class="text-sm text-indigo-800 mb-6">Inicia sesión para hablar con nuestra IA y reservar tu cita.</p>
                     <div class="space-y-3">
-                        <button onclick="startVoiceMode()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center transition shadow-lg group">
-                            <i data-lucide="mic" class="w-5 h-5 mr-3 group-hover:scale-110 transition"></i> Hablar
-                        </button>
-                        <button onclick="startChatMode()" class="w-full py-4 bg-white border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 rounded-xl font-bold flex items-center justify-center transition">
-                            <i data-lucide="message-square" class="w-5 h-5 mr-3"></i> Chatear
-                        </button>
+                        <button onclick="startVoiceMode()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center transition shadow-lg"><i data-lucide="mic" class="w-5 h-5 mr-3"></i> Hablar</button>
+                        <button onclick="startChatMode()" class="w-full py-4 bg-white border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 rounded-xl font-bold flex items-center justify-center transition"><i data-lucide="message-square" class="w-5 h-5 mr-3"></i> Chatear</button>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- MODAL AUTH (COMPARTIDO) -->
-    <div id="auth-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center fade-in">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
-            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
-            <div class="flex border-b border-slate-200 mb-6">
-                <button id="tab-login" onclick="switchTab('login')" class="flex-1 py-2 text-center font-medium border-b-2 border-indigo-600 text-indigo-600">Iniciar Sesión</button>
-                <button id="tab-register" onclick="switchTab('register')" class="flex-1 py-2 text-center font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">Registrarse</button>
+    <!-- Modal Login (Simplificado para redirect) -->
+    <div id="login-redirect-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center fade-in">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm text-center">
+            <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600"><i data-lucide="lock" class="w-8 h-8"></i></div>
+            <h3 class="text-xl font-bold mb-2">Acceso Requerido</h3>
+            <p class="text-slate-500 mb-6">Para hablar con la IA y reservar, necesitas identificarte primero.</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="window.location.href='/'" class="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold">Ir a Login</button>
+                <button onclick="document.getElementById('login-redirect-modal').classList.add('hidden')" class="px-5 py-2 text-slate-500 hover:text-slate-700">Cancelar</button>
             </div>
-            <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" id="login-email" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Contraseña</label><input type="password" id="login-pass" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"></div>
-                <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Entrar</button>
-            </form>
-            <form id="form-register" onsubmit="handleRegister(event)" class="space-y-4 hidden">
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Nombre</label><input type="text" id="reg-name" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" id="reg-email" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Contraseña</label><input type="password" id="reg-pass" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Rol</label><div class="grid grid-cols-2 gap-2"><label class="cursor-pointer border rounded-lg p-2 text-center hover:bg-slate-50 has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50 has-[:checked]:text-indigo-700 transition"><input type="radio" name="role" value="cliente" checked class="hidden"><span class="text-sm font-medium">Cliente</span></label><label class="cursor-pointer border rounded-lg p-2 text-center hover:bg-slate-50 has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50 has-[:checked]:text-indigo-700 transition"><input type="radio" name="role" value="propietario" class="hidden"><span class="text-sm font-medium">Propietario</span></label></div></div>
-                <button type="submit" class="w-full bg-slate-900 text-white py-2 rounded-lg font-bold hover:bg-slate-800 transition">Crear Cuenta</button>
-            </form>
-            <div id="auth-error" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700 text-sm"><i data-lucide="alert-circle" class="w-4 h-4 mr-2 flex-shrink-0"></i><span id="auth-error-text">Error</span></div>
         </div>
     </div>
 
-    <!-- MODALES VOZ/CHAT -->
-    <div id="voice-overlay" class="fixed inset-0 z-[60] hidden bg-indigo-900/95 backdrop-blur-xl flex flex-col items-center justify-center text-white fade-in">
-        <button onclick="closeVoiceMode()" class="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 transition"><i data-lucide="x" class="w-8 h-8"></i></button>
-        <div class="relative mb-12"><div class="voice-wave"></div><div class="w-24 h-24 bg-indigo-600 rounded-full flex items-center justify-center relative z-10 shadow-2xl"><i data-lucide="mic" class="w-10 h-10"></i></div></div>
-        <h2 id="voice-status" class="text-3xl font-bold mb-4">Te escucho...</h2>
-        <p id="voice-transcript" class="text-indigo-200 text-lg max-w-2xl text-center px-4 min-h-[3rem]">Di "Quiero reservar..."</p>
-    </div>
-
+    <!-- Chat Window -->
     <div id="chat-window" class="fixed bottom-6 right-6 z-50 hidden flex-col bg-white w-96 h-[500px] rounded-2xl shadow-2xl border border-slate-200 overflow-hidden fade-in">
-        <div class="bg-slate-900 p-4 flex justify-between items-center text-white"><span class="font-bold flex items-center gap-2">Asistente Virtual</span><button onclick="closeChatMode()" class="hover:text-slate-300"><i data-lucide="x"></i></button></div>
+        <div class="bg-slate-900 p-4 flex justify-between items-center text-white"><span class="font-bold flex items-center gap-2">Asistente Virtual</span><button onclick="document.getElementById('chat-window').classList.add('hidden')"><i data-lucide="x"></i></button></div>
         <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-slate-50 space-y-3 text-sm"></div>
         <form onsubmit="handleChatSubmit(event)" class="p-3 bg-white border-t flex gap-2"><input type="text" id="chat-input" class="flex-1 border rounded-full px-4 py-2 text-sm outline-none" placeholder="Escribe..." autocomplete="off"><button class="bg-indigo-600 text-white p-2 rounded-full"><i data-lucide="send" class="w-4 h-4"></i></button></form>
     </div>
@@ -196,106 +105,80 @@
         let businessData = null;
         let currentUser = null;
 
-        // AUTH & UI LOGIC (COPIADA DE INDEX)
-        function openAuthModal(tab) { document.getElementById('auth-modal').classList.remove('hidden'); switchTab(tab); }
-        function closeAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); document.getElementById('auth-error').classList.add('hidden'); }
-        function switchTab(tab) {
-            const lF=document.getElementById('form-login'), rF=document.getElementById('form-register');
-            const lT=document.getElementById('tab-login'), rT=document.getElementById('tab-register');
-            if(tab==='login'){ lF.classList.remove('hidden'); rF.classList.add('hidden'); lT.className="flex-1 py-2 text-center font-bold border-b-2 border-indigo-600 text-indigo-600"; rT.className="flex-1 py-2 text-center font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700"; }
-            else { lF.classList.add('hidden'); rF.classList.remove('hidden'); rT.className="flex-1 py-2 text-center font-bold border-b-2 border-indigo-600 text-indigo-600"; lT.className="flex-1 py-2 text-center font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700"; }
-        }
-        async function handleLogin(e){ e.preventDefault(); const email=document.getElementById('login-email').value, password=document.getElementById('login-pass').value; try{ const r=await fetch(`${API_URL}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})}); const d=await r.json(); if(r.ok) loginSuccess(d); else showError(d.error); }catch(x){ showError('Error conexión'); } }
-        async function handleRegister(e){ e.preventDefault(); const nombre=document.getElementById('reg-name').value, email=document.getElementById('reg-email').value, password=document.getElementById('reg-pass').value, rol=document.querySelector('input[name="role"]:checked').value; try{ const r=await fetch(`${API_URL}/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,email,password,rol})}); if(r.ok) handleLogin(e); else { const d=await r.json(); showError(d.error); } }catch(x){ showError('Error conexión'); } }
-        function loginSuccess(u){ currentUser=u; localStorage.setItem('sector_mind_user',JSON.stringify(u)); closeAuthModal(); updateUI(); location.reload(); }
-        function logout(){ currentUser=null; localStorage.removeItem('sector_mind_user'); location.reload(); }
-        function showError(m){ document.getElementById('auth-error').classList.remove('hidden'); document.getElementById('auth-error-text').innerText=m; }
-        
-        function updateUI(){
-            const ab=document.getElementById('auth-buttons'), up=document.getElementById('user-profile');
-            if(currentUser){ ab.classList.add('hidden'); up.classList.remove('hidden'); up.classList.add('flex'); document.getElementById('user-name-display').innerText=currentUser.nombre; document.getElementById('user-role-display').innerText=currentUser.rol; }
-            else { ab.classList.remove('hidden'); up.classList.add('hidden'); }
-        }
-
-        // INIT & LOAD DATA
         async function init() {
-            if(!businessId) { alert("ID desconocido"); location.href='/'; return; }
+            if(!businessId) { window.location.href='/'; return; }
+            const stored = localStorage.getItem('sector_mind_user');
+            if(stored) {
+                currentUser = JSON.parse(stored);
+                document.getElementById('user-status').innerHTML = `<span class="text-indigo-600 font-bold">Hola, ${currentUser.nombre}</span>`;
+            } else {
+                document.getElementById('user-status').innerHTML = `<a href="/" class="text-slate-400 hover:text-indigo-600">Iniciar Sesión</a>`;
+            }
+
             try {
-                // Negocio
-                const res = await fetch(`${API_URL}/negocios/`);
-                const all = await res.json();
+                const res = await fetch(`${API_URL}/negocios/`); const all = await res.json();
                 businessData = all.find(b => b.id == businessId);
-                if(!businessData) throw new Error("No encontrado");
+                if(!businessData) throw new Error("404");
 
+                // --- RELLENO DE DATOS (CORREGIDO) ---
                 document.getElementById('biz-name').innerText = businessData.nombre;
+                document.getElementById('ai-name').innerText = businessData.nombre + " AI";
                 
-                // --- CAMBIO: NOMBRE DE LA IA DINÁMICO ---
-                document.getElementById('ai-name-display').innerText = businessData.nombre + " AI";
-
                 document.getElementById('biz-type').innerText = businessData.tipo_negocio;
-                document.getElementById('biz-desc').innerText = businessData.descripcion || "Sin descripción.";
-                document.getElementById('biz-address').innerText = businessData.direccion || "Dirección no especificada";
                 
-                // PROPIETARIO
-                const owner = businessData.propietario_nombre || "Anónimo";
-                document.getElementById('biz-owner').innerText = owner;
-                document.getElementById('biz-owner-mobile').innerText = owner;
+                // Estos son los que te faltaban:
+                document.getElementById('biz-desc').innerText = businessData.descripcion || "Sin descripción disponible.";
+                document.getElementById('biz-address').innerText = businessData.direccion || "Dirección no especificada";
+                document.getElementById('biz-owner').innerText = businessData.propietario_nombre || "Anónimo";
 
-                // Foto
                 if(businessData.foto_url && businessData.foto_url.startsWith('http')) document.getElementById('biz-img').src = businessData.foto_url;
                 else document.getElementById('biz-img').src = `https://source.unsplash.com/1200x600/?${businessData.tipo_negocio === 'peluqueria' ? 'hair-salon' : 'office'}`;
 
-                // Servicios
-                const rS = await fetch(`${API_URL}/negocios/${businessId}/servicios`);
-                const servs = await rS.json();
+                const rS = await fetch(`${API_URL}/negocios/${businessId}/servicios`); const servs = await rS.json();
                 const l = document.getElementById('services-list'); l.innerHTML = '';
                 servs.forEach(s => {
-                    l.innerHTML += `<div class="flex justify-between items-center p-4 bg-white rounded-xl border border-slate-100 hover:border-indigo-200 transition"><div><p class="font-bold text-slate-800 text-lg">${s.nombre}</p><div class="flex items-center text-xs text-slate-500 mt-1"><i data-lucide="clock" class="w-3 h-3 mr-1"></i> ${s.duracion_minutos} min</div></div><span class="font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">${s.precio}€</span></div>`;
+                    l.innerHTML += `<div class="flex justify-between items-center p-4 bg-white rounded-xl border border-slate-100"><div><p class="font-bold text-slate-800">${s.nombre}</p><div class="flex items-center text-xs text-slate-500 mt-1"><i data-lucide="clock" class="w-3 h-3 mr-1"></i> ${s.duracion_minutos} min</div></div><span class="font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">${s.precio}€</span></div>`;
                 });
             } catch(e) { console.error(e); }
             lucide.createIcons();
         }
 
-        // --- Chat & Voz ---
-        function startChatMode() { 
-            // --- PROTECCIÓN LOGIN ---
-            if(!currentUser) { openAuthModal('login'); return; }
+        // --- CHAT LOGIC ---
+        function startChatMode() {
+            if(!currentUser) { document.getElementById('login-redirect-modal').classList.remove('hidden'); return; }
             
-            document.getElementById('chat-window').classList.remove('hidden'); 
-            document.getElementById('chat-window').classList.add('flex'); 
-            const m=`Hola, quiero reservar en ${businessData.nombre}`; addMsg('user',m); sendToRasa(m); 
+            const w = document.getElementById('chat-window');
+            w.classList.remove('hidden'); w.classList.add('flex');
+            
+            // TRUCO: Enviar saludo automático con contexto
+            const contextMsg = `/greet{"negocio": "${businessData.nombre}"}`;
+            sendToRasa(contextMsg, true); 
         }
-        function closeChatMode() { document.getElementById('chat-window').classList.add('hidden'); }
+
         async function handleChatSubmit(e){ e.preventDefault(); const i=document.getElementById('chat-input'); if(i.value){ addMsg('user',i.value); await sendToRasa(i.value); i.value='';}}
-        async function sendToRasa(m){ 
-            const uId = currentUser ? currentUser.id : 'guest';
-            try{ const r=await fetch(RASA_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sender:uId,message:m})}); const d=await r.json(); d.forEach(x=>addMsg('bot',x.text)); }catch(e){ addMsg('bot','Error conexión IA'); } 
-        }
-        function addMsg(s,t){ const d=document.createElement('div'); d.className=s==='user'?'bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-none self-end max-w-[80%]':'bg-slate-100 text-slate-700 p-3 rounded-2xl rounded-tl-none self-start max-w-[80%]'; d.innerText=t; document.getElementById('chat-messages').append(d); }
         
-        let recognition;
-        function startVoiceMode(){ 
-            // --- PROTECCIÓN LOGIN ---
-            if(!currentUser) { openAuthModal('login'); return; }
-
-            document.getElementById('voice-overlay').classList.remove('hidden'); 
-            if(!('webkitSpeechRecognition'in window))return alert("Usa Chrome"); 
-            recognition=new webkitSpeechRecognition(); recognition.lang='es-ES'; 
-            recognition.onstart=()=>document.getElementById('voice-status').innerText="Te escucho..."; 
-            recognition.onresult=(e)=>{ const t=e.results[0][0].transcript; document.getElementById('voice-transcript').innerText=`"${t}"`; document.getElementById('voice-status').innerText="Pensando..."; let m=t; if(!t.toLowerCase().includes(businessData.nombre.toLowerCase())) m+=` en ${businessData.nombre}`; sendVoiceToRasa(m); }; recognition.start(); 
+        async function sendToRasa(m, hidden=false) {
+            try {
+                const r = await fetch(RASA_URL, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sender:currentUser.id,message:m})});
+                const d = await r.json();
+                d.forEach(x => addMsg('bot', x.text));
+            } catch(e) { if(!hidden) addMsg('bot','Error conexión IA'); } 
         }
-        async function sendVoiceToRasa(m){ 
-            const uId = currentUser ? currentUser.id : 'guest';
-            const r=await fetch(RASA_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sender:uId,message:m})}); const d=await r.json(); if(d.length>0){ const t=d[0].text; document.getElementById('voice-transcript').innerText=t; const s=new SpeechSynthesisUtterance(t); s.lang='es-ES'; s.onend=()=>recognition.start(); window.speechSynthesis.speak(s); } 
+        
+        function addMsg(s,t){ 
+            const d=document.createElement('div'); 
+            d.className=s==='user'?'bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-none self-end max-w-[80%]':'bg-slate-100 text-slate-700 p-3 rounded-2xl rounded-tl-none self-start max-w-[80%]'; 
+            d.innerText=t; 
+            document.getElementById('chat-messages').append(d); 
         }
-        function closeVoiceMode(){ document.getElementById('voice-overlay').classList.add('hidden'); if(recognition)recognition.stop(); window.speechSynthesis.cancel(); }
 
-        window.onload = () => {
-            const u = localStorage.getItem('sector_mind_user');
-            if(u) currentUser = JSON.parse(u);
-            updateUI();
-            init();
-        };
+        // --- VOICE LOGIC ---
+        function startVoiceMode(){
+            if(!currentUser) { document.getElementById('login-redirect-modal').classList.remove('hidden'); return; }
+            alert("Modo voz activado (Simulado: Usa Chrome para STT real).");
+        }
+
+        init();
     </script>
 </body>
 </html>

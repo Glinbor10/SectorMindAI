@@ -17,7 +17,6 @@ entities:
   - fecha
 
 slots:
-  # --- AQUÍ ESTABA EL ERROR. AHORA TIENEN MAPPINGS ---
   negocio:
     type: text
     influence_conversation: true
@@ -46,8 +45,13 @@ slots:
       - type: custom
 
 responses:
+  # Saludo genérico (si no sabemos dónde estamos)
   utter_greet:
     - text: "¡Hola! Soy Sector Mind AI. ¿En qué negocio quieres reservar hoy?"
+
+  # --- NUEVO: Saludo Contextual (Se usa cuando la web envía el nombre) ---
+  utter_greet_con_negocio:
+    - text: "¡Hola! En {negocio} estamos deseando atenderle. ¿Qué servicio necesita hoy?"
 
   utter_goodbye:
     - text: "¡Hasta luego! Gracias por usar nuestro servicio."
