@@ -1,12 +1,57 @@
 # backend/routes/citas.py
 from flask import Blueprint, jsonify, request
 import sqlite3
-# Importamos la conexión y la lógica desde el paquete padre
 from ..db import get_db_connection 
 from ..logic import obtener_tramos_disponibles, verificar_solapamiento 
 
 # Definimos el Blueprint. Aquí no usamos url_prefix para que las rutas sean /citas y /disponibilidad
 citas_bp = Blueprint('citas', __name__)
+
+
+# Endpoint: Obtener Citas (GET /citas)
+# AHORA ADMITE FILTROS: ?cliente_id=1  O  ?negocio_id=2
+@citas_bp.route('/citas', methods=['GET'])
+def obtener_citas():
+    cliente_id = request.args.get('cliente_id')
+    negocio_id = request.args.get('negocio_id')
+
+    conn = get_db_connection()
+    
+    # Preparamos una consulta que une tablas para dar información útil (nombres en vez de solo IDs)
+    query = '''
+        SELECT 
+            c.id, c.fecha_hora_cita, c.estado, c.duracion_minutos,
+            n.nombre as negocio_nombre, 
+            s.nombre as servicio_nombre, 
+            s.precio,
+            u.nombre as cliente_nombre
+        FROM citas c
+        JOIN negocios n ON c.negocio_id = n.id
+        JOIN servicios s ON c.servicio_id = s.id
+        JOIN usuarios u ON c.cliente_id = u.id
+    '''
+    
+    params = []
+    conditions = []
+
+    if cliente_id:
+        conditions.append("c.cliente_id = ?")
+        params.append(cliente_id)
+    
+    if negocio_id:
+        conditions.append("c.negocio_id = ?")
+        params.append(negocio_id)
+    
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    
+    # Ordenar por fecha más reciente
+    query += " ORDER BY c.fecha_hora_cita DESC"
+
+    citas = conn.execute(query, params).fetchall()
+    conn.close()
+    
+    return jsonify([dict(row) for row in citas])
 
 # --- ENDPOINT DE DISPONIBILIDAD (CRÍTICO PARA RASA) ---
 

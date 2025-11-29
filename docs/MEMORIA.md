@@ -1,4 +1,3 @@
-
 # Memoria Técnica - Sector Mind AI
 
 ## 1. Introducción y Objetivos
@@ -7,64 +6,63 @@ Sector Mind AI nace con el objetivo de modernizar la gestión de reservas en peq
 
 ## 2. Arquitectura y Elección de Tecnologías
 
-Para el desarrollo de la plataforma, se ha optado por una arquitectura modular desacoplada, separando la lógica de negocio (Backend), la interfaz de usuario (Frontend) y el motor de inteligencia (IA).
+Para el desarrollo de la plataforma, se ha optado por una arquitectura modular desacoplada:
 
 ### 🧠 Motor Conversacional: Rasa Open Source
-
-Se ha seleccionado Rasa frente a alternativas en la nube (como Dialogflow o Amazon Lex) por las siguientes razones estratégicas:
-
-- **Control Total y Privacidad:** Al ser open-source, permite la ejecución local de todo el stack sin enviar datos sensibles de los clientes a terceros.
-- **Acciones Personalizadas (Custom Actions):** Rasa ofrece una integración nativa con Python (rasa-sdk), lo que permite ejecutar lógica compleja (consultar bases de datos, calcular horarios) en respuesta a la intención del usuario, algo fundamental para un sistema de reservas dinámico.
-- **Flexibilidad NLU:** Permite un entrenamiento fino de las entidades y intents específicos del dominio en español.
+Se ha seleccionado Rasa frente a alternativas en la nube por su capacidad de ejecución local y privacidad de datos.
+- **Estado Actual:** Configurado para detección de intenciones (NLU) y gestión de diálogo básica mediante reglas e historias.
+- **Conectividad:** Se comunica con el backend a través de un *Action Server* dedicado.
 
 ### 🔌 Backend y API: Flask (Python)
+Actúa como el orquestador central del sistema:
+- **Gestión de Archivos:** Sistema de subida física de imágenes de perfil (`multipart/form-data`) almacenadas en servidor local.
+- **Autenticación:** Sistema de usuarios seguro con roles (Cliente/Propietario).
+- **Lógica de Negocio:** Algoritmos de disponibilidad horaria y gestión de base de datos SQLite.
 
-Flask actúa como el orquestador del sistema. Se eligió por:
+## 3. Retos Técnicos y Soluciones (Evolución del Proyecto)
 
-- **Ligereza y Modularidad:** A diferencia de Django, Flask permite construir una API RESTful mínima y escalar según necesidad utilizando Blueprints.
-- **Ecosistema Python:** Facilita la integración directa con las librerías de análisis de datos y lógica de fechas (datetime, pandas si fuera necesario).
-- **Manejo de Rutas:** Gestión eficiente de endpoints para servir tanto la API JSON como los archivos estáticos del Frontend.
+### Fase v0.1: Infraestructura y Conectividad (Pasado)
+El objetivo inicial fue lograr que piezas tecnológicas dispares (Python, JS, SQLite, Rasa) se comunicaran entre sí sin errores.
 
-### 💾 Base de Datos: SQLite
+- **A. Integración de Servicios:**
+    - *Reto:* Rasa y Flask son procesos independientes que no comparten memoria.
+    - *Solución:* Implementación de una arquitectura orientada a servicios (SOA) local usando REST API. El `action_server` de Rasa actúa como puente HTTP para consultar la base de datos de Flask.
 
-Para esta fase del proyecto, se utiliza SQLite:
+- **B. Despliegue Local (Dependency Hell):**
+    - *Reto:* Conflictos de versiones entre las librerías de IA (TensorFlow, Rasa) y el Backend web.
+    - *Solución:* Aislamiento estricto con entornos virtuales y control de dependencias mediante `requirements.txt`.
 
-- **Despliegue sin Servidor:** Al ser una base de datos basada en archivos, elimina la necesidad de configurar servidores dedicados (como PostgreSQL o MySQL), simplificando enormemente el desarrollo y las pruebas (CI/CD).
-- **Portabilidad:** La base de datos completa reside en un solo archivo (`tfg_data.db`), facilitando backups y reset de datos.
-- **Suficiencia:** SQLite es capaz de manejar el tráfico esperado para un prototipo funcional y pequeñas implantaciones reales.
+### Fase v0.2: Experiencia de Usuario y Multimedia (Presente)
+Una vez el sistema funcionaba, el reto fue hacerlo usable, seguro y moderno.
 
-### 🎨 Frontend: HTML5 + JavaScript (Vanilla) + Tailwind CSS
+- **A. Interacción por Voz (Web Speech API):**
+    - *Reto:* Permitir hablar con el bot sin latencia extrema ni costes de APIs en la nube.
+    - *Solución:* Delegar el reconocimiento de voz (STT) y la síntesis (TTS) al navegador del cliente. Esto envía texto limpio al servidor, reduciendo drásticamente la carga de procesamiento y la latencia.
 
-- **Sin Frameworks Pesados:** Se evitó el uso de React/Vue para mantener la ligereza y reducir la complejidad de compilación.
-- **Web Speech API:** Uso de estándares nativos del navegador para el reconocimiento de voz (STT) y síntesis de voz (TTS), evitando costes de APIs externas.
+- **B. Persistencia y Seguridad:**
+    - *Reto:* El sistema olvidaba qué negocio visitaba el usuario al recargar la página y permitía el uso anónimo de la IA.
+    - *Solución:* Implementación de `localStorage` para mantener el estado de navegación y un sistema de "Lock Screen" (Pantalla de Bloqueo) que restringe el acceso al agente hasta que existe una sesión válida.
 
-## 3. Desafíos Técnicos y Soluciones
+- **C. Gestión de Errores e Integridad:**
+    - *Reto:* Inconsistencias entre la sesión del navegador y la base de datos tras reinicios (IDs de usuario obsoletos).
+    - *Solución:* Blindaje de los endpoints de la API. Si un ID no existe, el servidor devuelve un 404 controlado que fuerza el cierre de sesión en el cliente, evitando bloqueos.
 
-Durante el ciclo de desarrollo, se identificaron y superaron varios obstáculos críticos:
+## 4. Próximos Pasos: Inteligencia y Ejecución (Fase v0.3)
 
-### A. Sincronización Rasa-Flask en Tiempo Real
+Actualmente, el sistema cuenta con una interfaz avanzada y una infraestructura robusta, pero el modelo de IA tiene capacidades de ejecución limitadas. Los retos inmediatos son:
 
-- **El Problema:** Rasa es asíncrono y "ciego" ante el estado real del negocio. No sabe si una hora está libre solo con el entrenamiento NLU.
-- **La Solución:** Implementación de un servidor de acciones (`actions.py`) que actúa como puente. Cuando el usuario pide una hora, Rasa pausa la conversación, consulta el endpoint `/disponibilidad` de Flask, y devuelve una respuesta basada en datos reales, no solo en predicciones lingüísticas.
+- **Perfeccionamiento del Slot Filling:**
+    - *Problema Actual:* El bot reconoce intenciones pero puede perder datos (hora, servicio) en conversaciones largas o no estructuradas.
+    - *Objetivo:* Implementar *Rasa Forms* para asegurar la recolección estricta de todos los datos necesarios antes de intentar una reserva.
 
-### B. Entrenamiento con Escasez de Datos (Cold Start)
+- **Gestión de Contexto Complejo:**
+    - *Objetivo:* Que el bot recuerde el contexto de conversaciones pasadas (ej: "quiero lo mismo de la última vez").
 
-- **El Problema:** Los modelos de lenguaje requieren miles de ejemplos para generalizar, pero partíamos de cero.
-- **La Solución:**
-	- Uso de Lookup Tables en Rasa para inyectar listas masivas de nombres de negocios y servicios sin tener que escribir miles de frases.
-	- Implementación de Interactive Learning (Rasa Shell) para corregir al bot en tiempo real y reentrenar con esas correcciones.
+-- **Migración a Producción:**
+    - *Objetivo:* Migrar de SQLite a PostgreSQL y desplegar en contenedores Docker.
 
-### C. Gestión de Dependencias (Dependency Hell)
+### Usuarios de desarrollo disponibles
 
-- **El Problema:** Rasa requiere versiones específicas de librerías (como SQLAlchemy < 2.0 o versiones concretas de sanic) que entraban en conflicto con las versiones modernas de Flask.
-- **La Solución:**
-	- Aislamiento estricto mediante entornos virtuales (`venv`).
-	- Definición de un archivo `requirements.txt` con versiones "pineadas" (fijas) para garantizar la reproducibilidad del entorno en cualquier máquina.
-
-## 4. Trabajo Futuro y Mejoras
-
-Aun el sistema es funcional (v0.1), se plantean las siguientes líneas de evolución:
-
-- **Migración a PostgreSQL:** Para entornos de producción con concurrencia de usuarios real.
-- **Panel de Administración:** Interfaz gráfica para que los propietarios gestionen sus horarios sin tocar código.
-- **Notificaciones:** Integración con WhatsApp Business API o Email para confirmar citas.
+✨ ¡SISTEMA RESTAURADO COMPLETAMENTE! ✨
+   -> Login Propietario: propietario@sectormind.com / p
+   -> Login Cliente:     cliente@sectormind.com / u

@@ -6,377 +6,316 @@
     <title>Sector Mind AI - Plataforma de Reservas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .hidden { display: none !important; }
+        .filter-btn.active { background-color: #4f46e5; color: white; border-color: #4f46e5; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen relative">
 
-    <!-- NAV BAR -->
+    <script>
+        const API_URL = 'http://localhost:5000';
+        let currentUser = null;
+        let allNegocios = []; 
+        let currentCategory = 'Todos';
+        let currentSearchTerm = '';
+    </script>
+
     <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
-                <div class="flex items-center cursor-pointer" onclick="window.location.href='/'">
-                    <div class="bg-indigo-600 p-2 rounded-lg mr-3">
-                        <i data-lucide="brain-circuit" class="h-6 w-6 text-white"></i>
+                <div class="flex items-center cursor-pointer group" onclick="window.location.href='/'">
+                    <div class="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center mr-2 relative overflow-hidden transition-transform group-hover:scale-105">
+                        <i data-lucide="calendar" class="text-indigo-300 w-6 h-6 absolute opacity-40" stroke-width="1.5"></i>
+                        <i data-lucide="brain-circuit" class="text-white w-5 h-5 relative z-10"></i>
                     </div>
                     <span class="font-bold text-xl tracking-tight text-slate-900">Sector Mind AI</span>
                 </div>
-                
+
                 <div class="flex items-center space-x-4">
-                    <div id="auth-buttons" class="flex gap-2">
-                        <button onclick="openAuthModal('login')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 transition">Iniciar Sesión</button>
-                        <button onclick="openAuthModal('register')" class="px-4 py-2 rounded-full bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition shadow-lg shadow-indigo-500/20">Registrarse</button>
+                    <div id="auth-buttons" class="flex items-center space-x-3">
+                        <button onclick="openModal('modal-login')" class="text-slate-600 hover:text-indigo-600 font-medium transition-colors">Iniciar Sesión</button>
+                        <button onclick="openModal('modal-register')" class="bg-indigo-600 text-white px-5 py-2 rounded-full font-medium hover:bg-indigo-700 transition-shadow shadow-lg shadow-indigo-200">Registrarse</button>
                     </div>
-                    <div id="user-profile" class="hidden items-center gap-3">
-                        <div class="text-right">
-                            <p class="text-sm font-bold text-slate-900" id="user-name-display">Usuario</p>
-                            <p class="text-xs text-slate-500 capitalize" id="user-role-display">Cliente</p>
-                        </div>
-                        <div class="h-9 w-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold border border-indigo-200">
-                            <i data-lucide="user"></i>
-                        </div>
-                        <button onclick="logout()" class="text-xs text-red-500 hover:text-red-700 ml-2 font-medium border border-red-100 rounded px-2 py-1 bg-red-50">Salir</button>
+
+                    <div id="user-menu" class="hidden flex items-center gap-3 cursor-pointer" onclick="window.location.href='/perfil'">
+                        <span id="user-name-display" class="font-medium text-slate-700">Usuario</span>
+                        <img id="user-avatar-display" src="" class="w-10 h-10 rounded-full border-2 border-indigo-100 object-cover bg-slate-200">
                     </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- ========================================= -->
-    <!-- VISTA CLIENTE (Buscador y Lista Global) -->
-    <!-- ========================================= -->
-    <div id="view-client" class="flex-grow flex flex-col">
-        <header class="bg-white border-b border-slate-100 relative overflow-hidden">
-            <div class="max-w-7xl mx-auto py-12 px-4 text-center relative z-10">
-                <span class="inline-block py-1 px-3 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold uppercase tracking-wider mb-4 border border-indigo-100">
-                    Reserva Inteligente v2.0
-                </span>
-                <h1 class="text-3xl font-extrabold text-slate-900 sm:text-5xl mb-4 leading-tight">
-                    Encuentra y reserva <br>
-                    <span class="text-indigo-600">tu servicio ideal.</span>
-                </h1>
-            </div>
-        </header>
-
-        <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full">
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div class="relative w-full md:w-1/2">
-                    <i data-lucide="search" class="absolute left-3 top-3 text-slate-400 w-5 h-5"></i>
-                    <input type="text" id="search-input" oninput="filterBusinesses()" placeholder="Buscar negocio (ej: Peluquería Estilo...)" class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
-                </div>
-                <div class="flex items-center gap-2 w-full md:w-auto">
-                    <i data-lucide="filter" class="text-slate-400 w-5 h-5"></i>
-                    <select id="type-filter" onchange="filterBusinesses()" class="w-full md:w-48 p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white cursor-pointer">
-                        <option value="">Todos los tipos</option>
-                        <option value="peluqueria">💇 Peluquerías</option>
-                        <option value="dentista">🦷 Dentistas</option>
-                        <option value="fisioterapia">🦴 Fisioterapia</option>
-                    </select>
+    <header class="relative pt-16 pb-20 lg:pt-24 lg:pb-28 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 mb-6">
+                Tu tiempo, <span class="text-indigo-600">mejor invertido.</span>
+            </h1>
+            <p class="mt-4 max-w-2xl mx-auto text-xl text-slate-500 mb-10">
+                Reserva citas en tus negocios favoritos con nuestra IA conversacional.
+            </p>
+            <div class="max-w-xl mx-auto relative group">
+                <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-200"></div>
+                <div class="relative bg-white rounded-2xl shadow-xl flex items-center p-2 border border-slate-100">
+                    <i data-lucide="search" class="ml-4 text-slate-400 w-5 h-5"></i>
+                    <input type="text" id="search-input" placeholder="Buscar..." class="w-full p-3 outline-none text-slate-700 placeholder:text-slate-400 bg-transparent text-lg">
                 </div>
             </div>
+        </div>
+    </header>
 
-            <div id="negocios-container" class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3"></div>
-            <div id="no-results" class="hidden text-center py-12">
-                <p class="text-slate-500 font-medium">No encontramos negocios.</p>
-            </div>
-        </main>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full flex-grow">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <h2 class="text-2xl font-bold text-slate-900">Negocios Destacados</h2>
+            <div id="filters-container" class="flex flex-wrap gap-2"></div>
+        </div>
+        <div id="business-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="col-span-full text-center py-20"><p class="text-slate-500">Cargando...</p></div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-8 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
+            &copy; 2025 Sector Mind AI.
+        </div>
+    </footer>
+
+    <div id="modal-login" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative mx-4">
+            <button onclick="closeModal('modal-login')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">Bienvenido</h2>
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <input type="email" id="login-email" required placeholder="Email" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="password" id="login-password" required placeholder="Contraseña" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700">Entrar</button>
+            </form>
+        </div>
     </div>
 
-    <!-- ========================================= -->
-    <!-- VISTA PROPIETARIO (Gestión) -->
-    <!-- ========================================= -->
-    <div id="view-owner" class="hidden flex-grow bg-slate-50 p-4 md:p-8">
-        <div class="max-w-6xl mx-auto">
-            <div class="flex justify-between items-center mb-8">
+    <div id="modal-register" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative mx-4">
+            <button onclick="closeModal('modal-register')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">Crear cuenta</h2>
+            <form onsubmit="handleRegister(event)" class="space-y-4">
+                <input type="text" id="reg-name" required placeholder="Nombre Completo" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="email" id="reg-email" required placeholder="Email" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="password" id="reg-password" required placeholder="Contraseña" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
                 <div>
-                    <h2 class="text-3xl font-bold text-slate-900">Mis Negocios</h2>
-                    <p class="text-slate-500">Gestiona tus locales y servicios</p>
+                    <label class="block text-sm font-medium text-slate-700 mb-1 ml-1">Foto de perfil (Opcional)</label>
+                    <input type="file" id="reg-photo-file" accept="image/*" class="w-full p-2 border border-slate-300 rounded-xl text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                 </div>
-                <button onclick="openCreateBusinessModal()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition flex items-center shadow-lg shadow-indigo-200">
-                    <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Nuevo Negocio
-                </button>
-            </div>
-
-            <div id="owner-businesses-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Se llena con JS -->
-            </div>
-            
-            <div id="owner-empty-state" class="hidden text-center py-16 bg-white rounded-3xl border border-dashed border-slate-300">
-                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                    <i data-lucide="store" class="w-8 h-8"></i>
-                </div>
-                <h3 class="text-lg font-bold text-slate-900">Aún no tienes negocios</h3>
-                <p class="text-slate-500 mb-4">Crea tu primer negocio para empezar a recibir reservas.</p>
-                <button onclick="openCreateBusinessModal()" class="text-indigo-600 font-bold hover:underline">Crear ahora</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL AUTH -->
-    <div id="auth-modal" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center fade-in">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
-            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
-            <div class="flex border-b border-slate-200 mb-6">
-                <button id="tab-login" onclick="switchTab('login')" class="flex-1 py-2 text-center font-medium border-b-2 border-indigo-600 text-indigo-600">Iniciar Sesión</button>
-                <button id="tab-register" onclick="switchTab('register')" class="flex-1 py-2 text-center font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">Registrarse</button>
-            </div>
-            <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-4">
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" id="login-email" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Contraseña</label><input type="password" id="login-pass" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"></div>
-                <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Entrar</button>
-            </form>
-            <form id="form-register" onsubmit="handleRegisterSubmit(event)" class="space-y-4 hidden">
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Nombre</label><input type="text" id="reg-name" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Email</label><input type="email" id="reg-email" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Contraseña</label><input type="password" id="reg-pass" required class="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-indigo-500"></div>
-                <div><label class="block text-sm font-medium text-slate-700 mb-1">Rol</label><div class="grid grid-cols-2 gap-2"><label class="cursor-pointer border rounded-lg p-2 text-center hover:bg-slate-50 has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50 has-[:checked]:text-indigo-700 transition"><input type="radio" name="role" value="cliente" checked class="hidden"><span class="text-sm font-medium">Cliente</span></label><label class="cursor-pointer border rounded-lg p-2 text-center hover:bg-slate-50 has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50 has-[:checked]:text-indigo-700 transition"><input type="radio" name="role" value="propietario" class="hidden"><span class="text-sm font-medium">Propietario</span></label></div></div>
-                <button type="submit" class="w-full bg-slate-900 text-white py-2 rounded-lg font-bold hover:bg-slate-800 transition">Crear Cuenta</button>
-            </form>
-            <div id="auth-error" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700 text-sm"><span id="auth-error-text">Error</span></div>
-        </div>
-    </div>
-
-    <!-- MODAL CREAR NEGOCIO -->
-    <div id="modal-create-business" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center fade-in">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative max-h-[90vh] overflow-y-auto">
-            <button onclick="document.getElementById('modal-create-business').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
-            <h2 class="text-2xl font-bold mb-4">Nuevo Negocio</h2>
-            <form onsubmit="handleCreateBusiness(event)" class="space-y-4">
-                <div><label class="block text-sm font-medium mb-1">Nombre</label><input type="text" id="new-biz-name" required class="w-full border rounded-lg px-3 py-2"></div>
-                <div><label class="block text-sm font-medium mb-1">Tipo</label><select id="new-biz-type" class="w-full border rounded-lg px-3 py-2"><option value="peluqueria">Peluquería</option><option value="dentista">Dentista</option><option value="fisioterapia">Fisioterapia</option></select></div>
-                <div><label class="block text-sm font-medium mb-1">Dirección</label><input type="text" id="new-biz-address" required class="w-full border rounded-lg px-3 py-2"></div>
-                <div><label class="block text-sm font-medium mb-1">Descripción</label><textarea id="new-biz-desc" rows="3" class="w-full border rounded-lg px-3 py-2"></textarea></div>
-                <div><label class="block text-sm font-medium mb-1">Foto URL (Opcional)</label><input type="url" id="new-biz-photo" class="w-full border rounded-lg px-3 py-2" placeholder="https://..."></div>
-                <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700">Crear Negocio</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL AÑADIR SERVICIO -->
-    <div id="modal-add-service" class="fixed inset-0 z-50 hidden bg-slate-900/50 backdrop-blur-sm flex items-center justify-center fade-in">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 relative">
-            <button onclick="document.getElementById('modal-add-service').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
-            <h2 class="text-xl font-bold mb-4">Añadir Servicio</h2>
-            <p id="service-modal-biz-name" class="text-sm text-slate-500 mb-4">...</p>
-            <form onsubmit="handleAddService(event)" class="space-y-4">
-                <input type="hidden" id="service-biz-id">
-                <div><label class="block text-sm font-medium mb-1">Nombre</label><input type="text" id="new-service-name" required class="w-full border rounded-lg px-3 py-2"></div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="block text-sm font-medium mb-1">Precio (€)</label><input type="number" id="new-service-price" step="0.01" required class="w-full border rounded-lg px-3 py-2"></div>
-                    <div><label class="block text-sm font-medium mb-1">Minutos</label><input type="number" id="new-service-duration" value="30" required class="w-full border rounded-lg px-3 py-2"></div>
-                </div>
-                <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold hover:bg-emerald-700">Guardar</button>
+                <select id="reg-rol" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <option value="cliente">Cliente (Quiero reservar)</option>
+                    <option value="propietario">Dueño de Negocio</option>
+                </select>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700">Registrarse</button>
             </form>
         </div>
     </div>
 
     <script>
-        const API_URL = 'http://localhost:5000';
-        let currentUser = null;
-        let allBusinesses = [];
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-        // --- AUTH UI ---
-        function openAuthModal(t) { document.getElementById('auth-modal').classList.remove('hidden'); switchTab(t); }
-        function closeAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); document.getElementById('auth-error').classList.add('hidden'); }
-        function switchTab(t) {
-            const lF=document.getElementById('form-login'), rF=document.getElementById('form-register');
-            const lT=document.getElementById('tab-login'), rT=document.getElementById('tab-register');
-            if(t==='login'){ lF.classList.remove('hidden'); rF.classList.add('hidden'); lT.className="flex-1 py-2 text-center font-bold border-b-2 border-indigo-600 text-indigo-600"; rT.className="flex-1 py-2 text-center font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700"; }
-            else { lF.classList.add('hidden'); rF.classList.remove('hidden'); rT.className="flex-1 py-2 text-center font-bold border-b-2 border-indigo-600 text-indigo-600"; lT.className="flex-1 py-2 text-center font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700"; }
-        }
-
-        // --- AUTH LOGIC (ROBUSTA) ---
-        async function performLogin(email, password) {
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
             try {
                 const res = await fetch(`${API_URL}/auth/login`, {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({email, password})
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    loginSuccess(data);
+                    saveUserSession(data);
+                    closeModal('modal-login');
+                    Swal.fire({
+                        title: 'Sector Mind AI',
+                        text: `Bienvenido de nuevo, ${data.nombre}`,
+                        icon: 'success',
+                        confirmButtonColor: '#4f46e5'
+                    });
                 } else {
-                    showError(data.error || 'Error de acceso');
+                    Swal.fire('Error', data.error, 'error');
                 }
-            } catch (x) { showError('Error de conexión'); }
+            } catch (err) { Swal.fire('Error', 'Error de conexión', 'error'); }
         }
 
-        async function handleLoginSubmit(e) {
+        async function handleRegister(e) {
             e.preventDefault();
-            await performLogin(document.getElementById('login-email').value, document.getElementById('login-pass').value);
-        }
-
-        async function handleRegisterSubmit(e) {
-            e.preventDefault();
-            const nombre = document.getElementById('reg-name').value;
-            const email = document.getElementById('reg-email').value;
-            const password = document.getElementById('reg-pass').value;
-            const rol = document.querySelector('input[name="role"]:checked').value;
+            const formData = new FormData();
+            formData.append('nombre', document.getElementById('reg-name').value);
+            formData.append('email', document.getElementById('reg-email').value);
+            formData.append('password', document.getElementById('reg-password').value);
+            formData.append('rol', document.getElementById('reg-rol').value);
+            const fileInput = document.getElementById('reg-photo-file');
+            if(fileInput.files[0]) formData.append('foto_perfil', fileInput.files[0]);
 
             try {
-                const r = await fetch(`${API_URL}/auth/register`, {
-                    method: 'POST', headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({nombre, email, password, rol})
-                });
-                if (r.ok) {
-                    await performLogin(email, password);
-                } else {
-                    const d = await r.json();
-                    showError(d.error);
-                }
-            } catch(x) { showError('Error conexión'); }
+                const res = await fetch(`${API_URL}/auth/register`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (res.ok) {
+                    saveUserSession(data);
+                    closeModal('modal-register');
+                    Swal.fire({
+                        title: 'Sector Mind AI',
+                        text: `¡Cuenta creada! Bienvenido, ${data.nombre}`,
+                        icon: 'success',
+                        confirmButtonColor: '#4f46e5'
+                    });
+                } else { Swal.fire('Error', data.error, 'error'); }
+            } catch (err) { Swal.fire('Error', 'Error al registrarse', 'error'); }
         }
 
-        function loginSuccess(u){ currentUser=u; localStorage.setItem('sector_mind_user',JSON.stringify(u)); closeAuthModal(); updateUI(); }
-        function logout(){ currentUser=null; localStorage.removeItem('sector_mind_user'); location.reload(); }
-        function showError(m){ document.getElementById('auth-error').classList.remove('hidden'); document.getElementById('auth-error-text').innerText=m; }
-        
-        // --- UI STATE MANAGER ---
-        function updateUI(){
-            const ab=document.getElementById('auth-buttons'), up=document.getElementById('user-profile');
-            const vClient=document.getElementById('view-client'), vOwner=document.getElementById('view-owner');
-            
-            if(currentUser){ 
-                ab.classList.add('hidden'); up.classList.remove('hidden'); up.classList.add('flex'); 
-                document.getElementById('user-name-display').innerText=currentUser.nombre; 
-                document.getElementById('user-role-display').innerText=currentUser.rol;
+        function saveUserSession(userData) {
+            localStorage.setItem('sector_mind_user', JSON.stringify({
+                id: userData.id,
+                nombre: userData.nombre,
+                email: userData.email,
+                rol: userData.rol,
+                foto_perfil_url: userData.foto_perfil_url
+            }));
+            currentUser = userData;
+            updateUI();
+        }
 
-                // LOGICA DE ROLES
-                if(currentUser.rol === 'propietario') {
-                    vClient.classList.add('hidden'); 
-                    vOwner.classList.remove('hidden');
-                    loadOwnerBusinesses(); // Carga panel dueño
+        function logout() {
+            localStorage.removeItem('sector_mind_user');
+            currentUser = null;
+            updateUI();
+            window.location.reload();
+        }
+
+        function updateUI() {
+            const userStr = localStorage.getItem('sector_mind_user');
+            if (userStr) {
+                currentUser = JSON.parse(userStr);
+                document.getElementById('auth-buttons').classList.add('hidden');
+                document.getElementById('user-menu').classList.remove('hidden');
+                document.getElementById('user-menu').classList.add('flex');
+                document.getElementById('user-name-display').innerText = currentUser.nombre;
+                if (currentUser.foto_perfil_url) {
+                    document.getElementById('user-avatar-display').src = currentUser.foto_perfil_url;
                 } else {
-                    vClient.classList.remove('hidden'); 
-                    vOwner.classList.add('hidden');
-                    loadBusinesses(); // Carga panel cliente
+                    document.getElementById('user-avatar-display').src = `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
                 }
-            } else { 
-                ab.classList.remove('hidden'); up.classList.add('hidden');
-                vClient.classList.remove('hidden'); vOwner.classList.add('hidden');
-                loadBusinesses();
+            } else {
+                document.getElementById('auth-buttons').classList.remove('hidden');
+                document.getElementById('user-menu').classList.add('hidden');
+                document.getElementById('user-menu').classList.remove('flex');
             }
         }
 
-        // --- CLIENT LOGIC ---
         async function loadBusinesses() {
-            const c = document.getElementById('negocios-container');
-            if(!c) return;
-            c.innerHTML = '<p class="text-center col-span-3 py-10">Cargando...</p>';
+            const grid = document.getElementById('business-grid');
             try {
-                const r = await fetch(`${API_URL}/negocios/`); const d = await r.json(); allBusinesses = d; renderBusinesses(d);
-            } catch(e) { c.innerHTML = '<p class="text-red-500 text-center col-span-3">Error Backend</p>'; }
+                const res = await fetch(`${API_URL}/negocios/`);
+                allNegocios = await res.json();
+                if(allNegocios.length === 0) {
+                    grid.innerHTML = '<p class="text-center col-span-full text-slate-500">No hay negocios.</p>';
+                    return;
+                }
+                generateFilters(allNegocios);
+                renderBusinessGrid(allNegocios);
+            } catch (err) { grid.innerHTML = '<p class="text-red-500 col-span-full">Error al conectar.</p>'; }
         }
-        function renderBusinesses(list) {
-            const c = document.getElementById('negocios-container'); const no = document.getElementById('no-results'); c.innerHTML='';
-            if(list.length===0){c.classList.add('hidden');no.classList.remove('hidden');return;} else{c.classList.remove('hidden');no.classList.add('hidden');}
-            list.forEach(n => {
-                let img = n.foto_url && n.foto_url.startsWith('http') ? n.foto_url : `https://source.unsplash.com/600x400/?${n.tipo_negocio==='peluqueria'?'hair-salon':'office'}`;
-                const card = document.createElement('div');
-                card.className = 'bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition duration-300 cursor-pointer group h-full flex flex-col';
-                card.onclick = () => window.location.href=`/negocio?id=${n.id}`;
-                card.innerHTML = `<div class="h-48 overflow-hidden relative"><img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500"><div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-slate-800 uppercase tracking-wide shadow-sm">${n.tipo_negocio}</div></div><div class="p-6 flex-grow flex flex-col"><h3 class="text-xl font-bold text-slate-900 mb-1 group-hover:text-indigo-600 transition">${n.nombre}</h3><p class="text-sm text-slate-500 mb-4 line-clamp-2 flex-grow">${n.descripcion || 'Sin descripción'}</p><div class="flex items-center text-xs text-slate-400 mt-auto pt-4 border-t border-slate-50"><i data-lucide="user" class="w-3 h-3 mr-1"></i><span>${n.propietario_nombre || 'Anónimo'}</span></div></div>`;
-                c.appendChild(card);
+
+        function generateFilters(negocios) {
+            const container = document.getElementById('filters-container');
+            const types = ['Todos', ...new Set(negocios.map(n => capitalize(n.tipo_negocio)))];
+            container.innerHTML = '';
+            types.forEach(type => {
+                const btn = document.createElement('button');
+                btn.className = `filter-btn px-4 py-2 rounded-full text-sm font-medium border border-slate-200 transition-colors duration-200 hover:bg-slate-100 ${type === 'Todos' ? 'active' : 'bg-white text-slate-600'}`;
+                btn.innerText = type;
+                btn.onclick = () => setFilter(type, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function setFilter(type, btnElement) {
+            currentCategory = type;
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                b.classList.remove('active', 'bg-indigo-600', 'text-white');
+                b.classList.add('bg-white', 'text-slate-600');
+            });
+            btnElement.classList.remove('bg-white', 'text-slate-600');
+            btnElement.classList.add('active'); 
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const term = currentSearchTerm.toLowerCase();
+            const category = currentCategory.toLowerCase();
+            const filtered = allNegocios.filter(negocio => {
+                const matchesText = negocio.nombre.toLowerCase().includes(term) || 
+                                    (negocio.descripcion && negocio.descripcion.toLowerCase().includes(term)) ||
+                                    (negocio.tipo_negocio && negocio.tipo_negocio.toLowerCase().includes(term));
+                const matchesCategory = category === 'todos' || negocio.tipo_negocio.toLowerCase() === category;
+                return matchesText && matchesCategory;
+            });
+            renderBusinessGrid(filtered);
+        }
+
+        function renderBusinessGrid(negociosData) {
+            const grid = document.getElementById('business-grid');
+            grid.innerHTML = '';
+            if (negociosData.length === 0) {
+                grid.innerHTML = '<p class="text-center col-span-full text-slate-400 py-10">No hay resultados.</p>';
+                return;
+            }
+            negociosData.forEach(negocio => {
+                const fotoBg = negocio.foto_url ? negocio.foto_url : 'https://images.unsplash.com/photo-1521590832896-017c4f98aa51?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+                
+                const cardLink = document.createElement('a');
+                cardLink.className = "group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 cursor-pointer flex flex-col h-full fade-in block text-left";
+                
+                // Mantenemos el href por si acaso el usuario hace click derecho -> abrir en pestaña nueva
+                cardLink.href = `/negocio?id=${negocio.id}`;
+
+                // --- ESTA ES LA CORRECCIÓN: GUARDAR EN MEMORIA AL HACER CLICK ---
+                cardLink.onclick = () => {
+                    localStorage.setItem('selected_business', JSON.stringify(negocio));
+                };
+                // ---------------------------------------------------------------
+
+                cardLink.innerHTML = `
+                    <div class="h-48 overflow-hidden relative">
+                        <img src="${fotoBg}" alt="${negocio.nombre}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-indigo-600 shadow-sm capitalize">${negocio.tipo_negocio}</div>
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow">
+                        <h3 class="text-xl font-bold text-slate-900 mb-2">${negocio.nombre}</h3>
+                        <p class="text-slate-500 text-sm line-clamp-2 mb-4 flex-grow">${negocio.descripcion || 'Sin descripción.'}</p>
+                        <div class="flex items-center text-slate-400 text-xs pt-4 border-t border-slate-100 mt-auto">
+                            <i data-lucide="map-pin" class="w-4 h-4 mr-1"></i>
+                            <span>${negocio.direccion || 'Ubicación no especificada'}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(cardLink);
             });
             lucide.createIcons();
         }
-        function filterBusinesses() {
-            const txt = document.getElementById('search-input').value.toLowerCase();
-            const type = document.getElementById('type-filter').value;
-            const res = allBusinesses.filter(n => n.nombre.toLowerCase().includes(txt) && (type==="" || n.tipo_negocio===type));
-            renderBusinesses(res);
-        }
-        function resetFilters() { document.getElementById('search-input').value = ''; document.getElementById('type-filter').value = ''; renderBusinesses(allBusinesses); }
 
-        // --- OWNER LOGIC ---
-        async function loadOwnerBusinesses() {
-            const c = document.getElementById('owner-businesses-container');
-            const empty = document.getElementById('owner-empty-state');
-            c.innerHTML = '<p class="col-span-full text-center">Cargando tus negocios...</p>';
-            try {
-                const r = await fetch(`${API_URL}/negocios/?propietario_id=${currentUser.id}`);
-                const data = await r.json();
-                c.innerHTML = '';
-                
-                if(data.length === 0) { c.classList.add('hidden'); empty.classList.remove('hidden'); return; }
-                else { c.classList.remove('hidden'); empty.classList.add('hidden'); }
+        function capitalize(str) { return str ? str.charAt(0).toUpperCase() + str.slice(1) : ''; }
 
-                data.forEach(n => {
-                    let img = n.foto_url && n.foto_url.startsWith('http') ? n.foto_url : `https://source.unsplash.com/600x400/?${n.tipo_negocio==='peluqueria'?'hair-salon':'office'}`;
-                    const card = document.createElement('div');
-                    card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col';
-                    card.innerHTML = `
-                        <div class="h-40 overflow-hidden relative"><img src="${img}" class="w-full h-full object-cover"></div>
-                        <div class="p-6 flex-grow">
-                            <div class="flex justify-between items-start mb-2">
-                                <h3 class="text-xl font-bold text-slate-900">${n.nombre}</h3>
-                                <span class="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded font-bold uppercase">${n.tipo_negocio}</span>
-                            </div>
-                            <p class="text-sm text-slate-500 mb-4 line-clamp-2">${n.direccion}</p>
-                            <div class="border-t pt-4 mt-auto grid grid-cols-2 gap-2">
-                                <button onclick="window.location.href='/negocio?id=${n.id}'" class="py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 border rounded-lg hover:border-indigo-600 transition">Ver Público</button>
-                                <button onclick="openAddServiceModal(${n.id}, '${n.nombre}')" class="py-2 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">Añadir Servicio</button>
-                            </div>
-                        </div>
-                    `;
-                    c.appendChild(card);
-                });
-            } catch(e) { console.error(e); c.innerHTML='Error cargando negocios'; }
-        }
-
-        function openCreateBusinessModal() { document.getElementById('modal-create-business').classList.remove('hidden'); }
-        async function handleCreateBusiness(e) {
-            e.preventDefault();
-            const payload = {
-                nombre: document.getElementById('new-biz-name').value,
-                tipo_negocio: document.getElementById('new-biz-type').value,
-                direccion: document.getElementById('new-biz-address').value,
-                descripcion: document.getElementById('new-biz-desc').value,
-                foto_url: document.getElementById('new-biz-photo').value,
-                propietario_id: currentUser.id
-            };
-            try {
-                const r = await fetch(`${API_URL}/negocios/`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
-                if(r.ok) {
-                    document.getElementById('modal-create-business').classList.add('hidden');
-                    e.target.reset();
-                    loadOwnerBusinesses();
-                } else { alert("Error al crear negocio"); }
-            } catch(x) { alert("Error conexión"); }
-        }
-
-        function openAddServiceModal(id, name) {
-            document.getElementById('service-biz-id').value = id;
-            document.getElementById('service-modal-biz-name').innerText = "Añadiendo a: " + name;
-            document.getElementById('modal-add-service').classList.remove('hidden');
-        }
-        async function handleAddService(e) {
-            e.preventDefault();
-            const id = document.getElementById('service-biz-id').value;
-            const payload = {
-                nombre: document.getElementById('new-service-name').value,
-                precio: parseFloat(document.getElementById('new-service-price').value),
-                duracion: parseInt(document.getElementById('new-service-duration').value)
-            };
-            try {
-                const r = await fetch(`${API_URL}/negocios/${id}/servicios`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
-                if(r.ok) {
-                    document.getElementById('modal-add-service').classList.add('hidden');
-                    e.target.reset();
-                    alert("Servicio añadido correctamente");
-                } else { alert("Error al añadir servicio"); }
-            } catch(x) { alert("Error conexión"); }
-        }
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            currentSearchTerm = e.target.value;
+            applyFilters();
+        });
 
         window.onload = () => {
-            const u = localStorage.getItem('sector_mind_user');
-            if(u) currentUser = JSON.parse(u);
             updateUI();
+            loadBusinesses();
             lucide.createIcons();
         };
     </script>

@@ -1,11 +1,23 @@
-﻿# **Sector Mind AI (v0.1)** 
-**Plataforma de gestión de reservas inteligente con asistencia conversacional.** 
-## 📋 **Estado del Proyecto (Versión 0.1)** 
-Actualmente, el proyecto se encuentra en una fase funcional temprana (**Alpha**). La infraestructura técnica está completa, permitiendo la comunicación fluida entre el cliente web, el servidor y el motor de IA. 
+﻿# **Sector Mind AI (v0.2.0)**
 
-- ✅ **Frontend (Web):** Interfaz completa y responsiva. Incluye sistema de Login/Registro, navegación entre negocios y widgets de chat/voz integrados. 
-- ✅ **Backend (API):** Servidor Flask totalmente operativo con base de datos SQLite. Gestiona usuarios, negocios, servicios y disponibilidad. 
-- ⚠ **Modelos IA (Rasa):** La estructura lógica (Intents, Stories, Reglas y Acciones personalizadas) está definida y conectada. Sin embargo, **los modelos requieren un entrenamiento más profundo** y más datos de ejemplo para gestionar conversaciones complejas con fluidez. 
+**Plataforma de gestión de reservas inteligente con asistencia conversacional multimodal.**
+
+---
+
+## 📋 **Estado del Proyecto**
+
+El proyecto ha evolucionado a la versión **v0.2.0 (Beta Funcional)**.
+Se han integrado capacidades multimedia y mejoras de experiencia de usuario (UX) significativas.
+
+### ✅ Nuevas Funcionalidades (v0.2)
+- **IA Multimodal (Voz):** El asistente ahora permite hablar por micrófono y responde con voz sintetizada (usando Web Speech API), además del chat de texto tradicional.
+- **Gestión de Archivos:** Los usuarios pueden subir su **foto de perfil** real, que se guarda físicamente en el servidor (`/frontend/uploads`).
+- **Seguridad UX:** El chat inteligente aparece bloqueado con un candado si el usuario no ha iniciado sesión.
+- **Auto-Login:** Al registrarse, la sesión se inicia automáticamente.
+- **Interfaz Mejorada:** Notificaciones visuales con *SweetAlert2* y navegación persistente entre negocios.
+
+---
+
 ## 📂 **Estructura del Proyecto** 
 El sistema sigue una arquitectura modular moderna:
 
@@ -60,6 +72,12 @@ Esto abrirá automáticamente las 3 terminales necesarias:
 1. **Rasa Actions** (Puerto 5055) 
 1. **Rasa Core** (Puerto 5005) 
 ## 🧪 **Cómo probar la demo (v0.1)** 
+
+### Usuarios de desarrollo disponibles
+
+✨ ¡SISTEMA RESTAURADO COMPLETAMENTE! ✨
+  -> Login Propietario: propietario@sectormind.com / p
+  -> Login Cliente:     cliente@sectormind.com / u
 1. Abre tu navegador en http://localhost:5000. 
 2. **Login:** Pulsa "Iniciar Sesión" (o regístrate como nuevo usuario). 
 2. **Explorar:** Haz clic en una tarjeta de negocio (ej. "Peluquería Estilo"). 
