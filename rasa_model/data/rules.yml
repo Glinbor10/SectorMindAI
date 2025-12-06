@@ -1,26 +1,18 @@
 version: "3.1"
 
 rules:
-  - rule: Say 'I am a bot' anytime the user challenges
-    steps:
-      - intent: bot_challenge
-      - action: utter_iamabot
-
-  - rule: Saludo normal (Sin contexto)
+  - rule: Capturar contexto inicial
     steps:
       - intent: greet
-      - action: utter_greet
-
-  # --- NUEVA REGLA: Saludo con contexto (Payload desde Web) ---
-  # Se activa cuando la web envía: /greet{"negocio": "Nombre"}
-  - rule: Saludo con contexto de negocio
-    steps:
-      - intent: greet
-      - slot_was_set:
-          - negocio  
-      - action: utter_greet_con_negocio 
+      - action: action_set_contexto
+      - action: utter_greet_con_negocio
 
   - rule: Despedida
     steps:
       - intent: goodbye
       - action: utter_goodbye
+
+  - rule: Challenge
+    steps:
+      - intent: bot_challenge
+      - action: action_responder_bot_challenge

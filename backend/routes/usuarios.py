@@ -48,10 +48,13 @@ def actualizar_usuario(user_id):
                 ext = archivo.filename.rsplit('.', 1)[1].lower()
                 filename = f"user_{user_id}_{uuid.uuid4().hex[:8]}.{ext}"
                 
-                # Definir ruta de guardado (frontend/uploads)
-                # Subimos un nivel desde 'backend' para llegar a la raíz y luego a frontend/uploads
-                base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                upload_folder = os.path.join(base_dir, 'frontend', 'uploads')
+                # Usar carpeta temporal en tests o frontend/uploads en producción
+                if current_app.config.get('UPLOAD_FOLDER'):
+                    upload_folder = current_app.config['UPLOAD_FOLDER']
+                else:
+                    # Definir ruta de guardado (frontend/uploads)
+                    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                    upload_folder = os.path.join(base_dir, 'frontend', 'uploads')
                 
                 # Crear carpeta si no existe por seguridad
                 if not os.path.exists(upload_folder):
@@ -76,8 +79,12 @@ def actualizar_usuario(user_id):
         params.append(user_id)
         
         query = f"UPDATE usuarios SET {', '.join(updates)} WHERE id = ?"
-        conn.execute(query, params)
+        result = conn.execute(query, params)
         conn.commit()
+        
+        # Verificar que el usuario existe
+        if result.rowcount == 0:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
 
         # Devolver usuario actualizado
         updated_user = conn.execute('SELECT id, nombre, email, rol, foto_perfil_url FROM usuarios WHERE id = ?', (user_id,)).fetchone()

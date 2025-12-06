@@ -1,20 +1,28 @@
-﻿# **Sector Mind AI (v0.2.0)**
+﻿# **Sector Mind AI (v0.3.0)**
 
-**Plataforma de gestión de reservas inteligente con asistencia conversacional multimodal.**
+**Plataforma de gestión de reservas inteligente con asistencia conversacional multimodal y testing comprehensivo.**
 
 ---
 
 ## 📋 **Estado del Proyecto**
 
-El proyecto ha evolucionado a la versión **v0.2.0 (Beta Funcional)**.
-Se han integrado capacidades multimedia y mejoras de experiencia de usuario (UX) significativas.
+El proyecto ha alcanzado la versión **v0.3.0 (Producción-Ready)**.
+Sistema completo de reservas automáticas con IA, cobertura de tests del 82% y calidad de código enterprise-grade.
 
-### ✅ Nuevas Funcionalidades (v0.2)
-- **IA Multimodal (Voz):** El asistente ahora permite hablar por micrófono y responde con voz sintetizada (usando Web Speech API), además del chat de texto tradicional.
-- **Gestión de Archivos:** Los usuarios pueden subir su **foto de perfil** real, que se guarda físicamente en el servidor (`/frontend/uploads`).
-- **Seguridad UX:** El chat inteligente aparece bloqueado con un candado si el usuario no ha iniciado sesión.
-- **Auto-Login:** Al registrarse, la sesión se inicia automáticamente.
-- **Interfaz Mejorada:** Notificaciones visuales con *SweetAlert2* y navegación persistente entre negocios.
+### ✅ Últimas Funcionalidades (v0.3.0)
+- **Suite de Testing Completa:** 123 tests automatizados con 82% de cobertura global
+  - Backend: 92% coverage (106 tests)
+  - Rasa Actions: 50% coverage (17 tests con mocking)
+- **Aislamiento de Tests:** Sistema de BD y archivos temporales para tests sin contaminar producción
+- **Bug Fixes Backend:** Corrección de validaciones 404 en endpoints de usuarios y negocios
+- **Mejora de Código:** Refactorización para soporte de configuración de carpetas de upload en tests
+
+### 🎯 Funcionalidades Principales (Sistema Completo)
+- **Reservas Automáticas End-to-End:** El agente IA completa reservas reales sin intervención manual
+- **IA Multimodal (Voz):** Reconocimiento de voz y síntesis (Web Speech API)
+- **Gestión de Archivos:** Sistema de subida de fotos de perfil con validaciones
+- **Detección Inteligente:** Matching fuzzy de servicios y consultas en tiempo real
+- **Interpretación NLU:** Procesamiento de fechas en lenguaje natural ("mañana", "el lunes")
 
 ---
 
@@ -24,24 +32,53 @@ El sistema sigue una arquitectura modular moderna:
 ```plaintext
 SectorMindAI/
 │
+├── .venv/                # Entorno virtual Python
+├── .vscode/              # Configuración de VS Code (tasks.json)
+├── .github/              # Workflows de GitHub
+│
 ├── backend/              # API Flask (lógica principal)
-│   ├── routes/           # Endpoints (Auth, Negocios, Citas)
+│   ├── routes/           # Endpoints (auth, citas, negocios, usuarios)
+│   ├── tests/            # Suite de testing (106 tests, 92% coverage)
 │   ├── app.py            # Punto de entrada del servidor
 │   ├── logic.py          # Algoritmos de disponibilidad de horarios
-│   └── manage_db.py      # Script maestro para gestión de Base de Datos
+│   ├── db.py             # Gestión de conexiones SQLite
+│   └── manage_db.py      # Script maestro para gestión de BD
 │
 ├── frontend/             # Cliente Web
 │   ├── index.html        # Home (Buscador y Login)
-│   └── negocio.html      # Página de detalle y Chatbot específico
+│   ├── detalle.html      # Página de detalle de negocio
+│   ├── perfil.html       # Gestión de perfil de usuario
+│   ├── app.js            # Lógica JavaScript del cliente
+│   └── uploads/          # Fotos de perfil (generadas en runtime)
 │
 ├── database/             # Base de datos y esquema
-│   ├── schema.sql        # Plano de la base de datos
-│   └── tfg_data.db       # Archivo de datos (SQLite)
+│   ├── schema.sql        # Plano de la BD (5 tablas relacionales)
+│   └── tfg_data.db       # Archivo de datos SQLite
 │
-└── rasa_model/           # Inteligencia Artificial (Rasa)
-  ├── actions/          # Código Python que ejecuta el bot (consultar API)
-  ├── data/             # Ejemplos de entrenamiento (NLU, Stories)
-  └── domain.yml        # Configuración del dominio del bot
+├── rasa_model/           # Inteligencia Artificial (Rasa)
+│   ├── actions/          # 7 Custom actions (Python)
+│   │   └── actions.py    # Lógica de las acciones custom
+│   ├── tests/            # Tests de Rasa (17 tests, 50% coverage)
+│   ├── data/             # Ejemplos de entrenamiento
+│   │   ├── nlu.yml       # Intenciones y entidades
+│   │   ├── stories.yml   # Historias conversacionales
+│   │   └── rules.yml     # Reglas de diálogo
+│   ├── domain.yml        # Configuración del dominio del bot
+│   ├── config.yml        # Pipeline de NLU y políticas
+│   ├── credentials.yml   # Credenciales de canales
+│   └── endpoints.yml     # Configuración de endpoints
+│
+├── docs/                 # Documentación técnica
+│   ├── MEMORIA.md        # Memoria técnica completa
+│   ├── CHANGELOG.md      # Historial de cambios por versión
+│   └── RASA.md           # Documentación específica de Rasa
+│
+├── htmlcov/              # Reportes de coverage (generado)
+│   └── index.html        # Dashboard de cobertura de tests
+│
+├── pytest.ini            # Configuración de pytest y coverage
+├── requirements.txt      # Dependencias Python del proyecto
+└── README.md             # Este archivo
 ```
 ## 🚀 **Instalación y Puesta en Marcha** 
 ### **Prerrequisitos** 
@@ -71,13 +108,15 @@ Esto abrirá automáticamente las 3 terminales necesarias:
 1. **Backend Flask** (Puerto 5000) 
 1. **Rasa Actions** (Puerto 5055) 
 1. **Rasa Core** (Puerto 5005) 
-## 🧪 **Cómo probar la demo (v0.1)** 
+## 🧪 **Cómo probar la demo** 
 
 ### Usuarios de desarrollo disponibles
 
-✨ ¡SISTEMA RESTAURADO COMPLETAMENTE! ✨
-  -> Login Propietario: propietario@sectormind.com / p
-  -> Login Cliente:     cliente@sectormind.com / u
+✨ ¡SISTEMA LISTO PARA USAR! ✨
+```
+Login Propietario: propietario@sectormind.com / p
+Login Cliente:     cliente@sectormind.com / u
+```
 1. Abre tu navegador en http://localhost:5000. 
 2. **Login:** Pulsa "Iniciar Sesión" (o regístrate como nuevo usuario). 
 2. **Explorar:** Haz clic en una tarjeta de negocio (ej. "Peluquería Estilo"). 
@@ -86,16 +125,73 @@ Esto abrirá automáticamente las 3 terminales necesarias:
 - Pulsa **"Hablar"** para usar tu micrófono (Solo Chrome). 
 - *Nota: Si el bot no entiende algo complejo, recuerda que está en fase de entrenamiento.* 
 
-🛠 **Desarrollo y Contribución** 
+---
+
+## 📊 **Métricas de Calidad (v0.3.0)**
+
+| Métrica | Valor |
+|---------|-------|
+| **Tests Totales** | 123 |
+| **Coverage Backend** | 92% |
+| **Coverage Rasa** | 50% |
+| **Coverage Global** | 82% |
+| **Tiempo Ejecución** | ~13 segundos |
+| **Tasa de Éxito** | 100% (123/123) |
+
+---
+
+## 🧪 **Tests y Calidad del Código**
+
+El proyecto cuenta con **123 tests automatizados** que validan toda la funcionalidad:
+
+### **Ejecutar TODOS los tests del proyecto (más simple):**
+```bash
+pytest -v
+```
+
+### **Con reporte de cobertura completo:**
+```bash
+pytest --cov=backend --cov=rasa_model/actions --cov-report=html --cov-report=term
+```
+
+### **Comandos específicos:**
+```bash
+# Solo backend (106 tests)
+pytest backend/tests/ -v
+
+# Solo Rasa (17 tests)
+pytest rasa_model/tests/ -v
+```
+
+### **Coverage actual del proyecto:**
+- **Backend:** 92% (106 tests)
+  - `routes/auth.py`: 98%
+  - `routes/citas.py`: 92%
+  - `routes/negocios.py`: 92%
+  - `routes/usuarios.py`: 93%
+  - `logic.py`: 92%
+- **Rasa Actions:** 50% (17 tests con mocking)
+- **Coverage Global:** 82%
+
+El reporte HTML se genera en `htmlcov/index.html` para análisis detallado.
+
+---
+
+## 🛠 **Desarrollo y Contribución** 
 ### **Comandos útiles manuales** 
 Entrenar el modelo de IA: 
 
-Si modificas archivos en rasa\_model/data/: cd rasa\_model 
-
-rasa train 
+Si modificas archivos en rasa\_model/data/: 
+```bash
+cd rasa_model 
+rasa train
+```
 
 Resetear base de datos: 
 
-Si cambias el schema.sql o quieres limpiar datos: python -m backend.manage\_db 
+Si cambias el schema.sql o quieres limpiar datos: 
+```bash
+python -m backend.manage_db
+``` 
 
 *Proyecto desarrollado como parte de TFG/Investigación en IA Conversacional.* 

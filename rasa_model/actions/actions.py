@@ -1,254 +1,774 @@
 from typing import Any, Text, Dict, List
-import requests
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
-from fuzzywuzzy import fuzz
-from datetime import datetime
-import json
+import requests
+from datetime import datetime, timedelta
 
-# URL base de tu API de Flask (Terminal 1)
-FLASK_API_BASE_URL = "http://localhost:5000"
+# --- CONFIGURACIÓN API ---
+API_URL = "http://localhost:5000"
 
-# --- UTILIDADES DE CONEXIÓN ---
 
-def get_negocios_y_servicios():
-    """Obtiene la lista completa de negocios y servicios desde la API de Flask."""
-    try:
-        # 1. Obtener todos los negocios
-        response_negocios = requests.get(f"{FLASK_API_BASE_URL}/negocios")
-        response_negocios.raise_for_status() # Lanza error si el estado no es 200
-        negocios_data = response_negocios.json()
+class ActionSetContexto(Action):
+    """Captura los metadatos del frontend (cliente_id, negocio_id) al iniciar conversación"""
 
-        # 2. Obtener los servicios para cada negocio
-        servicios_por_negocio = {}
-        for negocio in negocios_data:
-            response_servicios = requests.get(f"{FLASK_API_BASE_URL}/negocios/{negocio['id']}/servicios")
-            response_servicios.raise_for_status()
-            negocio['servicios'] = response_servicios.json()
-            servicios_por_negocio[negocio['nombre']] = negocio['servicios']
-
-        return negocios_data, servicios_por_negocio
-
-    except requests.exceptions.RequestException as e:
-        print(f"ERROR: No se pudo conectar con la API de Flask: {e}")
-        return [], {}
-
-# --- ACCIONES PERSONALIZADAS ---
-
-class ActionValidarEntidades(Action):
-    """
-    Valida el negocio y el servicio usando FuzzyWuzzy y obtiene los IDs reales de la BD.
-    Guarda los IDs y los nombres corregidos en los slots.
-    """
     def name(self) -> Text:
-        return "action_validar_entidades"
+        return "action_set_contexto"
 
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        # Obtener metadatos del mensaje inicial
+        metadata = tracker.latest_message.get('metadata', {})
+        
+        cliente_id = metadata.get('cliente_id')
+        negocio_id = metadata.get('negocio_id')
+        negocio_nombre = metadata.get('negocio_nombre')
+
+        # Guardar en slots para usar en las siguientes actions
+        return [
+            SlotSet("cliente_id", cliente_id),
+            SlotSet("negocio_id", negocio_id),
+            SlotSet("negocio", negocio_nombre)
+        ]
+
+
+class ActionNormalizarServicio(Action):
+    """Detecta el servicio que quiere el usuario y lo normaliza"""
+
+    def name(self) -> Text:
+        return "action_normalizar_servicio"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        mensaje_usuario = tracker.latest_message.get('text', '').lower()
         negocio_nombre = tracker.get_slot("negocio")
-        servicio_nombre = tracker.get_slot("servicio")
-        
-        # Slots que se actualizarán
-        slots = []
+        negocio_id = tracker.get_slot("negocio_id")
 
-        # Obtener datos de la BD
-        negocios_list, servicios_map = get_negocios_y_servicios()
-        if not negocios_list:
-            dispatcher.utter_message(text="Lo siento, el sistema de reservas está caído. Por favor, inténtalo más tarde.")
-            return [] # Detiene la conversación
+        if not negocio_id:
+            dispatcher.utter_message(text="No sé en qué negocio estás. Por favor, selecciona uno desde la web.")
+            return []
 
-        # 1. VALIDAR NEGOCIO
-        negocio_encontrado = None
-        mejor_score_negocio = 0
-        
-        # Buscar el mejor match usando FuzzyWuzzy
-        for negocio in negocios_list:
-            # Usamos el ratio Parcial para manejar negocios con nombres largos o cortos
-            score = fuzz.partial_ratio(negocio_nombre.lower(), negocio['nombre'].lower())
+        try:
+            # Consultar servicios reales del negocio desde la API
+            response = requests.get(f"{API_URL}/negocios/{negocio_id}/servicios", timeout=5)
             
-            if score > mejor_score_negocio:
-                mejor_score_negocio = score
-                negocio_encontrado = negocio
+            if response.status_code != 200:
+                dispatcher.utter_message(text="No pude cargar los servicios. Intenta de nuevo.")
+                return []
 
-        # Si el score es alto (ej. 80 o más), asumimos que es correcto.
-        if negocio_encontrado and mejor_score_negocio >= 80:
-            slots.append(SlotSet("negocio", negocio_encontrado['nombre']))
-            slots.append(SlotSet("negocio_id", negocio_encontrado['id']))
-            print(f"DEBUG: Negocio corregido a {negocio_encontrado['nombre']} (ID: {negocio_encontrado['id']})")
-        else:
-            # Si no se encuentra o el score es muy bajo
-            dispatcher.utter_message(text=f"No encontré el negocio '{negocio_nombre}'. ¿Podrías deletrearlo o darme un nombre más exacto?")
-            return [SlotSet("negocio", None)] # Resetea el slot para volver a preguntar
+            servicios_disponibles = response.json()
+            
+            if not servicios_disponibles:
+                dispatcher.utter_message(text="Este negocio no tiene servicios configurados.")
+                return []
 
-
-        # 2. VALIDAR SERVICIO (Solo si el negocio fue validado)
-        if negocio_encontrado and servicio_nombre:
-            servicios_negocio = servicios_map.get(negocio_encontrado['nombre'], [])
-            servicio_encontrado = None
-            mejor_score_servicio = 0
-
-            for servicio in servicios_negocio:
-                score = fuzz.ratio(servicio_nombre.lower(), servicio['nombre'].lower())
-                
-                if score > mejor_score_servicio:
-                    mejor_score_servicio = score
-                    servicio_encontrado = servicio
-
-            # Si el score es alto (ej. 85 o más), asumimos que es correcto.
-            if servicio_encontrado and mejor_score_servicio >= 85:
-                slots.append(SlotSet("servicio", servicio_encontrado['nombre']))
-                slots.append(SlotSet("servicio_id", servicio_encontrado['id']))
-                print(f"DEBUG: Servicio corregido a {servicio_encontrado['nombre']} (ID: {servicio_encontrado['id']})")
+            # Buscar coincidencia fuzzy
+            servicio_detectado = None
+            servicio_id = None
+            
+            for servicio in servicios_disponibles:
+                nombre_servicio = servicio['nombre'].lower()
+                # Búsqueda flexible: si alguna palabra clave coincide
+                palabras = nombre_servicio.split()
+                if any(palabra in mensaje_usuario for palabra in palabras if len(palabra) > 3):
+                    servicio_detectado = servicio['nombre']
+                    servicio_id = servicio['id']
+                    break
+            
+            if servicio_detectado:
+                return [
+                    SlotSet("servicio", servicio_detectado),
+                    SlotSet("servicio_id", servicio_id)
+                ]
             else:
-                # Si no se encuentra un match claro
-                nombres_servicios = ", ".join([s['nombre'] for s in servicios_negocio])
-                dispatcher.utter_message(text=f"No reconozco el servicio '{servicio_nombre}' en {negocio_encontrado['nombre']}. Los servicios disponibles son: {nombres_servicios}")
-                return slots + [SlotSet("servicio", None)] # Resetea el slot para volver a preguntar
+                # No se encontró, ofrecer opciones
+                opciones = ", ".join([s['nombre'] for s in servicios_disponibles])
+                dispatcher.utter_message(
+                    text=f"No entendí qué servicio quieres. Tenemos: {opciones}"
+                )
+                return [SlotSet("servicio", None)]
 
-        # Si todo fue validado (o faltaba el servicio, que se pedirá después)
-        return slots
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al conectar con el servidor: {str(e)}")
+            return []
 
 
 class ActionMostrarDisponibilidad(Action):
-    """
-    Llama al endpoint /disponibilidad de Flask para obtener y mostrar los tramos horarios libres.
-    """
+    """Muestra los horarios disponibles para el servicio seleccionado"""
+
     def name(self) -> Text:
         return "action_mostrar_disponibilidad"
 
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        # Obtenemos los IDs y la fecha extraída por Rasa
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
         negocio_id = tracker.get_slot("negocio_id")
         servicio_id = tracker.get_slot("servicio_id")
-        fecha_bruta = tracker.get_slot("fecha") # Rasa devuelve una fecha o un token temporal
+        servicio = tracker.get_slot("servicio")
 
-        # 1. PRE-PROCESAR LA FECHA (Rasa Duckling)
-        # Rasa extrae la fecha en formato ISO8601 (YYYY-MM-DD), o una referencia temporal.
-        # Aquí simplificamos, asumiendo que ya tenemos un YYYY-MM-DD del slot 'fecha'.
-        # Si la entidad 'fecha' es un objeto complejo (entidad Duckling), debemos parsearlo:
-        
-        # En la práctica real, 'fecha' es una lista de diccionarios del NLU.
-        # Simplificamos asumiendo que si el slot tiene valor, es la fecha a consultar.
-        
-        # Intentamos obtener solo la parte YYYY-MM-DD
-        if isinstance(fecha_bruta, str):
-            # Asumimos que la fecha es el primer token (ej. '2025-11-28')
-            try:
-                # Esto es una simplificación. Duckling puede devolver más info.
-                fecha_consulta = datetime.strptime(fecha_bruta.split('T')[0], '%Y-%m-%d').strftime('%Y-%m-%d')
-            except ValueError:
-                # Si no es un formato esperado, volvemos a preguntar
-                dispatcher.utter_message(text="No entendí bien la fecha. Por favor, especifica el día (ej. 'el martes' o '25 de diciembre').")
-                return [SlotSet("fecha", None)] # Resetea el slot
-
-        # 2. LLAMAR A LA API DE DISPONIBILIDAD
-        payload = {
-            "negocio_id": negocio_id,
-            "servicio_id": servicio_id,
-            "fecha": fecha_consulta # YYYY-MM-DD
-        }
-
-        try:
-            response = requests.post(f"{FLASK_API_BASE_URL}/disponibilidad", json=payload)
-            response.raise_for_status()
-            disponibilidad = response.json()
-        except requests.exceptions.RequestException as e:
-            dispatcher.utter_message(text="Hubo un error al consultar la disponibilidad. ¿Podrías probar con otra fecha?")
+        if not negocio_id or not servicio_id:
+            dispatcher.utter_message(text="Necesito saber qué servicio quieres primero. Por favor, dime qué servicio te interesa.")
             return []
 
-        # 3. PROCESAR Y MOSTRAR RESULTADO
-        tramos_libres = disponibilidad.get('tramos_libres', [])
-        
-        if not tramos_libres:
-            dispatcher.utter_message(text=f"Lo siento, no hay huecos disponibles para ese servicio el {fecha_consulta}. ¿Quieres probar otro día?")
-            return [SlotSet("fecha", None)]
-        
-        # Mostrar las primeras 5 opciones (para no saturar)
-        opciones_mostrar = tramos_libres[:5]
-        
-        mensaje = f"Encontré {len(tramos_libres)} huecos el {fecha_consulta}. Estas son las primeras opciones:\n"
-        for i, tramo in enumerate(opciones_mostrar):
-            # Formato: 2025-11-28 10:00:00 -> 10:00
-            hora = datetime.strptime(tramo, '%Y-%m-%d %H:%M:%S').strftime('%H:%M')
-            mensaje += f"  - {hora}\n"
+        try:
+            # Detectar si el usuario pide más opciones
+            ultimo_intent = tracker.latest_message.get('intent', {}).get('name', '')
+            dias_a_buscar = 14 if ultimo_intent == 'pedir_mas_opciones' else 7
             
-        mensaje += "¿Qué hora prefieres? Dime, por ejemplo, 'la de las 10:30'."
-        
-        # Guardamos la lista completa en un slot para usarla en la reserva
-        return [
-            SlotSet("disponibilidad", tramos_libres),
-            SlotSet("fecha_consulta", fecha_consulta), # Guardamos la fecha limpia
-            SlotSet("fecha", None), # Reseteamos el slot 'fecha' para que el usuario pueda responder con la HORA
-            SlotSet("tramos_mostrar", opciones_mostrar) # Guardamos las 5 opciones mostradas
-        ]
+            # Consultar disponibilidad para los próximos días
+            horarios_por_dia = {}
+            hoy = datetime.now().date()
 
-        
+            for i in range(dias_a_buscar):  # 7 o 14 días según el contexto
+                fecha = hoy + timedelta(days=i)
+                fecha_str = fecha.strftime('%Y-%m-%d')
+
+                response = requests.post(
+                    f"{API_URL}/disponibilidad",
+                    json={
+                        "negocio_id": negocio_id,
+                        "servicio_id": servicio_id,
+                        "fecha": fecha_str
+                    },
+                    timeout=5
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+                    horarios = data.get('disponibles', [])
+                    if horarios:
+                        # Guardar solo los primeros 5 horarios por día
+                        horarios_por_dia[fecha_str] = horarios[:5]
+
+            if not horarios_por_dia:
+                dispatcher.utter_message(
+                    text=f"Lo siento, no hay horarios disponibles para {servicio} en los próximos días."
+                )
+                return []
+
+            # Formatear mensaje de disponibilidad
+            if ultimo_intent == 'pedir_mas_opciones':
+                mensaje = f"📅 **Aquí tienes más días disponibles para {servicio}:**\n\n"
+                dias_mostrados = 0
+                # Mostrar desde el día 6 en adelante si pide más opciones
+                for fecha_str, horarios in list(horarios_por_dia.items())[5:10]:
+                    fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d')
+                    dia_texto = self._formatear_dia(fecha_obj)
+                    horas = [h.split()[1][:5] for h in horarios[:3]]
+                    mensaje += f"**{dia_texto}**: {', '.join(horas)}\n"
+                    dias_mostrados += 1
+            else:
+                mensaje = f"📅 Horarios disponibles para **{servicio}**:\n\n"
+                dias_mostrados = 0
+                for fecha_str, horarios in list(horarios_por_dia.items())[:5]:
+                    fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d')
+                    dia_texto = self._formatear_dia(fecha_obj)
+                    horas = [h.split()[1][:5] for h in horarios[:3]]
+                    mensaje += f"**{dia_texto}**: {', '.join(horas)}\n"
+                    dias_mostrados += 1
+
+            if len(horarios_por_dia) > dias_mostrados:
+                mensaje += f"\n💡 _Tenemos disponibilidad hasta {len(horarios_por_dia)} días adelante. Pregunta por 'más días' si quieres ver más opciones._\n"
+
+            mensaje += "\n¿Para qué día quieres reservar? (Ej: 'mañana', 'hoy', 'el lunes')"
+
+            dispatcher.utter_message(text=mensaje)
+            
+            # Guardar disponibilidad en slot para uso posterior
+            # NO limpiar servicio_id y servicio para mantener contexto
+            return [SlotSet("horarios_disponibles", horarios_por_dia)]
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al consultar disponibilidad: {str(e)}")
+            return []
+
+    def _formatear_dia(self, fecha: datetime) -> str:
+        hoy = datetime.now().date()
+        if fecha.date() == hoy:
+            return "Hoy"
+        elif fecha.date() == hoy + timedelta(days=1):
+            return "Mañana"
+        else:
+            dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+            return f"{dias[fecha.weekday()]} {fecha.day}/{fecha.month}"
+
+
 class ActionReservarCita(Action):
-    """
-    Finaliza la reserva llamando al endpoint POST /citas de Flask.
-    """
+    """Crea la reserva final en el sistema"""
+
     def name(self) -> Text:
         return "action_reservar_cita"
 
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        # Obtenemos todos los datos necesarios
-        negocio = tracker.get_slot("negocio")
-        servicio = tracker.get_slot("servicio")
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        # Obtener datos de los slots
+        cliente_id = tracker.get_slot("cliente_id")
         negocio_id = tracker.get_slot("negocio_id")
         servicio_id = tracker.get_slot("servicio_id")
-        
-        # El slot 'fecha' después de action_mostrar_disponibilidad contiene la HORA elegida
-        hora_elegida_bruta = tracker.get_slot("fecha") 
-        fecha_consulta = tracker.get_slot("fecha_consulta") # Contiene YYYY-MM-DD
+        servicio = tracker.get_slot("servicio")
+        fecha_texto = tracker.get_slot("fecha")
+        horarios_disponibles = tracker.get_slot("horarios_disponibles")
 
-        # 1. COMBINAR FECHA Y HORA (y encontrar el match en la lista de disponibilidad)
-        tramos_libres = tracker.get_slot("disponibilidad")
-
-        # Esto es una simplificación: asumimos que el usuario dice la HORA exacta (ej. "las 10 y media")
-        # En la práctica, necesitarías un extractor de hora más robusto.
-        
-        # Intentamos encontrar la hora elegida dentro de los tramos disponibles.
-        cita_final = None
-        for tramo in tramos_libres:
-            # Si el texto de la hora elegida (ej. "10:30") se parece a la hora del tramo (ej. "10:30:00")
-            if hora_elegida_bruta in tramo or datetime.strptime(tramo, '%Y-%m-%d %H:%M:%S').strftime('%H:%M') == hora_elegida_bruta:
-                 cita_final = tramo
-                 break
-
-        if not cita_final:
-            dispatcher.utter_message(text="No he podido confirmar la hora exacta. Por favor, selecciona una de las horas que te di.")
-            return [SlotSet("fecha", None)]
-
-        # 2. LLAMAR A LA API DE RESERVA
-        payload = {
-            "negocio_id": negocio_id,
-            "servicio_id": servicio_id,
-            "fecha_hora_cita": cita_final # Formato YYYY-MM-DD HH:MM:SS
-        }
+        if not all([cliente_id, negocio_id, servicio_id]):
+            dispatcher.utter_message(text="Falta información para completar la reserva.")
+            return []
 
         try:
-            response = requests.post(f"{FLASK_API_BASE_URL}/citas", json=payload)
-            response.raise_for_status() 
+            # Interpretar la fecha que dijo el usuario
+            fecha_reserva = self._interpretar_fecha(fecha_texto, horarios_disponibles)
+
+            if not fecha_reserva:
+                dispatcher.utter_message(
+                    text="No pude entender la fecha. Por favor, dime 'hoy', 'mañana' o un día específico."
+                )
+                return []
+
+            # Crear la cita en el backend
+            response = requests.post(
+                f"{API_URL}/citas",
+                json={
+                    "cliente_id": cliente_id,
+                    "negocio_id": negocio_id,
+                    "servicio_id": servicio_id,
+                    "fecha_hora_cita": fecha_reserva
+                },
+                timeout=5
+            )
+
+            if response.status_code == 201:
+                # Formatear fecha para mostrar
+                fecha_obj = datetime.strptime(fecha_reserva, '%Y-%m-%d %H:%M:%S')
+                fecha_legible = fecha_obj.strftime('%d/%m/%Y a las %H:%M')
+                
+                dispatcher.utter_message(
+                    text=f"✅ ¡Reserva confirmada!\n\n"
+                         f"**Servicio:** {servicio}\n"
+                         f"**Fecha:** {fecha_legible}\n\n"
+                         f"Te esperamos. ¡Gracias por confiar en nosotros!"
+                )
+                return [
+                    SlotSet("servicio", None),
+                    SlotSet("servicio_id", None),
+                    SlotSet("fecha", None),
+                    SlotSet("horarios_disponibles", None)
+                ]
+            else:
+                error_msg = response.json().get('error', 'Error desconocido')
+                dispatcher.utter_message(
+                    text=f"❌ No se pudo crear la reserva: {error_msg}"
+                )
+                return []
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al reservar: {str(e)}")
+            return []
+
+    def _interpretar_fecha(self, texto_fecha: str, horarios_disponibles: dict) -> str:
+        """Convierte 'mañana', 'hoy', etc. en una fecha-hora específica"""
+        if not texto_fecha or not horarios_disponibles:
+            return None
+
+        texto_lower = texto_fecha.lower()
+        hoy = datetime.now().date()
+
+        # Mapear texto a fecha
+        if "hoy" in texto_lower:
+            fecha_objetivo = hoy
+        elif "mañana" in texto_lower or "manana" in texto_lower:
+            fecha_objetivo = hoy + timedelta(days=1)
+        elif "pasado" in texto_lower:
+            fecha_objetivo = hoy + timedelta(days=2)
+        else:
+            # Intentar interpretar día de la semana
+            dias_semana = {
+                'lunes': 0, 'martes': 1, 'miercoles': 2, 'miércoles': 2,
+                'jueves': 3, 'viernes': 4, 'sabado': 5, 'sábado': 5, 'domingo': 6
+            }
+            dia_encontrado = None
+            for dia_nombre, dia_num in dias_semana.items():
+                if dia_nombre in texto_lower:
+                    dia_encontrado = dia_num
+                    break
             
-            # Si la API devuelve éxito
-            dispatcher.utter_message(text=f"¡Reserva confirmada! Tienes una cita para {servicio} en {negocio} el día {cita_final}."
-                                          " ¡Te esperamos! ¿Necesitas algo más?")
+            if dia_encontrado is not None:
+                dias_hasta = (dia_encontrado - hoy.weekday()) % 7
+                if dias_hasta == 0:
+                    dias_hasta = 7  # Si es el mismo día, ir a la próxima semana
+                fecha_objetivo = hoy + timedelta(days=dias_hasta)
+            else:
+                # Si no se entiende, usar mañana por defecto
+                fecha_objetivo = hoy + timedelta(days=1)
 
-        except requests.exceptions.HTTPError as e:
-            # Si el backend lanza un error (ej. solapamiento 409)
-            error_msg = response.json().get('error', 'Error desconocido en el servidor.')
-            dispatcher.utter_message(text=f"Lo siento, la reserva no pudo completarse. El servidor dice: {error_msg}. Por favor, vuelve a intentarlo.")
-        except requests.exceptions.RequestException as e:
-            dispatcher.utter_message(text="Error de conexión con el sistema de reservas. El backend no responde.")
+        fecha_str = fecha_objetivo.strftime('%Y-%m-%d')
 
-        # Limpiar slots de reserva después de intentar
-        return [
-            SlotSet("negocio", None), 
-            SlotSet("servicio", None), 
-            SlotSet("fecha", None), 
-            SlotSet("disponibilidad", None),
-            SlotSet("negocio_id", None),
-            SlotSet("servicio_id", None),
-            SlotSet("fecha_consulta", None),
-            SlotSet("tramos_mostrar", None)
-        ]
+        # Buscar el primer horario disponible de ese día
+        if fecha_str in horarios_disponibles:
+            horarios = horarios_disponibles[fecha_str]
+            if horarios:
+                return horarios[0]  # Devolver el primer slot disponible
+
+        return None
+
+
+class ActionInfoNegocio(Action):
+    """Proporciona información general sobre el negocio"""
+
+    def name(self) -> Text:
+        return "action_info_negocio"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        negocio_id = tracker.get_slot("negocio_id")
+        negocio_nombre = tracker.get_slot("negocio")
+
+        if not negocio_id:
+            dispatcher.utter_message(text="No tengo información del negocio en este momento.")
+            return []
+
+        try:
+            response = requests.get(f"{API_URL}/negocios/{negocio_id}", timeout=5)
+            
+            if response.status_code != 200:
+                dispatcher.utter_message(text="No pude obtener la información del negocio.")
+                return []
+
+            negocio = response.json()
+            
+            mensaje = f"📍 **{negocio['nombre']}**\n\n"
+            
+            if negocio.get('descripcion'):
+                mensaje += f"{negocio['descripcion']}\n\n"
+            
+            if negocio.get('direccion'):
+                mensaje += f"📌 **Dirección:** {negocio['direccion']}\n"
+            
+            mensaje += f"🏢 **Tipo:** {negocio.get('tipo_negocio', 'Negocio').capitalize()}\n\n"
+            mensaje += "Pregúntame por horarios, servicios o reserva tu cita. 😊"
+
+            dispatcher.utter_message(text=mensaje)
+            return []
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al consultar información: {str(e)}")
+            return []
+
+
+class ActionMostrarHorarios(Action):
+    """Muestra los horarios de apertura del negocio"""
+
+    def name(self) -> Text:
+        return "action_mostrar_horarios"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        negocio_id = tracker.get_slot("negocio_id")
+
+        if not negocio_id:
+            dispatcher.utter_message(text="No tengo información del negocio.")
+            return []
+
+        try:
+            # Consultar horarios desde la base de datos
+            response = requests.get(f"{API_URL}/negocios/{negocio_id}/horarios", timeout=5)
+            
+            if response.status_code == 404:
+                dispatcher.utter_message(text="Este endpoint aún no está implementado. Déjame crear el endpoint primero.")
+                return []
+            
+            if response.status_code != 200:
+                dispatcher.utter_message(text="No pude consultar los horarios.")
+                return []
+
+            horarios = response.json()
+            
+            if not horarios:
+                dispatcher.utter_message(text="No tengo horarios configurados para este negocio.")
+                return []
+
+            # Organizar horarios por día
+            dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+            horarios_por_dia = {}
+            
+            for horario in horarios:
+                dia = dias_semana[horario['dia_semana']]
+                if dia not in horarios_por_dia:
+                    horarios_por_dia[dia] = []
+                horarios_por_dia[dia].append({
+                    'apertura': horario['hora_apertura'][:5],
+                    'cierre': horario['hora_cierre'][:5]
+                })
+
+            mensaje = "🕒 **Horarios de apertura:**\n\n"
+            
+            for dia in dias_semana:
+                if dia in horarios_por_dia:
+                    turnos = horarios_por_dia[dia]
+                    if len(turnos) == 1:
+                        mensaje += f"**{dia}:** {turnos[0]['apertura']} - {turnos[0]['cierre']}\n"
+                    else:
+                        horarios_texto = " y ".join([f"{t['apertura']}-{t['cierre']}" for t in turnos])
+                        mensaje += f"**{dia}:** {horarios_texto}\n"
+
+            dispatcher.utter_message(text=mensaje)
+            return []
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al consultar horarios: {str(e)}")
+            return []
+
+
+class ActionListarServicios(Action):
+    """Lista todos los servicios con precios y duración"""
+
+    def name(self) -> Text:
+        return "action_listar_servicios"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        negocio_id = tracker.get_slot("negocio_id")
+
+        if not negocio_id:
+            dispatcher.utter_message(text="No tengo información del negocio.")
+            return []
+
+        try:
+            response = requests.get(f"{API_URL}/negocios/{negocio_id}/servicios", timeout=5)
+            
+            if response.status_code != 200:
+                dispatcher.utter_message(text="No pude cargar los servicios.")
+                return []
+
+            servicios = response.json()
+            
+            if not servicios:
+                dispatcher.utter_message(text="Este negocio no tiene servicios configurados.")
+                return []
+
+            mensaje = "💇 **Servicios disponibles:**\n\n"
+            
+            for servicio in servicios:
+                mensaje += f"**{servicio['nombre']}**\n"
+                mensaje += f"   💰 {servicio['precio']}€ | ⏱️ {servicio['duracion_minutos']} min\n\n"
+
+            mensaje += "¿Quieres reservar alguno? Dime cuál te interesa. 😊"
+
+            dispatcher.utter_message(text=mensaje)
+            return []
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al listar servicios: {str(e)}")
+            return []
+
+
+class ActionMostrarUbicacion(Action):
+    """Muestra la ubicación del negocio"""
+
+    def name(self) -> Text:
+        return "action_mostrar_ubicacion"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        negocio_id = tracker.get_slot("negocio_id")
+
+        if not negocio_id:
+            dispatcher.utter_message(text="No tengo información del negocio.")
+            return []
+
+        try:
+            response = requests.get(f"{API_URL}/negocios/{negocio_id}", timeout=5)
+            
+            if response.status_code != 200:
+                dispatcher.utter_message(text="No pude obtener la ubicación.")
+                return []
+
+            negocio = response.json()
+            direccion = negocio.get('direccion', 'No disponible')
+
+            mensaje = f"📍 **Ubicación:**\n\n{direccion}\n\n"
+            mensaje += "Puedes encontrarnos fácilmente en esta dirección. ¡Te esperamos!"
+
+            dispatcher.utter_message(text=mensaje)
+            return []
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al consultar ubicación: {str(e)}")
+            return []
+
+
+class ActionConsultarCitasUsuario(Action):
+    """Muestra las citas del usuario"""
+
+    def name(self) -> Text:
+        return "action_consultar_citas_usuario"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        cliente_id = tracker.get_slot("cliente_id")
+        negocio_id = tracker.get_slot("negocio_id")
+
+        if not cliente_id:
+            dispatcher.utter_message(text="Debes iniciar sesión para ver tus citas.")
+            return []
+
+        try:
+            # Consultar citas del usuario en este negocio
+            response = requests.get(
+                f"{API_URL}/citas",
+                params={
+                    "cliente_id": cliente_id,
+                    "negocio_id": negocio_id
+                },
+                timeout=5
+            )
+            
+            if response.status_code != 200:
+                dispatcher.utter_message(text="No pude consultar tus citas.")
+                return []
+
+            citas = response.json()
+            
+            # Filtrar solo citas futuras y confirmadas
+            hoy = datetime.now()
+            citas_futuras = [
+                c for c in citas 
+                if datetime.strptime(c['fecha_hora_cita'], '%Y-%m-%d %H:%M:%S') > hoy
+                and c['estado'] == 'confirmado'
+            ]
+
+            if not citas_futuras:
+                dispatcher.utter_message(
+                    text="No tienes citas pendientes en este negocio. ¿Quieres reservar una? 😊"
+                )
+                return []
+
+            mensaje = "📅 **Tus próximas citas:**\n\n"
+            
+            for cita in citas_futuras[:5]:  # Mostrar máximo 5
+                fecha_obj = datetime.strptime(cita['fecha_hora_cita'], '%Y-%m-%d %H:%M:%S')
+                fecha_legible = fecha_obj.strftime('%d/%m/%Y a las %H:%M')
+                mensaje += f"🔹 **{cita['servicio_nombre']}**\n"
+                mensaje += f"   📆 {fecha_legible}\n"
+                mensaje += f"   ⏱️ {cita['duracion_minutos']} minutos\n\n"
+
+            mensaje += "Si necesitas cancelar alguna, dime '**cancela mi cita del [día]**'"
+
+            dispatcher.utter_message(text=mensaje)
+            return []
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al consultar citas: {str(e)}")
+            return []
+
+
+class ActionCancelarCita(Action):
+    """Muestra las citas del usuario y solicita confirmación para cancelar"""
+
+    def name(self) -> Text:
+        return "action_cancelar_cita"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        cliente_id = tracker.get_slot("cliente_id")
+        negocio_id = tracker.get_slot("negocio_id")
+        cita_a_cancelar_id = tracker.get_slot("cita_a_cancelar_id")
+
+        if not cliente_id:
+            dispatcher.utter_message(text="Debes iniciar sesión para cancelar citas.")
+            return []
+
+        try:
+            # Si ya tenemos ID de cita confirmada, proceder a cancelar
+            if cita_a_cancelar_id:
+                response = requests.delete(
+                    f"{API_URL}/citas/{cita_a_cancelar_id}",
+                    timeout=5
+                )
+                
+                if response.status_code == 200 or response.status_code == 204:
+                    dispatcher.utter_message(
+                        text=f"✅ **Cita cancelada correctamente**\n\n"
+                             f"Si cambias de opinión, puedes reservar otra cita cuando quieras."
+                    )
+                    return [SlotSet("cita_a_cancelar_id", None)]
+                else:
+                    dispatcher.utter_message(text="No pude cancelar la cita. Intenta más tarde.")
+                    return [SlotSet("cita_a_cancelar_id", None)]
+
+            # Si no hay ID, mostrar citas disponibles para cancelar
+            response = requests.get(
+                f"{API_URL}/citas",
+                params={
+                    "cliente_id": cliente_id,
+                    "negocio_id": negocio_id
+                },
+                timeout=5
+            )
+            
+            if response.status_code != 200:
+                dispatcher.utter_message(text="No pude consultar tus citas.")
+                return []
+
+            citas = response.json()
+            
+            # Filtrar citas futuras confirmadas
+            hoy = datetime.now()
+            citas_futuras = [
+                c for c in citas 
+                if datetime.strptime(c['fecha_hora_cita'], '%Y-%m-%d %H:%M:%S') > hoy
+                and c['estado'] == 'confirmado'
+            ]
+
+            if not citas_futuras:
+                dispatcher.utter_message(text="No tienes citas pendientes para cancelar.")
+                return []
+
+            # Mostrar citas disponibles
+            if len(citas_futuras) == 1:
+                cita = citas_futuras[0]
+                fecha_obj = datetime.strptime(cita['fecha_hora_cita'], '%Y-%m-%d %H:%M:%S')
+                fecha_legible = fecha_obj.strftime('%d/%m/%Y a las %H:%M')
+                
+                mensaje = f"📅 **Tienes esta cita pendiente:**\n\n"
+                mensaje += f"🔹 **{cita['servicio_nombre']}**\n"
+                mensaje += f"📆 {fecha_legible}\n"
+                mensaje += f"⏱️ {cita['duracion_minutos']} minutos\n\n"
+                mensaje += "¿Quieres cancelarla? Responde **'sí'** para confirmar o **'no'** para mantenerla."
+                
+                dispatcher.utter_message(text=mensaje)
+                # Guardar el ID temporalmente para confirmar
+                return [SlotSet("cita_a_cancelar_id", cita['id'])]
+            else:
+                mensaje = f"📅 **Tienes {len(citas_futuras)} citas pendientes:**\n\n"
+                
+                for i, cita in enumerate(citas_futuras, 1):
+                    fecha_obj = datetime.strptime(cita['fecha_hora_cita'], '%Y-%m-%d %H:%M:%S')
+                    fecha_legible = fecha_obj.strftime('%d/%m/%Y a las %H:%M')
+                    mensaje += f"**{i}.** {cita['servicio_nombre']} - {fecha_legible}\n"
+                
+                mensaje += "\n❌ **Para cancelar múltiples citas, cancélalas una a una.**\n"
+                mensaje += "Responde con el **número de la cita** que quieres cancelar."
+                
+                dispatcher.utter_message(text=mensaje)
+                # Guardar las citas en slot para selección
+                return [SlotSet("citas_disponibles", citas_futuras)]
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al procesar cancelación: {str(e)}")
+            return []
+
+
+class ActionConfirmarCancelacion(Action):
+    """Confirma la cancelación cuando el usuario selecciona número de cita"""
+
+    def name(self) -> Text:
+        return "action_confirmar_cancelacion"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        mensaje_usuario = tracker.latest_message.get('text', '').strip()
+        citas_disponibles = tracker.get_slot("citas_disponibles")
+
+        if not citas_disponibles:
+            dispatcher.utter_message(text="No hay citas para seleccionar. Intenta de nuevo.")
+            return []
+
+        try:
+            # Intentar extraer número del mensaje
+            numero = None
+            for palabra in mensaje_usuario.split():
+                if palabra.isdigit():
+                    numero = int(palabra)
+                    break
+            
+            if numero and 1 <= numero <= len(citas_disponibles):
+                cita_seleccionada = citas_disponibles[numero - 1]
+                fecha_obj = datetime.strptime(cita_seleccionada['fecha_hora_cita'], '%Y-%m-%d %H:%M:%S')
+                fecha_legible = fecha_obj.strftime('%d/%m/%Y a las %H:%M')
+                
+                mensaje = f"🔹 **{cita_seleccionada['servicio_nombre']}**\n"
+                mensaje += f"📆 {fecha_legible}\n\n"
+                mensaje += "¿Confirmas la cancelación? Responde **'sí'** o **'no'**."
+                
+                dispatcher.utter_message(text=mensaje)
+                return [
+                    SlotSet("cita_a_cancelar_id", cita_seleccionada['id']),
+                    SlotSet("citas_disponibles", None)
+                ]
+            else:
+                dispatcher.utter_message(text="Número inválido. Por favor, elige un número de la lista.")
+                return []
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error: {str(e)}")
+            return []
+
+
+class ActionResponderBotChallenge(Action):
+    """Responde cuando el usuario pregunta qué es el bot"""
+
+    def name(self) -> Text:
+        return "action_responder_bot_challenge"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        negocio_id = tracker.get_slot("negocio_id")
+        negocio_nombre = tracker.get_slot("negocio")
+
+        if not negocio_id or not negocio_nombre:
+            dispatcher.utter_message(
+                text="Soy un asistente virtual de **Sector Mind AI**, tu plataforma inteligente de reservas."
+            )
+            return []
+
+        try:
+            # Obtener información del negocio para conocer al propietario
+            response = requests.get(f"{API_URL}/negocios/{negocio_id}", timeout=5)
+            
+            if response.status_code != 200:
+                dispatcher.utter_message(
+                    text=f"Soy el asistente virtual de **{negocio_nombre}**, potenciado por **Sector Mind AI**."
+                )
+                return []
+
+            negocio = response.json()
+            propietario_nombre = negocio.get('propietario_nombre', 'nuestro equipo')
+
+            mensaje = f"🤖 Soy el asistente virtual de **{negocio_nombre}**, gestionado por **{propietario_nombre}**.\n\n"
+            mensaje += "Estoy aquí para ayudarte a:\n"
+            mensaje += "✅ Consultar servicios y precios\n"
+            mensaje += "✅ Ver horarios de apertura\n"
+            mensaje += "✅ Reservar citas\n"
+            mensaje += "✅ Gestionar tus reservas\n\n"
+            mensaje += "¿En qué puedo ayudarte? 😊"
+
+            dispatcher.utter_message(text=mensaje)
+            return []
+
+        except Exception as e:
+            dispatcher.utter_message(
+                text=f"Soy el asistente virtual de **{negocio_nombre}**, potenciado por **Sector Mind AI**."
+            )
+            return []

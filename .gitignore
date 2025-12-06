@@ -1,4 +1,16 @@
-﻿# Entornos virtuales
+﻿# ==========================
+# 🧠 SECCIÓN RASA (IMPORTANTE)
+# ==========================
+.rasa/
+models/*
+results/
+story_graph.dot
+*.tar.gz
+
+# ==========================
+# 🐍 SECCIÓN PYTHON / FLASK
+# ==========================
+# Entornos virtuales
 .venv/
 venv/
 env/
@@ -34,7 +46,7 @@ htmlcov/
 # Environment variables
 .env
 
-# Database
+# Database (Tus datos reales no deben subir)
 *.db
 *.sqlite
 *.sqlite3

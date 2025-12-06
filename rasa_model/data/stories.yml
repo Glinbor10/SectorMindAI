@@ -1,71 +1,85 @@
 version: "3.1"
+
 stories:
 
-# =================================================================
-# FLUJO 1: Reserva completa (El usuario da toda la info de golpe)
-# =================================================================
-- story: happy path completa
+- story: Reserva completa con disponibilidad
   steps:
-    - intent: greet
-    - action: utter_greet
-    - intent: reservar_cita
-      entities:
-        - negocio: "Peluquería Estilo"
-        - servicio: "corte"
-    - slot_was_set:
-      - negocio: Peluquería Estilo
-    - slot_was_set:
-      - servicio: Corte de pelo
-    - action: action_validar_entidades # Valida si existen negocio y servicio
-    - intent: elegir_fecha
-      entities:
-        - fecha: "mañana"
-    - slot_was_set:
-      - fecha: "2025-11-29" # Ejemplo de fecha extraída (será una fecha real en el slot)
-    - action: action_mostrar_disponibilidad # Llama a Flask para ver huecos
-    # Ahora el bot preguntará al usuario qué hora de la lista prefiere
-    - intent: elegir_fecha # El usuario dice "el primero" o "a las 10:30"
-    - action: utter_ask_confirmacion
-    - intent: affirm
-    - action: action_reservar_cita # Llama a Flask para guardar la cita
-    - intent: goodbye
-    - action: utter_goodbye
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: reservar_servicio
+  - action: action_normalizar_servicio
+  - action: action_mostrar_disponibilidad
+  - intent: informar_fecha
+  - action: action_reservar_cita
+  
+- story: Usuario dice servicio directamente sin saludar
+  steps:
+  - intent: reservar_servicio
+  - action: action_normalizar_servicio
+  - action: action_mostrar_disponibilidad
+  - intent: informar_fecha
+  - action: action_reservar_cita
 
-# =================================================================
-# FLUJO 2: Reserva simple (El bot pregunta por la info faltante)
-# =================================================================
-- story: reserva con preguntas guiadas
+- story: Despedida
   steps:
-    - intent: greet
-    - action: utter_greet
-    - intent: reservar_cita
-    - action: utter_ask_negocio # Bot pregunta por el negocio
-    - intent: elegir_negocio
-      entities:
-        - negocio: "Dentista Salud"
-    - slot_was_set:
-      - negocio: Dentista Salud
-    - action: utter_ask_servicio # Bot pregunta por el servicio
-    - intent: elegir_servicio
-      entities:
-        - servicio: "limpieza dental"
-    - slot_was_set:
-      - servicio: Limpieza dental
-    - action: action_validar_entidades # Valida que ambos slots son correctos
-    - action: utter_ask_fecha # Bot pregunta por la fecha
-    - intent: elegir_fecha
-      entities:
-        - fecha: "el martes"
-    - action: action_mostrar_disponibilidad
-    - intent: affirm # Asumiendo que el bot ofrece una lista de horas y el usuario dice "sí"
-    - action: action_reservar_cita
-    - intent: goodbye
-    - action: utter_goodbye
+  - intent: goodbye
+  - action: utter_goodbye
 
-# =================================================================
-# FLUJO 3: Despedida inmediata
-# =================================================================
-- story: solo despedida
+- story: Consultar información del negocio
   steps:
-    - intent: goodbye
-    - action: utter_goodbye
+  - intent: info_general
+  - action: action_info_negocio
+
+- story: Consultar horarios
+  steps:
+  - intent: consultar_horarios
+  - action: action_mostrar_horarios
+
+- story: Consultar servicios y precios
+  steps:
+  - intent: consultar_servicios
+  - action: action_listar_servicios
+
+- story: Consultar ubicación
+  steps:
+  - intent: consultar_ubicacion
+  - action: action_mostrar_ubicacion
+
+- story: Ver mis citas
+  steps:
+  - intent: consultar_mis_citas
+  - action: action_consultar_citas_usuario
+
+- story: Cancelar una cita - confirmar directamente
+  steps:
+  - intent: cancelar_cita
+  - action: action_cancelar_cita
+  - intent: affirm
+  - action: action_cancelar_cita
+
+- story: Cancelar una cita - seleccionar de lista
+  steps:
+  - intent: cancelar_cita
+  - action: action_cancelar_cita
+  - intent: inform
+  - action: action_confirmar_cancelacion
+  - intent: affirm
+  - action: action_cancelar_cita
+
+- story: Cancelar cita - usuario dice no
+  steps:
+  - intent: cancelar_cita
+  - action: action_cancelar_cita
+  - intent: deny
+  - action: utter_goodbye
+
+- story: Pedir más opciones de horarios
+  steps:
+  - intent: reservar_servicio
+  - action: action_normalizar_servicio
+  - action: action_mostrar_disponibilidad
+  - intent: pedir_mas_opciones
+  - action: action_mostrar_disponibilidad
+  - intent: informar_fecha
+  - action: action_reservar_cita

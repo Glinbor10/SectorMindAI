@@ -5,11 +5,17 @@ intents:
   - goodbye
   - affirm
   - deny
-  - reservar_cita
-  - elegir_negocio
-  - elegir_servicio
-  - elegir_fecha
+  - reservar_servicio
+  - informar_fecha
   - bot_challenge
+  - consultar_horarios
+  - consultar_servicios
+  - consultar_ubicacion
+  - consultar_mis_citas
+  - cancelar_cita
+  - info_general
+  - inform
+  - pedir_mas_opciones
 
 entities:
   - negocio
@@ -19,62 +25,89 @@ entities:
 slots:
   negocio:
     type: text
-    influence_conversation: true
+    influence_conversation: false
     mappings:
       - type: from_entity
         entity: negocio
 
+  negocio_id:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  cliente_id:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
   servicio:
     type: text
-    influence_conversation: true
+    influence_conversation: false
     mappings:
       - type: from_entity
         entity: servicio
+      - type: from_text
+        intent: reservar_servicio
+
+  servicio_id:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
 
   fecha:
     type: text
-    influence_conversation: true
+    influence_conversation: false
     mappings:
-      - type: from_entity
-        entity: fecha
+      - type: from_text
+        intent: informar_fecha
 
-  disponibilidad:
+  horarios_disponibles:
+    type: any
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  cita_a_cancelar_id:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  citas_disponibles:
     type: any
     influence_conversation: false
     mappings:
       - type: custom
 
 responses:
-  # Saludo genérico (si no sabemos dónde estamos)
-  utter_greet:
-    - text: "¡Hola! Soy Sector Mind AI. ¿En qué negocio quieres reservar hoy?"
-
-  # --- NUEVO: Saludo Contextual (Se usa cuando la web envía el nombre) ---
   utter_greet_con_negocio:
-    - text: "¡Hola! En {negocio} estamos deseando atenderle. ¿Qué servicio necesita hoy?"
+    - text: "¡Hola! Bienvenido a {negocio}. ¿Qué servicio necesitas?"
 
-  utter_goodbye:
-    - text: "¡Hasta luego! Gracias por usar nuestro servicio."
-
-  utter_iamabot:
-    - text: "Soy un bot, impulsado por Rasa."
-
-  utter_ask_negocio:
-    - text: "¿Me puedes decir el nombre del negocio?"
-
-  utter_ask_servicio:
+  utter_pedir_servicio:
     - text: "¿Qué servicio te gustaría reservar?"
 
-  utter_ask_fecha:
-    - text: "¿Para qué fecha y hora?"
+  utter_goodbye:
+    - text: "¡Hasta luego! Si necesitas algo más, aquí estaré."
 
-  utter_ask_confirmacion:
-    - text: "¿Confirmas la reserva?"
+  utter_default:
+    - text: "No he entendido bien. ¿Puedes repetirlo?"
 
 actions:
-  - action_validar_entidades
+  - action_set_contexto
+  - action_normalizar_servicio
   - action_mostrar_disponibilidad
   - action_reservar_cita
+  - action_info_negocio
+  - action_mostrar_horarios
+  - action_listar_servicios
+  - action_mostrar_ubicacion
+  - action_consultar_citas_usuario
+  - action_cancelar_cita
+  - action_confirmar_cancelacion
+  - action_responder_bot_challenge
 
 session_config:
   session_expiration_time: 60

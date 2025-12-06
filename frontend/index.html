@@ -43,7 +43,7 @@
                         <button onclick="openModal('modal-register')" class="bg-indigo-600 text-white px-5 py-2 rounded-full font-medium hover:bg-indigo-700 transition-shadow shadow-lg shadow-indigo-200">Registrarse</button>
                     </div>
 
-                    <div id="user-menu" class="hidden flex items-center gap-3 cursor-pointer" onclick="window.location.href='/perfil'">
+                    <div id="user-menu" class="hidden flex items-center gap-3 cursor-pointer" onclick="window.location.href='/perfil.html'">
                         <span id="user-name-display" class="font-medium text-slate-700">Usuario</span>
                         <img id="user-avatar-display" src="" class="w-10 h-10 rounded-full border-2 border-indigo-100 object-cover bg-slate-200">
                     </div>
@@ -137,15 +137,8 @@
                 if (res.ok) {
                     saveUserSession(data);
                     closeModal('modal-login');
-                    Swal.fire({
-                        title: 'Sector Mind AI',
-                        text: `Bienvenido de nuevo, ${data.nombre}`,
-                        icon: 'success',
-                        confirmButtonColor: '#4f46e5'
-                    });
-                } else {
-                    Swal.fire('Error', data.error, 'error');
-                }
+                    Swal.fire({ title: 'Sector Mind AI', text: `Bienvenido de nuevo, ${data.nombre}`, icon: 'success', confirmButtonColor: '#4f46e5' });
+                } else { Swal.fire('Error', data.error, 'error'); }
             } catch (err) { Swal.fire('Error', 'Error de conexión', 'error'); }
         }
 
@@ -165,33 +158,15 @@
                 if (res.ok) {
                     saveUserSession(data);
                     closeModal('modal-register');
-                    Swal.fire({
-                        title: 'Sector Mind AI',
-                        text: `¡Cuenta creada! Bienvenido, ${data.nombre}`,
-                        icon: 'success',
-                        confirmButtonColor: '#4f46e5'
-                    });
+                    Swal.fire({ title: 'Sector Mind AI', text: `¡Cuenta creada! Bienvenido, ${data.nombre}`, icon: 'success', confirmButtonColor: '#4f46e5' });
                 } else { Swal.fire('Error', data.error, 'error'); }
             } catch (err) { Swal.fire('Error', 'Error al registrarse', 'error'); }
         }
 
         function saveUserSession(userData) {
-            localStorage.setItem('sector_mind_user', JSON.stringify({
-                id: userData.id,
-                nombre: userData.nombre,
-                email: userData.email,
-                rol: userData.rol,
-                foto_perfil_url: userData.foto_perfil_url
-            }));
+            localStorage.setItem('sector_mind_user', JSON.stringify(userData));
             currentUser = userData;
             updateUI();
-        }
-
-        function logout() {
-            localStorage.removeItem('sector_mind_user');
-            currentUser = null;
-            updateUI();
-            window.location.reload();
         }
 
         function updateUI() {
@@ -202,11 +177,7 @@
                 document.getElementById('user-menu').classList.remove('hidden');
                 document.getElementById('user-menu').classList.add('flex');
                 document.getElementById('user-name-display').innerText = currentUser.nombre;
-                if (currentUser.foto_perfil_url) {
-                    document.getElementById('user-avatar-display').src = currentUser.foto_perfil_url;
-                } else {
-                    document.getElementById('user-avatar-display').src = `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
-                }
+                document.getElementById('user-avatar-display').src = currentUser.foto_perfil_url || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
             } else {
                 document.getElementById('auth-buttons').classList.remove('hidden');
                 document.getElementById('user-menu').classList.add('hidden');
@@ -278,14 +249,13 @@
                 const cardLink = document.createElement('a');
                 cardLink.className = "group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 cursor-pointer flex flex-col h-full fade-in block text-left";
                 
-                // Mantenemos el href por si acaso el usuario hace click derecho -> abrir en pestaña nueva
-                cardLink.href = `/negocio?id=${negocio.id}`;
+                // --- CAMBIO IMPORTANTE: Enlace al archivo detalle.html ---
+                cardLink.href = 'detalle.html'; 
+                // --------------------------------------------------------
 
-                // --- ESTA ES LA CORRECCIÓN: GUARDAR EN MEMORIA AL HACER CLICK ---
                 cardLink.onclick = () => {
                     localStorage.setItem('selected_business', JSON.stringify(negocio));
                 };
-                // ---------------------------------------------------------------
 
                 cardLink.innerHTML = `
                     <div class="h-48 overflow-hidden relative">

@@ -1,118 +1,177 @@
 version: "3.1"
-nlu:
-# =================================================================
-# 1. INTENTS PRINCIPALES
-# =================================================================
 
-# Saludos y despedidas
+nlu:
 - intent: greet
   examples: |
     - hola
     - buenos días
-    - buenas tardes
-    - qué tal
-    - cómo estás
-    - hola, quiero reservar
-    - quiero hacer una reserva
+    - /greet{"negocio": "FisioMente Centro"}
+    - /greet{"negocio": "Peluquería Estilo"}
+    - /greet{"negocio": "Taller Paco"}
 
 - intent: goodbye
   examples: |
     - adiós
     - hasta luego
     - chao
-    - nos vemos
-    - que tengas buen día
 
-# Intención principal de reserva
-- intent: reservar_cita
+- intent: reservar_servicio
   examples: |
-    - quiero reservar una cita
-    - me gustaría agendar un servicio
-    - necesito una reserva
-    - hagamos una cita
-    - ¿puedo reservar un [corte](servicio)?
-    - quiero reservar un [corte de pelo](servicio) en [Peluquería Estilo](negocio)
-    - reserva para un [empaste](servicio) en [Clínica Dental Sonrisa](negocio)
+    - quiero un corte
+    - quiero un cortesito
+    - corte de pelo
+    - tinte
+    - peinado
+    - barba
+    - mechas
+    - fisioterapia
+    - masaje
+    - punción seca
+    - osteopatía
+    - limpieza
+    - empaste
+    - revisión
+    - cambio de aceite
+    - itv
+    - manicura
+    - necesito cita para un corte
+    - reservar hueco
 
-# =================================================================
-# 2. ENTIDADES Y SINÓNIMOS (Para capturar datos clave)
-# =================================================================
-
-# SINÓNIMOS DE NEGOCIO (Si el usuario es vago)
-- synonym: Peluquería Estilo
+# --- AQUÍ ESTÁ EL CAMBIO CLAVE ---
+- intent: informar_fecha
   examples: |
-    - Estilo
-    - la pelu
-    - peluquería
-    - la de la esquina
+    - mañana
+    - para mañana
+    - para mañana por la tarde
+    - para mañana por la mañana
+    - lo quiero para hoy
+    - hoy
+    - pasado mañana
+    - para el lunes
+    - el lunes
+    - el martes
+    - para el miércoles
+    - el jueves
+    - el viernes
+    - el sábado
+    - por la tarde
+    - por la mañana
+    - a las 5
+    - para las 10:00
+    - mañana a las 17:00
+    - el 7 de diciembre
+    - 07/12/2025
+    - la semana que viene
+    - cuando puedas
+    - para dentro de un rato
 
-- synonym: Clínica Dental Sonrisa
-  examples: |
-    - dentista
-    - la clínica
-    - el doctor
-
-# SINÓNIMOS DE SERVICIO (Para manejar "arreglos" o jerga)
-- synonym: Corte de pelo
-  examples: |
-    - corte
-    - arreglo
-    - un retoke
-    - sanear puntas
-    - cortar un poco
-
-- synonym: Empaste
-  examples: |
-    - rellenar caries
-    - tapar un agujero
-    - arreglar un diente
-
-# ENTIDADES DE NEGOCIO (Nombres reales que el modelo debe reconocer)
-- intent: elegir_negocio
-  examples: |
-    - quiero ir a [Peluquería Estilo](negocio)
-    - para [Clínica Dental Sonrisa](negocio)
-    - en [Fisio Avanza](negocio)
-    - el de [Dentista Salud](negocio)
-
-# ENTIDADES DE SERVICIO
-- intent: elegir_servicio
-  examples: |
-    - el servicio de [corte de pelo](servicio)
-    - quiero [tinte](servicio)
-    - necesito una [limpieza dental](servicio)
-    - [masaje deportivo](servicio)
-
-# ENTIDADES DE FECHA Y HORA (Rasa usa un extractor pre-entrenado para esto, duckling, pero añadimos ejemplos)
-# Nota: La entidad 'fecha' se entrena en español.
-- intent: elegir_fecha
-  examples: |
-    - el [lunes](fecha)
-    - [mañana](fecha)
-    - [pasado mañana](fecha)
-    - el [15 de agosto](fecha)
-    - [hoy por la tarde](fecha)
-    - [a las 5 de la tarde](fecha)
-    - [el martes a las 11](fecha)
-    - [este viernes por la mañana](fecha)
-
-# =================================================================
-# 3. AFIRMACIONES Y NEGACIONES
-# =================================================================
 - intent: affirm
   examples: |
     - sí
+    - si
+    - Si
     - correcto
-    - claro que sí
-    - estoy de acuerdo
-    - eso es
-    - sí, resérvalo
+    - vale
+    - perfecto
+    - exacto
+    - ok
 
 - intent: deny
   examples: |
     - no
-    - no quiero
-    - cancelar
-    - para nada
-    - ese no
-    - no estoy seguro
+    - espera
+    - corregir
+
+- intent: bot_challenge
+  examples: |
+    - eres un bot?
+
+- intent: consultar_horarios
+  examples: |
+    - qué horario tenéis
+    - a qué hora abrís
+    - cuándo abrís
+    - horario de apertura
+    - horarios
+    - cuándo estáis abiertos
+    - hasta qué hora abrís
+    - a qué hora cerráis
+    - horario del negocio
+
+- intent: consultar_servicios
+  examples: |
+    - qué servicios tenéis
+    - qué servicios ofrecéis
+    - qué hacéis
+    - que me podéis hacer
+    - servicios disponibles
+    - qué tipos de servicios
+    - cuánto cuesta un corte
+    - precios
+    - tarifas
+    - cuánto vale
+
+- intent: consultar_ubicacion
+  examples: |
+    - dónde estáis
+    - cuál es vuestra dirección
+    - ubicación
+    - dónde os encuentro
+    - cómo llego
+    - dirección del negocio
+
+- intent: consultar_mis_citas
+  examples: |
+    - tengo cita
+    - cuándo tengo cita
+    - mis citas
+    - ver mis reservas
+    - qué citas tengo
+    - tengo algo reservado
+    - cuándo es mi cita
+    - qué día tengo cita
+
+- intent: cancelar_cita
+  examples: |
+    - cancela mi cita
+    - quiero cancelar
+    - anular cita
+    - eliminar mi reserva
+    - borra mi cita
+    - cancelar la cita del lunes
+    - quiero anular mi cita de mañana
+    - cancela mi próxima cita
+
+- intent: info_general
+  examples: |
+    - qué es este sitio
+    - cuéntame sobre el negocio
+    - información
+    - quiénes sois
+    - sobre vosotros
+    - qué hacéis aquí
+
+- intent: inform
+  examples: |
+    - 1
+    - 2
+    - 3
+    - el primero
+    - la primera
+    - el número 1
+    - opción 2
+    - esa
+    - la segunda
+
+- intent: pedir_mas_opciones
+  examples: |
+    - más días
+    - hay más días disponibles
+    - qué días hay después
+    - más horarios
+    - tienes más huecos
+    - y más adelante
+    - otros días
+    - más opciones
+    - hay más disponibilidad
+    - muéstrame más días
