@@ -85,3 +85,93 @@ nlu:
 - intent: bot_challenge
   examples: |
     - eres un bot?
+
+- intent: consultar_horarios
+  examples: |
+    - qué horario tenéis
+    - a qué hora abrís
+    - cuándo abrís
+    - horario de apertura
+    - horarios
+    - cuándo estáis abiertos
+    - hasta qué hora abrís
+    - a qué hora cerráis
+    - horario del negocio
+
+- intent: consultar_servicios
+  examples: |
+    - qué servicios tenéis
+    - qué servicios ofrecéis
+    - qué hacéis
+    - que me podéis hacer
+    - servicios disponibles
+    - qué tipos de servicios
+    - cuánto cuesta un corte
+    - precios
+    - tarifas
+    - cuánto vale
+
+- intent: consultar_ubicacion
+  examples: |
+    - dónde estáis
+    - cuál es vuestra dirección
+    - ubicación
+    - dónde os encuentro
+    - cómo llego
+    - dirección del negocio
+
+- intent: consultar_mis_citas
+  examples: |
+    - tengo cita
+    - cuándo tengo cita
+    - mis citas
+    - ver mis reservas
+    - qué citas tengo
+    - tengo algo reservado
+    - cuándo es mi cita
+    - qué día tengo cita
+
+- intent: cancelar_cita
+  examples: |
+    - cancela mi cita
+    - quiero cancelar
+    - anular cita
+    - eliminar mi reserva
+    - borra mi cita
+    - cancelar la cita del lunes
+    - quiero anular mi cita de mañana
+    - cancela mi próxima cita
+
+- intent: info_general
+  examples: |
+    - qué es este sitio
+    - cuéntame sobre el negocio
+    - información
+    - quiénes sois
+    - sobre vosotros
+    - qué hacéis aquí
+
+- intent: inform
+  examples: |
+    - 1
+    - 2
+    - 3
+    - el primero
+    - la primera
+    - el número 1
+    - opción 2
+    - esa
+    - la segunda
+
+- intent: pedir_mas_opciones
+  examples: |
+    - más días
+    - hay más días disponibles
+    - qué días hay después
+    - más horarios
+    - tienes más huecos
+    - y más adelante
+    - otros días
+    - más opciones
+    - hay más disponibilidad
+    - muéstrame más días

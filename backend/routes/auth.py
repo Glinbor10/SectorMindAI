@@ -1,7 +1,7 @@
 import os
 import uuid
 import sqlite3
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from ..db import get_db_connection
 
@@ -34,9 +34,12 @@ def register():
             ext = archivo.filename.rsplit('.', 1)[1].lower()
             filename = f"user_{uuid.uuid4().hex[:8]}.{ext}"
             
-            # Ruta absoluta a frontend/uploads
-            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            upload_folder = os.path.join(base_dir, 'frontend', 'uploads')
+            # Usar carpeta temporal en tests o frontend/uploads en producción
+            if current_app.config.get('UPLOAD_FOLDER'):
+                upload_folder = current_app.config['UPLOAD_FOLDER']
+            else:
+                base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                upload_folder = os.path.join(base_dir, 'frontend', 'uploads')
             
             if not os.path.exists(upload_folder):
                 os.makedirs(upload_folder)

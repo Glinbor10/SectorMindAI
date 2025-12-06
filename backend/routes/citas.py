@@ -115,3 +115,24 @@ def consultar_disponibilidad():
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
+
+# 4. ELIMINAR/CANCELAR CITA (DELETE /citas/<id>)
+@citas_bp.route('/citas/<int:cita_id>', methods=['DELETE'])
+def cancelar_cita(cita_id):
+    conn = get_db_connection()
+    try:
+        # Verificar que la cita existe
+        cita = conn.execute('SELECT * FROM citas WHERE id = ?', (cita_id,)).fetchone()
+        
+        if not cita:
+            return jsonify({'error': 'Cita no encontrada'}), 404
+        
+        # Cambiar estado a "cancelado" en lugar de eliminar
+        conn.execute('UPDATE citas SET estado = ? WHERE id = ?', ('cancelado', cita_id))
+        conn.commit()
+        
+        return jsonify({'message': 'Cita cancelada exitosamente'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()

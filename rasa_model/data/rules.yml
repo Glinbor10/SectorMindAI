@@ -15,4 +15,4 @@ rules:
   - rule: Challenge
     steps:
       - intent: bot_challenge
-      - action: utter_iamabot
+      - action: action_responder_bot_challenge

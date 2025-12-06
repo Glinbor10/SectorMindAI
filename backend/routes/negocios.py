@@ -48,6 +48,7 @@ def obtener_negocio(negocio_id):
 def crear_negocio():
     data = request.get_json()
     nombre = data.get('nombre')
+    tipo_negocio = data.get('tipo_negocio', 'general')  # Valor por defecto si no se envía
     direccion = data.get('direccion')
     propietario_id = data.get('propietario_id') # En producción, esto vendría del token de sesión
 
@@ -58,8 +59,8 @@ def crear_negocio():
     try:
         cur = conn.cursor()
         cur.execute(
-            'INSERT INTO negocios (nombre, direccion, propietario_id) VALUES (?, ?, ?)',
-            (nombre, direccion, propietario_id)
+            'INSERT INTO negocios (nombre, tipo_negocio, direccion, propietario_id) VALUES (?, ?, ?, ?)',
+            (nombre, tipo_negocio, direccion, propietario_id)
         )
         conn.commit()
         new_id = cur.lastrowid
@@ -122,6 +123,19 @@ def obtener_servicios_negocio(negocio_id):
         query = "SELECT id, nombre, duracion_minutos, precio FROM servicios WHERE negocio_id = ?"
         servicios = conn.execute(query, (negocio_id,)).fetchall()
         return jsonify([dict(row) for row in servicios])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# 6. OBTENER HORARIOS DE UN NEGOCIO
+@negocios_bp.route('/<int:negocio_id>/horarios', methods=['GET'])
+def obtener_horarios_negocio(negocio_id):
+    conn = get_db_connection()
+    try:
+        query = "SELECT dia_semana, hora_apertura, hora_cierre FROM horarios_negocio WHERE negocio_id = ? ORDER BY dia_semana, hora_apertura"
+        horarios = conn.execute(query, (negocio_id,)).fetchall()
+        return jsonify([dict(row) for row in horarios])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
