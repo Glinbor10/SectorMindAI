@@ -81,7 +81,7 @@ def crear_cita():
 
         cur.execute(
             'INSERT INTO citas (negocio_id, servicio_id, cliente_id, fecha_hora_cita, duracion_minutos, estado) VALUES (?, ?, ?, ?, ?, ?)',
-            (negocio_id, servicio_id, cliente_id, fecha_hora_cita, duracion, 'confirmada')
+            (negocio_id, servicio_id, cliente_id, fecha_hora_cita, duracion, 'confirmado')
         )
         conn.commit()
         new_id = cur.lastrowid
@@ -96,16 +96,21 @@ def crear_cita():
 def consultar_disponibilidad():
     data = request.get_json()
     negocio_id = data.get('negocio_id')
+    servicio_id = data.get('servicio_id')  # Ahora requerimos servicio_id
     fecha_str = data.get('fecha') # Esperamos 'YYYY-MM-DD'
 
-    if not (negocio_id and fecha_str):
-        return jsonify({'error': 'Faltan datos (negocio_id, fecha)'}), 400
+    if not (negocio_id and servicio_id and fecha_str):
+        return jsonify({'error': 'Faltan datos (negocio_id, servicio_id, fecha)'}), 400
 
     conn = get_db_connection()
     try:
-        # Usamos tu lógica existente en logic.py
-        horarios_libres = obtener_tramos_disponibles(negocio_id, fecha_str, conn)
-        return jsonify({'horarios': horarios_libres})
+        # Usamos tu lógica existente en logic.py (actualizada para recibir servicio_id)
+        resultado = obtener_tramos_disponibles(negocio_id, servicio_id, fecha_str, conn)
+        
+        if 'error' in resultado:
+            return jsonify(resultado), 400
+        
+        return jsonify({'disponibles': resultado.get('disponibles', [])})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

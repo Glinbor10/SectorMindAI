@@ -17,22 +17,64 @@ nlu:
 
 - intent: reservar_servicio
   examples: |
-    - [punción seca](servicio)
-    - quiero [masaje](servicio)
-    - [corte de pelo](servicio)
-    - [cambio de aceite](servicio)
-    - [limpieza dental](servicio)
-    - necesito [fisioterapia](servicio)
-    - [tinte](servicio)
-    - solo [revisión](servicio)
-    - quiero reservar [manicura](servicio)
+    - quiero un corte
+    - quiero un cortesito
+    - corte de pelo
+    - tinte
+    - peinado
+    - barba
+    - mechas
+    - fisioterapia
+    - masaje
+    - punción seca
+    - osteopatía
+    - limpieza
+    - empaste
+    - revisión
+    - cambio de aceite
+    - itv
+    - manicura
+    - necesito cita para un corte
+    - reservar hueco
+
+# --- AQUÍ ESTÁ EL CAMBIO CLAVE ---
+- intent: informar_fecha
+  examples: |
+    - mañana
+    - para mañana
+    - para mañana por la tarde
+    - para mañana por la mañana
+    - lo quiero para hoy
+    - hoy
+    - pasado mañana
+    - para el lunes
+    - el lunes
+    - el martes
+    - para el miércoles
+    - el jueves
+    - el viernes
+    - el sábado
+    - por la tarde
+    - por la mañana
+    - a las 5
+    - para las 10:00
+    - mañana a las 17:00
+    - el 7 de diciembre
+    - 07/12/2025
+    - la semana que viene
+    - cuando puedas
+    - para dentro de un rato
 
 - intent: affirm
   examples: |
     - sí
+    - si
+    - Si
     - correcto
     - vale
     - perfecto
+    - exacto
+    - ok
 
 - intent: deny
   examples: |
@@ -43,4 +85,3 @@ nlu:
 - intent: bot_challenge
   examples: |
     - eres un bot?
-    - eres humano?

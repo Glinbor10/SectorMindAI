@@ -2,15 +2,26 @@ version: "3.1"
 
 stories:
 
-- story: Camino feliz de reserva
+- story: Reserva completa con disponibilidad
   steps:
   - intent: greet
-  - slot_was_set:
-      - negocio: "FisioMente"
+  - action: action_set_contexto
   - action: utter_greet_con_negocio
   - intent: reservar_servicio
-    entities:
-    - servicio: "masaje"
-  - action: utter_confirmar_reserva
+  - action: action_normalizar_servicio
+  - action: action_mostrar_disponibilidad
+  - intent: informar_fecha
+  - action: action_reservar_cita
+  
+- story: Usuario dice servicio directamente sin saludar
+  steps:
+  - intent: reservar_servicio
+  - action: action_normalizar_servicio
+  - action: action_mostrar_disponibilidad
+  - intent: informar_fecha
+  - action: action_reservar_cita
+
+- story: Despedida
+  steps:
   - intent: goodbye
   - action: utter_goodbye

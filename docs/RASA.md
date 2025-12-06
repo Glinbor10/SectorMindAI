@@ -15,56 +15,95 @@ Rasa actúa como el **cerebro conversacional** y el orquestador de la lógica de
 
 ---
 
-## 2. Lo que se hace actualmente (Estado Actual)
+## 2. Lo que se hace actualmente (Estado Actual - v0.3.0)
 
 ### A. Comprensión del Lenguaje (NLU)
-El modelo está entrenado para gestionar el flujo completo de una reserva.
+El modelo está entrenado para gestionar el flujo completo de una reserva **con ejecución real**.
 * **Intents (Intenciones):** Detecta qué quiere el usuario.
-    * `reservar_cita`: Inicio del flujo principal.
-    * `elegir_negocio`, `elegir_servicio`, `elegir_fecha`: Aportación de datos.
-    * `greet`, `goodbye`: Protocolo social.
+    * `reservar_servicio`: Inicio del flujo principal cuando el usuario menciona un servicio.
+    * `informar_fecha`: Captura expresiones temporales ("mañana", "el lunes", "hoy").
+    * `greet`, `goodbye`, `affirm`, `deny`: Protocolo social y confirmaciones.
 * **Entities (Datos):** Extrae información crítica:
-    * `negocio`: Nombre del establecimiento (ej. "Peluquería Estilo").
-    * `servicio`: Tipo de servicio (ej. "corte de pelo").
+    * `negocio`: Nombre del establecimiento (ej. "Peluquería Estilo & Glamour").
+    * `servicio`: Tipo de servicio (ej. "corte de pelo", "tinte").
     * `fecha`: Momento deseado (ej. "mañana", "lunes").
 
 ### B. Gestión del Diálogo (Stories & Rules)
-* **Saludo Contextual:** Gracias a una regla específica (`rules.yml`), si el frontend envía un payload con el nombre del negocio (al hacer clic en una tarjeta), el bot saluda reconociendo ese contexto inmediatamente.
-* **Flujos de Historia:** Soporta tanto el "Happy Path" (el usuario da toda la info de golpe) como flujos interactivos donde el bot pregunta dato por dato.
+* **Captura de Contexto Automática:** Al iniciar conversación (`/greet`), ejecuta `action_set_contexto` que obtiene `cliente_id` y `negocio_id` desde los metadatos del frontend.
+* **Flujo de Reserva Completo:**
+  1. Usuario saluda → Bot captura contexto y da bienvenida personalizada.
+  2. Usuario menciona servicio → Bot normaliza y valida contra BD.
+  3. Bot consulta disponibilidad → Muestra horarios libres de próximos 7 días.
+  4. Usuario elige fecha → Bot interpreta lenguaje natural y crea la cita.
+* **Slots Dinámicos:** Uso de slots custom (`negocio_id`, `cliente_id`, `servicio_id`, `horarios_disponibles`) para mantener estado conversacional.
 
-### C. Acciones Personalizadas (`actions.py`)
-Es el componente más complejo, encargado de la validación y conexión con la API:
-1.  **`ActionValidarEntidades` (Corrección Inteligente):**
-    * Utiliza la librería `fuzzywuzzy` para corregir errores tipográficos del usuario.
-    * *Ejemplo:* Si el usuario escribe "peloqueria", el sistema lo asocia automáticamente con "Peluquería Estilo" basándose en la base de datos real.
-2.  **`ActionMostrarDisponibilidad`:**
-    * Consulta el endpoint `/disponibilidad` del backend Flask.
-    * Verifica si la fecha solicitada tiene huecos libres.
-3.  **`ActionReservarCita`:**
-    * Envía la petición final POST al backend para guardar la reserva en la base de datos SQL.
+### C. Acciones Personalizadas (`actions.py`) - **✅ IMPLEMENTADAS**
+El sistema cuenta con 4 custom actions que ejecutan lógica real:
+
+1.  **`ActionSetContexto` (Inicialización de Sesión):**
+    * Captura metadatos enviados por el frontend (`cliente_id`, `negocio_id`, `negocio_nombre`).
+    * Los guarda en slots de Rasa para uso en acciones posteriores.
+    * Se ejecuta automáticamente en el primer mensaje del usuario.
+
+2.  **`ActionNormalizarServicio` (Detección Inteligente de Servicios):**
+    * Consulta endpoint `/negocios/{negocio_id}/servicios` para obtener servicios reales.
+    * Usa matching de palabras clave para detectar el servicio mencionado por el usuario.
+    * *Ejemplo:* Si el usuario dice "quiero un corte" o "necesito tinte", lo asocia automáticamente con "Corte de pelo" o "Tinte completo" según la BD.
+    * Guarda `servicio_id` en slot para acciones posteriores.
+
+3.  **`ActionMostrarDisponibilidad` (Consulta de Horarios Disponibles):**
+    * Consulta endpoint `/disponibilidad` con `negocio_id` y `servicio_id`.
+    * Itera sobre los próximos 7 días buscando slots libres (intervalos de 15 minutos).
+    * Muestra al usuario los 3 días con mayor disponibilidad en formato legible ("Hoy", "Mañana", "Lunes 8/12").
+    * Guarda diccionario de horarios disponibles en slot para selección posterior.
+
+4.  **`ActionReservarCita` (Creación de Cita en BD):**
+    * Interpreta la fecha dicha por el usuario usando lógica de NLP simple:
+      - "hoy" / "mañana" / "pasado mañana" → Calcula fecha exacta.
+      - "el lunes" / "el martes" → Encuentra próximo día de la semana.
+    * Selecciona automáticamente el **primer horario disponible** del día elegido.
+    * Envía POST a `/citas` con `cliente_id`, `negocio_id`, `servicio_id`, `fecha_hora_cita`.
+    * Confirma la reserva al usuario con formato legible ("08/12/2025 a las 10:00").
+    * Limpia los slots de servicio y fecha para permitir nuevas reservas.
 
 ---
 
-## 3. Lo que se quiere hacer (Hoja de Ruta / Mejoras)
+## 3. Próximas Mejoras (Hoja de Ruta v0.4.0)
 
-Para robustecer el sistema y pasar de una "Beta Funcional" a un producto de producción, se plantean los siguientes objetivos:
+Aunque el sistema ya ejecuta reservas completas end-to-end, existen oportunidades de mejora:
 
-### A. Integración de Duckling (Manejo de Fechas)
-* **Problema actual:** El sistema detecta "mañana" como una entidad de texto simple. La conversión a fecha real (`YYYY-MM-DD`) se hace de forma manual o frágil.
-* **Solución:** Configurar `DucklingEntityExtractor` en el `config.yml`.
-* **Resultado:** Rasa convertirá automáticamente expresiones como "el próximo viernes a las 5" en un objeto JSON con fecha y hora exactas estandarizadas.
+### A. Integración de Duckling (Manejo Avanzado de Fechas)
+* **Situación actual:** La interpretación de fechas funciona para casos comunes ("mañana", días de la semana), pero usa lógica manual.
+* **Mejora propuesta:** Configurar `DucklingEntityExtractor` en el `config.yml`.
+* **Beneficio:** Soporte para expresiones complejas como "el próximo viernes a las 17:00", "dentro de 3 días", "la semana que viene".
 
 ### B. Gestión de Formularios (Rasa Forms)
-* **Objetivo:** Implementar `Forms` para la recolección de datos (`negocio` + `servicio` + `fecha`).
-* **Ventaja:** Simplifica las `stories.yml`. El formulario "atrapa" al usuario en un bucle hasta que proporcione toda la información necesaria, manejando validaciones y rechazos de forma más limpia que las historias manuales.
+* **Situación actual:** El flujo funciona mediante stories secuenciales, pero no valida rigurosamente la completitud de datos.
+* **Mejora propuesta:** Implementar `Forms` para slot filling obligatorio.
+* **Beneficio:** 
+  - Validación estricta: Si falta servicio o fecha, el bot insiste hasta obtenerlo.
+  - Código más limpio y mantenible.
+  - Soporte para correcciones mid-conversation ("Espera, mejor quiero otro servicio").
 
-### C. Fallback y Recuperación (Manejo de Errores)
-* **Objetivo:** Mejorar la respuesta cuando el bot no entiende ("Low Confidence") o cuando el Backend Flask está caído.
-* **Acción:** Crear una política de "Two-Stage Fallback". Primero pedir al usuario que reformule, y si falla de nuevo, ofrecer opciones botones o derivar a humano (simulado).
+### C. Fallback Inteligente y Recuperación de Errores
+* **Situación actual:** Si el backend está caído o hay error de conexión, el bot devuelve mensaje genérico.
+* **Mejora propuesta:** 
+  - Implementar `FallbackPolicy` con reintentos automáticos.
+  - Mostrar botones con servicios disponibles si no entiende el texto del usuario.
+  - Derivar a "contactar con el negocio" si persisten errores.
 
-### D. Optimización para Voz (Multimodal)
-* **Contexto:** Dado que el frontend permite entrada por micrófono.
-* **Mejora:** Entrenar el modelo con frases más cortas y coloquiales, típicas del lenguaje hablado, que difieren del lenguaje escrito.
+### D. Optimización para Entrada por Voz
+* **Situación actual:** El modelo funciona bien con voz, pero el entrenamiento usa texto escrito.
+* **Mejora propuesta:** 
+  - Agregar ejemplos de NLU más coloquiales ("dame cita pa mañana", "córtame el pelo").
+  - Implementar corrección automática de errores de STT (Speech-to-Text).
+  - Usar sinónimos y variaciones regionales ("corte", "cortarse", "cortarme").
+
+### E. Gestión de Múltiples Citas y Cancelaciones
+* **Objetivo:** Permitir al usuario:
+  - Consultar sus citas existentes ("¿Cuándo tengo cita?")
+  - Cancelar o reprogramar citas ("Cancela mi cita del lunes")
+  - Reservar múltiples servicios en una sola sesión.
 
 ---
 

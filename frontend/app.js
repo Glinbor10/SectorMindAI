@@ -207,7 +207,17 @@ async function handleChatSubmit(e) {
 
 async function sendToRasa(msg, hidden = false, typingElementId = null) {
     try {
-        const payload = { sender: currentUser ? currentUser.id : "anonimo", message: msg };
+        // Construir payload con metadatos para Rasa
+        const payload = { 
+            sender: currentUser ? currentUser.id.toString() : "anonimo", 
+            message: msg,
+            metadata: {
+                cliente_id: currentUser ? currentUser.id : null,
+                negocio_id: businessData ? businessData.id : null,
+                negocio_nombre: businessData ? businessData.nombre : null
+            }
+        };
+        
         const res = await fetch(RASA_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -239,11 +249,38 @@ function addMsg(sender, text) {
     const container = document.getElementById('chat-messages');
     const div = document.createElement('div');
     div.className = sender === 'user' ? "flex gap-3 flex-row-reverse fade-in" : "flex gap-3 fade-in";
+    
+    // Convertir markdown simple a HTML
+    const formattedText = formatMarkdown(text);
+    
     div.innerHTML = sender === 'user' 
-        ? `<div class=\"w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold flex-shrink-0\">YO</div><div class=\"bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-none shadow-md text-sm max-w-[80%]\">${text}</div>`
-        : `<div class=\"w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0\">IA</div><div class=\"bg-white text-slate-600 p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-sm max-w-[80%]\">${text}</div>`;
+        ? `<div class=\"w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold flex-shrink-0\">YO</div><div class=\"bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-none shadow-md text-sm max-w-[80%]\">${formattedText}</div>`
+        : `<div class=\"w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0\">IA</div><div class=\"bg-white text-slate-600 p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-sm max-w-[80%]\">${formattedText}</div>`;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
+}
+
+function formatMarkdown(text) {
+    if (!text) return '';
+    
+    // Convertir **texto** a <strong>
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>');
+    
+    // Convertir *texto* a <em>
+    text = text.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
+    
+    // Convertir saltos de línea \n\n a <br><br>
+    text = text.replace(/\n\n/g, '<br><br>');
+    
+    // Convertir saltos de línea simples \n a <br>
+    text = text.replace(/\n/g, '<br>');
+    
+    // Convertir emojis de check ✅ y cruz ❌ (mantenerlos)
+    // Ya están en el texto, no necesitan conversión
+    
+    // Convertir 📅 y otros emojis (mantenerlos también)
+    
+    return text;
 }
 
 function showTyping() {

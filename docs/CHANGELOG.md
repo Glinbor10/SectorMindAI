@@ -4,6 +4,32 @@ Todas las modificaciones notables en el proyecto Sector Mind AI se documentarán
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere al versionado semántico.
 
+## [v0.3.0] - 2025-12-06 (Sistema de Reservas IA Completo)
+
+### 🚀 Novedades (Added)
+- **Reservas Automáticas End-to-End:** El agente de IA ahora completa reservas reales en la base de datos sin intervención manual.
+- **Detección Inteligente de Servicios:** El bot consulta los servicios reales del negocio desde la API y usa matching fuzzy para entender variaciones del usuario.
+- **Consulta de Disponibilidad en Tiempo Real:** Nueva action `action_mostrar_disponibilidad` que muestra horarios libres de los próximos 7 días.
+- **Interpretación de Fechas en Lenguaje Natural:** El bot entiende "mañana", "hoy", "el lunes", "pasado mañana" y selecciona automáticamente el primer slot disponible.
+- **3 Nuevas Custom Actions de Rasa:**
+  - `action_set_contexto`: Captura cliente_id y negocio_id del frontend.
+  - `action_normalizar_servicio`: Detecta y valida servicios contra la base de datos real.
+  - `action_reservar_cita`: Crea la cita en la BD con estado "confirmado".
+- **Renderizado de Markdown en Chat:** Soporte para texto en **negrita**, *cursiva* y saltos de línea en mensajes del bot.
+
+### 🔧 Cambios (Changed)
+- **Endpoint `/disponibilidad`:** Ahora requiere `servicio_id` obligatorio para cálculos precisos de slots.
+- **Estado de Citas:** Unificado a `"confirmado"` (antes usaba "confirmada" inconsistentemente).
+- **Flujo Conversacional de Rasa:** Reestructurado con captura de contexto inicial y flujo completo de reserva.
+- **Frontend:** Ahora envía metadatos (`cliente_id`, `negocio_id`, `negocio_nombre`) en cada mensaje a Rasa.
+- **Stories y Rules:** Actualizadas para eliminar conflictos y soportar el nuevo flujo con inicialización de contexto.
+
+### 🐛 Correcciones (Fixed)
+- Eliminado conflicto entre rules y stories en el saludo contextual.
+- Corregida la consulta de disponibilidad para incluir validación de servicio específico.
+
+---
+
 ## [v0.2.0] - 2025-11-29 (Mejoras UX, Voz y Multimedia)
 
 ### 🚀 Novedades (Added)

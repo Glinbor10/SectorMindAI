@@ -1,119 +1,105 @@
 from typing import Any, Text, Dict, List
-import requests
-import json
-from datetime import datetime, timedelta
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
-from fuzzywuzzy import fuzz, process 
+import requests
+from datetime import datetime, timedelta
 
-# URL base de tu API de Flask
-FLASK_API_BASE_URL = "http://localhost:5000"
+# --- CONFIGURACIÓN API ---
+API_URL = "http://localhost:5000"
 
-# --- UTILIDADES ---
 
-def get_negocios_y_servicios():
-    """Obtiene la lista completa de negocios y servicios desde la API de Flask."""
-    try:
-        response_negocios = requests.get(f"{FLASK_API_BASE_URL}/negocios")
-        response_negocios.raise_for_status()
-        negocios_data = response_negocios.json()
+class ActionSetContexto(Action):
+    """Captura los metadatos del frontend (cliente_id, negocio_id) al iniciar conversación"""
 
-        for negocio in negocios_data:
-            try:
-                # Llamada al nuevo endpoint que acabas de crear
-                response_servicios = requests.get(f"{FLASK_API_BASE_URL}/negocios/{negocio['id']}/servicios")
-                if response_servicios.status_code == 200:
-                    negocio['servicios'] = response_servicios.json()
-                else:
-                    negocio['servicios'] = []
-            except:
-                negocio['servicios'] = []
-
-        return negocios_data, None
-    except Exception as e:
-        print(f"Error conectando con Flask: {e}")
-        return [], None
-
-def parse_fecha_relativa(texto_fecha):
-    """Convierte 'hoy', 'mañana' a YYYY-MM-DD. Si no sabe, devuelve el texto original."""
-    if not texto_fecha:
-        return None
-    
-    texto = texto_fecha.lower().strip()
-    hoy = datetime.now()
-
-    if "hoy" in texto:
-        return hoy.strftime("%Y-%m-%d")
-    elif "mañana" in texto and "pasado" not in texto:
-        return (hoy + timedelta(days=1)).strftime("%Y-%m-%d")
-    elif "pasado mañana" in texto:
-        return (hoy + timedelta(days=2)).strftime("%Y-%m-%d")
-    
-    # Si ya parece una fecha YYYY-MM-DD, la dejamos igual
-    # (Aquí podrías añadir más lógica si quieres)
-    return texto
-
-# --- ACCIONES ---
-
-class ActionValidarEntidades(Action):
     def name(self) -> Text:
-        return "action_validar_entidades"
+        return "action_set_contexto"
 
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
 
-        negocio_slot = tracker.get_slot("negocio")
-        servicio_slot = tracker.get_slot("servicio")
+        # Obtener metadatos del mensaje inicial
+        metadata = tracker.latest_message.get('metadata', {})
         
-        negocios_data, _ = get_negocios_y_servicios()
-        eventos_a_retornar = []
-        negocio_validado = None
+        cliente_id = metadata.get('cliente_id')
+        negocio_id = metadata.get('negocio_id')
+        negocio_nombre = metadata.get('negocio_nombre')
 
-        # 1. Validar Negocio
-        if negocio_slot:
-            if negocios_data:
-                nombres_reales = [n['nombre'] for n in negocios_data]
-                mejor_coincidencia, puntaje = process.extractOne(negocio_slot, nombres_reales)
-                
-                if puntaje > 80:
-                    negocio_validado = mejor_coincidencia
-                    eventos_a_retornar.append(SlotSet("negocio", negocio_validado))
-                    negocio_obj = next((n for n in negocios_data if n['nombre'] == negocio_validado), None)
-                    if negocio_obj:
-                        eventos_a_retornar.append(SlotSet("negocio_id", negocio_obj['id']))
-                else:
-                    dispatcher.utter_message(text=f"No encuentro el negocio '{negocio_slot}'. ¿Quizás {mejor_coincidencia}?")
-                    return [SlotSet("negocio", None)]
-            else:
-                 dispatcher.utter_message(text="Error de conexión con la base de datos.")
+        # Guardar en slots para usar en las siguientes actions
+        return [
+            SlotSet("cliente_id", cliente_id),
+            SlotSet("negocio_id", negocio_id),
+            SlotSet("negocio", negocio_nombre)
+        ]
 
-        # 2. Validar Servicio (Contextual)
-        if servicio_slot and negocio_validado:
-            negocio_obj = next((n for n in negocios_data if n['nombre'] == negocio_validado), None)
+
+class ActionNormalizarServicio(Action):
+    """Detecta el servicio que quiere el usuario y lo normaliza"""
+
+    def name(self) -> Text:
+        return "action_normalizar_servicio"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        mensaje_usuario = tracker.latest_message.get('text', '').lower()
+        negocio_nombre = tracker.get_slot("negocio")
+        negocio_id = tracker.get_slot("negocio_id")
+
+        if not negocio_id:
+            dispatcher.utter_message(text="No sé en qué negocio estás. Por favor, selecciona uno desde la web.")
+            return []
+
+        try:
+            # Consultar servicios reales del negocio desde la API
+            response = requests.get(f"{API_URL}/negocios/{negocio_id}/servicios", timeout=5)
             
-            if negocio_obj and 'servicios' in negocio_obj and negocio_obj['servicios']:
-                servicios_validos = [s['nombre'] for s in negocio_obj['servicios']]
-                mejor_servicio, puntaje_serv = process.extractOne(servicio_slot, servicios_validos)
+            if response.status_code != 200:
+                dispatcher.utter_message(text="No pude cargar los servicios. Intenta de nuevo.")
+                return []
 
-                if puntaje_serv > 80:
-                    eventos_a_retornar.append(SlotSet("servicio", mejor_servicio))
-                    servicio_obj = next((s for s in negocio_obj['servicios'] if s['nombre'] == mejor_servicio), None)
-                    if servicio_obj:
-                        eventos_a_retornar.append(SlotSet("servicio_id", servicio_obj['id']))
-                else:
-                    dispatcher.utter_message(text=f"En **{negocio_validado}** no hacemos '{servicio_slot}'. "
-                                                  f"Ofrecemos: {', '.join(servicios_validos)}.")
-                    eventos_a_retornar.append(SlotSet("servicio", None))
-                    eventos_a_retornar.append(SlotSet("servicio_id", None))
+            servicios_disponibles = response.json()
+            
+            if not servicios_disponibles:
+                dispatcher.utter_message(text="Este negocio no tiene servicios configurados.")
+                return []
+
+            # Buscar coincidencia fuzzy
+            servicio_detectado = None
+            servicio_id = None
+            
+            for servicio in servicios_disponibles:
+                nombre_servicio = servicio['nombre'].lower()
+                # Búsqueda flexible: si alguna palabra clave coincide
+                palabras = nombre_servicio.split()
+                if any(palabra in mensaje_usuario for palabra in palabras if len(palabra) > 3):
+                    servicio_detectado = servicio['nombre']
+                    servicio_id = servicio['id']
+                    break
+            
+            if servicio_detectado:
+                return [
+                    SlotSet("servicio", servicio_detectado),
+                    SlotSet("servicio_id", servicio_id)
+                ]
             else:
-                 dispatcher.utter_message(text=f"El negocio {negocio_validado} no tiene servicios disponibles ahora.")
+                # No se encontró, ofrecer opciones
+                opciones = ", ".join([s['nombre'] for s in servicios_disponibles])
+                dispatcher.utter_message(
+                    text=f"No entendí qué servicio quieres. Tenemos: {opciones}"
+                )
+                return [SlotSet("servicio", None)]
 
-        return eventos_a_retornar
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al conectar con el servidor: {str(e)}")
+            return []
 
 
 class ActionMostrarDisponibilidad(Action):
+    """Muestra los horarios disponibles para el servicio seleccionado"""
+
     def name(self) -> Text:
         return "action_mostrar_disponibilidad"
 
@@ -122,43 +108,78 @@ class ActionMostrarDisponibilidad(Action):
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
 
         negocio_id = tracker.get_slot("negocio_id")
-        fecha_raw = tracker.get_slot("fecha")
+        servicio_id = tracker.get_slot("servicio_id")
+        servicio = tracker.get_slot("servicio")
 
-        if not negocio_id or not fecha_raw:
-            dispatcher.utter_message(text="Necesito saber el negocio y la fecha.")
+        if not negocio_id or not servicio_id:
+            dispatcher.utter_message(text="Necesito saber qué servicio quieres primero.")
             return []
 
-        # TRADUCCIÓN DE FECHA ("mañana" -> "2025-12-07")
-        fecha_real = parse_fecha_relativa(fecha_raw)
-        
-        # Guardamos la fecha convertida en el slot para usarla luego al reservar
-        eventos = [SlotSet("fecha", fecha_real)]
-
         try:
-            payload = {"negocio_id": negocio_id, "fecha": fecha_real}
-            # Llamada al nuevo endpoint de citas.py
-            response = requests.post(f"{FLASK_API_BASE_URL}/disponibilidad", json=payload)
-            
-            if response.status_code == 200:
-                data = response.json()
-                horarios = data.get('horarios', [])
-                
-                if horarios:
-                    lista_horas = ", ".join(horarios[:5]) # Mostramos solo los 5 primeros para no saturar
-                    dispatcher.utter_message(text=f"Para el {fecha_real}, tengo libres: {lista_horas}...")
-                    eventos.append(SlotSet("disponibilidad", horarios))
-                else:
-                    dispatcher.utter_message(text=f"Lo siento, el {fecha_real} está completo.")
-            else:
-                 dispatcher.utter_message(text="Error consultando horarios en el servidor.")
-        
-        except Exception as e:
-            dispatcher.utter_message(text=f"Error de conexión: {e}")
+            # Consultar disponibilidad para los próximos 7 días
+            horarios_por_dia = {}
+            hoy = datetime.now().date()
 
-        return eventos
+            for i in range(7):  # Próximos 7 días
+                fecha = hoy + timedelta(days=i)
+                fecha_str = fecha.strftime('%Y-%m-%d')
+
+                response = requests.post(
+                    f"{API_URL}/disponibilidad",
+                    json={
+                        "negocio_id": negocio_id,
+                        "servicio_id": servicio_id,
+                        "fecha": fecha_str
+                    },
+                    timeout=5
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+                    horarios = data.get('disponibles', [])
+                    if horarios:
+                        # Guardar solo los primeros 5 horarios por día
+                        horarios_por_dia[fecha_str] = horarios[:5]
+
+            if not horarios_por_dia:
+                dispatcher.utter_message(
+                    text=f"Lo siento, no hay horarios disponibles para {servicio} en los próximos días."
+                )
+                return []
+
+            # Formatear mensaje de disponibilidad
+            mensaje = f"📅 Horarios disponibles para **{servicio}**:\n\n"
+            for fecha_str, horarios in list(horarios_por_dia.items())[:3]:  # Solo mostrar 3 días
+                fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d')
+                dia_texto = self._formatear_dia(fecha_obj)
+                horas = [h.split()[1][:5] for h in horarios[:3]]  # Solo hora HH:MM
+                mensaje += f"**{dia_texto}**: {', '.join(horas)}\n"
+
+            mensaje += "\n¿Para qué día quieres reservar? (Ej: 'mañana', 'hoy', 'el lunes')"
+
+            dispatcher.utter_message(text=mensaje)
+            
+            # Guardar disponibilidad en slot para uso posterior
+            return [SlotSet("horarios_disponibles", horarios_por_dia)]
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al consultar disponibilidad: {str(e)}")
+            return []
+
+    def _formatear_dia(self, fecha: datetime) -> str:
+        hoy = datetime.now().date()
+        if fecha.date() == hoy:
+            return "Hoy"
+        elif fecha.date() == hoy + timedelta(days=1):
+            return "Mañana"
+        else:
+            dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+            return f"{dias[fecha.weekday()]} {fecha.day}/{fecha.month}"
 
 
 class ActionReservarCita(Action):
+    """Crea la reserva final en el sistema"""
+
     def name(self) -> Text:
         return "action_reservar_cita"
 
@@ -166,46 +187,110 @@ class ActionReservarCita(Action):
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
 
-        # Recuperamos los datos limpios
-        negocio = tracker.get_slot("negocio")
-        servicio = tracker.get_slot("servicio")
-        fecha_dia = tracker.get_slot("fecha") # "2025-12-07"
-        
-        # OJO: Aquí Rasa debería haber preguntado la hora exacta en otro paso, 
-        # pero para esta demo, asumiremos que el usuario dijo la hora en el último mensaje
-        # o simplificaremos cogiendo la primera hora disponible si no se especificó (riesgo).
-        
-        # En un flujo real, deberías tener un slot 'hora'. 
-        # Vamos a intentar coger la última entidad de hora detectada o usar un default.
-        
+        # Obtener datos de los slots
+        cliente_id = tracker.get_slot("cliente_id")
         negocio_id = tracker.get_slot("negocio_id")
         servicio_id = tracker.get_slot("servicio_id")
+        servicio = tracker.get_slot("servicio")
+        fecha_texto = tracker.get_slot("fecha")
+        horarios_disponibles = tracker.get_slot("horarios_disponibles")
 
-        # Simulamos que el usuario eligió la primera hora libre si no dijo nada más
-        # (Esto es solo para que la demo no falle, en prod necesitas slot de hora)
-        disponibilidad = tracker.get_slot("disponibilidad")
-        hora_elegida = "10:00" # Default
-        
-        if disponibilidad and len(disponibilidad) > 0:
-             hora_elegida = disponibilidad[0]
-
-        # Construimos el timestamp final: "2025-12-07 10:00:00"
-        fecha_hora_final = f"{fecha_dia} {hora_elegida}:00"
-
-        payload = {
-            "negocio_id": negocio_id,
-            "servicio_id": servicio_id,
-            "fecha_hora_cita": fecha_hora_final
-        }
+        if not all([cliente_id, negocio_id, servicio_id]):
+            dispatcher.utter_message(text="Falta información para completar la reserva.")
+            return []
 
         try:
-            response = requests.post(f"{FLASK_API_BASE_URL}/citas", json=payload)
-            if response.status_code == 201 or response.status_code == 200:
-                dispatcher.utter_message(text=f"¡Hecho! Reserva confirmada: {servicio} en {negocio} para el {fecha_hora_final}.")
-            else:
-                dispatcher.utter_message(text="No pude guardar la reserva. Quizás alguien te quitó el hueco.")
-        except Exception as e:
-            dispatcher.utter_message(text="Error crítico conectando con el servidor de reservas.")
+            # Interpretar la fecha que dijo el usuario
+            fecha_reserva = self._interpretar_fecha(fecha_texto, horarios_disponibles)
 
-        # Limpiamos slots para la siguiente reserva
-        return [SlotSet("negocio", None), SlotSet("servicio", None), SlotSet("fecha", None), SlotSet("disponibilidad", None)]
+            if not fecha_reserva:
+                dispatcher.utter_message(
+                    text="No pude entender la fecha. Por favor, dime 'hoy', 'mañana' o un día específico."
+                )
+                return []
+
+            # Crear la cita en el backend
+            response = requests.post(
+                f"{API_URL}/citas",
+                json={
+                    "cliente_id": cliente_id,
+                    "negocio_id": negocio_id,
+                    "servicio_id": servicio_id,
+                    "fecha_hora_cita": fecha_reserva
+                },
+                timeout=5
+            )
+
+            if response.status_code == 201:
+                # Formatear fecha para mostrar
+                fecha_obj = datetime.strptime(fecha_reserva, '%Y-%m-%d %H:%M:%S')
+                fecha_legible = fecha_obj.strftime('%d/%m/%Y a las %H:%M')
+                
+                dispatcher.utter_message(
+                    text=f"✅ ¡Reserva confirmada!\n\n"
+                         f"**Servicio:** {servicio}\n"
+                         f"**Fecha:** {fecha_legible}\n\n"
+                         f"Te esperamos. ¡Gracias por confiar en nosotros!"
+                )
+                return [
+                    SlotSet("servicio", None),
+                    SlotSet("servicio_id", None),
+                    SlotSet("fecha", None),
+                    SlotSet("horarios_disponibles", None)
+                ]
+            else:
+                error_msg = response.json().get('error', 'Error desconocido')
+                dispatcher.utter_message(
+                    text=f"❌ No se pudo crear la reserva: {error_msg}"
+                )
+                return []
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al reservar: {str(e)}")
+            return []
+
+    def _interpretar_fecha(self, texto_fecha: str, horarios_disponibles: dict) -> str:
+        """Convierte 'mañana', 'hoy', etc. en una fecha-hora específica"""
+        if not texto_fecha or not horarios_disponibles:
+            return None
+
+        texto_lower = texto_fecha.lower()
+        hoy = datetime.now().date()
+
+        # Mapear texto a fecha
+        if "hoy" in texto_lower:
+            fecha_objetivo = hoy
+        elif "mañana" in texto_lower or "manana" in texto_lower:
+            fecha_objetivo = hoy + timedelta(days=1)
+        elif "pasado" in texto_lower:
+            fecha_objetivo = hoy + timedelta(days=2)
+        else:
+            # Intentar interpretar día de la semana
+            dias_semana = {
+                'lunes': 0, 'martes': 1, 'miercoles': 2, 'miércoles': 2,
+                'jueves': 3, 'viernes': 4, 'sabado': 5, 'sábado': 5, 'domingo': 6
+            }
+            dia_encontrado = None
+            for dia_nombre, dia_num in dias_semana.items():
+                if dia_nombre in texto_lower:
+                    dia_encontrado = dia_num
+                    break
+            
+            if dia_encontrado is not None:
+                dias_hasta = (dia_encontrado - hoy.weekday()) % 7
+                if dias_hasta == 0:
+                    dias_hasta = 7  # Si es el mismo día, ir a la próxima semana
+                fecha_objetivo = hoy + timedelta(days=dias_hasta)
+            else:
+                # Si no se entiende, usar mañana por defecto
+                fecha_objetivo = hoy + timedelta(days=1)
+
+        fecha_str = fecha_objetivo.strftime('%Y-%m-%d')
+
+        # Buscar el primer horario disponible de ese día
+        if fecha_str in horarios_disponibles:
+            horarios = horarios_disponibles[fecha_str]
+            if horarios:
+                return horarios[0]  # Devolver el primer slot disponible
+
+        return None
