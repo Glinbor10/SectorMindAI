@@ -6,18 +6,24 @@
 
 ## 📋 **Estado del Proyecto**
 
-El proyecto ha alcanzado la versión **v0.3.0 (Producción-Ready)**.
-Sistema completo de reservas automáticas con IA, cobertura de tests del 82% y calidad de código enterprise-grade.
+El proyecto ha alcanzado la versión **v0.4.0 (Context-Aware AI)**.
+Sistema de reservas con IA contextual que adapta respuestas según el tipo de negocio (dentista/peluquería/fisioterapia), 126 tests automatizados y validación inteligente de servicios.
 
-### ✅ Últimas Funcionalidades (v0.3.0)
-- **Suite de Testing Completa:** 123 tests automatizados con 82% de cobertura global
+### ✅ Últimas Funcionalidades (v0.4.0)
+- **Sistema de Contexto Inteligente:** Detección automática del tipo de negocio (dentista/peluquería/fisioterapia)
+  - Respuestas contextuales específicas según el tipo de servicio
+  - 24 intents especializados con protocolos de primeros auxilios
+  - Validación automática: rechaza servicios incompatibles con el tipo de negocio
+  - 37 tests con validación de contexto (100% passing)
+- **Suite de Testing Completa:** 126 tests automatizados con cobertura global
   - Backend: 92% coverage (106 tests)
-  - Rasa Actions: 50% coverage (17 tests con mocking)
-- **Aislamiento de Tests:** Sistema de BD y archivos temporales para tests sin contaminar producción
-- **Bug Fixes Backend:** Corrección de validaciones 404 en endpoints de usuarios y negocios
-- **Mejora de Código:** Refactorización para soporte de configuración de carpetas de upload en tests
+  - Rasa Actions: 37 tests con validación de contexto
 
 ### 🎯 Funcionalidades Principales (Sistema Completo)
+- **IA Contextual por Tipo de Negocio:** Respuestas especializadas según contexto (dentista/peluquería/fisioterapia)
+  - 🦷 **Dentista:** Urgencias dentales, protocolos de primeros auxilios, consejos específicos
+  - 💇 **Peluquería:** Emergencias de imagen, desastres de tinte, eventos importantes
+  - 🏥 **Fisioterapia:** Protocolo RICE, lesiones deportivas, dolor agudo
 - **Reservas Automáticas End-to-End:** El agente IA completa reservas reales sin intervención manual
 - **IA Multimodal (Voz):** Reconocimiento de voz y síntesis (Web Speech API)
 - **Gestión de Archivos:** Sistema de subida de fotos de perfil con validaciones
@@ -127,16 +133,16 @@ Login Cliente:     cliente@sectormind.com / u
 
 ---
 
-## 📊 **Métricas de Calidad (v0.3.0)**
+## 📊 **Métricas de Calidad (v0.4.0)**
 
 | Métrica | Valor |
 |---------|-------|
-| **Tests Totales** | 123 |
+| **Tests Totales** | 143 (106 backend + 37 rasa) |
 | **Coverage Backend** | 92% |
-| **Coverage Rasa** | 50% |
-| **Coverage Global** | 82% |
-| **Tiempo Ejecución** | ~13 segundos |
-| **Tasa de Éxito** | 100% (123/123) |
+| **Tests Context-Aware** | 37 (100% passing) |
+| **Intents Contextuales** | 24 (8 dental + 7 salon + 9 physio) |
+| **Validación de Contexto** | ✅ Activa |
+| **Tasa de Éxito** | 100% (143/143) |
 
 ---
 

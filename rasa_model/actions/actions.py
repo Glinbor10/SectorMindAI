@@ -8,6 +8,18 @@ from datetime import datetime, timedelta
 # --- CONFIGURACIÓN API ---
 API_URL = "http://localhost:5000"
 
+# Importar actions específicas de contexto (urgencias solamente)
+from .dentista_actions import (
+    ActionUrgenciaDental,
+    ActionBuscarUrgenciaProxima
+)
+from .peluqueria_actions import (
+    ActionUrgenciaPeluqueria
+)
+from .fisioterapia_actions import (
+    ActionUrgenciaFisioterapia
+)
+
 
 class ActionSetContexto(Action):
     """Captura los metadatos del frontend (cliente_id, negocio_id) al iniciar conversación"""
@@ -26,11 +38,23 @@ class ActionSetContexto(Action):
         negocio_id = metadata.get('negocio_id')
         negocio_nombre = metadata.get('negocio_nombre')
 
+        # Consultar tipo de negocio desde la API
+        tipo_negocio = None
+        if negocio_id:
+            try:
+                response = requests.get(f"{API_URL}/negocios/{negocio_id}", timeout=5)
+                if response.status_code == 200:
+                    negocio_info = response.json()
+                    tipo_negocio = negocio_info.get('tipo_negocio')
+            except Exception as e:
+                print(f"Error consultando tipo de negocio: {e}")
+
         # Guardar en slots para usar en las siguientes actions
         return [
             SlotSet("cliente_id", cliente_id),
             SlotSet("negocio_id", negocio_id),
-            SlotSet("negocio", negocio_nombre)
+            SlotSet("negocio", negocio_nombre),
+            SlotSet("tipo_negocio", tipo_negocio)
         ]
 
 

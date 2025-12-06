@@ -1,0 +1,34 @@
+version: "3.1"
+
+stories:
+# ========================================
+# HISTORIAS ESPECÍFICAS PARA PELUQUERÍA
+# ========================================
+
+# --- HISTORIA 1: Urgencia evento importante ---
+- story: urgencia_evento_peluqueria
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: corte_urgente_evento
+  - action: action_urgencia_peluqueria
+  - action: action_buscar_urgencia_proxima
+  - intent: informar_fecha
+  - action: action_reservar_cita
+  - action: utter_confirmacion
+
+# --- HISTORIA 2: Desastre de tinte ---
+- story: urgencia_tinte_mal
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: desastre_tinte
+  - action: action_urgencia_peluqueria
+  - action: action_buscar_urgencia_proxima
+  - intent: informar_fecha
+  - action: action_reservar_cita
+  - action: utter_confirmacion
+
+

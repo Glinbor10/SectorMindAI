@@ -1,0 +1,39 @@
+version: "3.1"
+
+nlu:
+# ========================================
+# INTENTS ESPECÍFICOS PARA FISIOTERAPIA
+# ========================================
+
+- intent: dolor_agudo_espalda
+  examples: |
+    - me duele mucho la espalda
+    - dolor de espalda intenso
+    - tengo la espalda bloqueada
+    - no puedo moverme del dolor de espalda
+    - espalda muy dolorida
+    - dolor lumbar fuerte
+    - dolor cervical agudo
+
+- intent: lesion_deportiva
+  examples: |
+    - me he lesionado jugando
+    - lesión deportiva
+    - me he hecho daño en el fútbol
+    - esguince
+    - me he lesionado corriendo
+    - tengo una lesión muscular
+    - rotura fibrilar
+    - me duele después de entrenar
+
+- intent: contractura_muscular
+  examples: |
+    - tengo una contractura
+    - músculo contracturado
+    - nudo muscular
+    - tengo contractura en el cuello
+    - contractura en la espalda
+    - músculo agarrotado
+    - sobrecarga muscular
+
+

@@ -1,0 +1,63 @@
+version: "3.1"
+
+stories:
+# ========================================
+# HISTORIAS ESPECÍFICAS PARA DENTISTA
+# ========================================
+
+# --- HISTORIA 1: Urgencia por dolor intenso ---
+- story: urgencia_dental_dolor
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: urgencia_dental_dolor
+  - action: action_urgencia_dental
+  - action: action_buscar_urgencia_proxima
+  - intent: informar_fecha
+  - action: action_reservar_cita
+  - action: utter_confirmacion
+
+# --- HISTORIA 2: Urgencia bracket caído ---
+- story: urgencia_bracket_cita
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: urgencia_dental_bracket
+  - action: action_urgencia_dental
+  - action: action_buscar_urgencia_proxima
+  - intent: informar_fecha
+  - action: action_reservar_cita
+  - action: utter_confirmacion
+
+# --- HISTORIA 3: Urgencia diente roto/caído ---
+- story: urgencia_diente_roto
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: urgencia_dental_diente
+  - action: action_urgencia_dental
+  - action: action_buscar_urgencia_proxima
+  - intent: informar_fecha
+  - action: action_reservar_cita
+  - action: utter_confirmacion
+
+# --- HISTORIA 4: Empaste caído (menos urgente) ---
+- story: empaste_perdido
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: perdida_empaste
+  - action: action_urgencia_dental
+  - intent: informar_fecha
+  - action: action_mostrar_disponibilidad
+  - intent: inform
+    entities:
+    - fecha
+  - action: action_reservar_cita
+  - action: utter_confirmacion
+
+

@@ -1,0 +1,30 @@
+version: "3.1"
+
+nlu:
+# ========================================
+# INTENTS ESPECÍFICOS PARA PELUQUERÍA
+# ========================================
+
+- intent: corte_urgente_evento
+  examples: |
+    - necesito corte urgente
+    - tengo una boda mañana
+    - necesito arreglarme para un evento
+    - corte de emergencia
+    - tengo evento importante mañana
+    - necesito peinarme para una boda
+    - mañana tengo entrevista de trabajo
+    - tengo comunión mañana
+
+- intent: desastre_tinte
+  examples: |
+    - me quedó mal el tinte
+    - el color me salió horrible
+    - necesito arreglar mi tinte
+    - tinte desastroso
+    - me lo hicieron mal en otro sitio
+    - el pelo me quedó naranja
+    - necesito corregir el color
+    - tinte en mal estado
+
+

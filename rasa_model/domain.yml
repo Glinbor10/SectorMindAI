@@ -16,6 +16,16 @@ intents:
   - info_general
   - inform
   - pedir_mas_opciones
+  # Intents de URGENCIAS (contextuales por tipo de negocio)
+  - urgencia_dental_dolor
+  - urgencia_dental_bracket
+  - urgencia_dental_diente
+  - perdida_empaste
+  - corte_urgente_evento
+  - desastre_tinte
+  - dolor_agudo_espalda
+  - lesion_deportiva
+  - contractura_muscular
 
 entities:
   - negocio
@@ -37,6 +47,12 @@ slots:
       - type: custom
 
   cliente_id:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  tipo_negocio:
     type: text
     influence_conversation: false
     mappings:
@@ -82,9 +98,18 @@ slots:
     mappings:
       - type: custom
 
+  es_urgencia:
+    type: bool
+    influence_conversation: false
+    mappings:
+      - type: custom
+
 responses:
   utter_greet_con_negocio:
     - text: "¡Hola! Bienvenido a {negocio}. ¿Qué servicio necesitas?"
+
+  utter_greet:
+    - text: "¡Hola! ¿En qué puedo ayudarte hoy?"
 
   utter_pedir_servicio:
     - text: "¿Qué servicio te gustaría reservar?"
@@ -94,6 +119,9 @@ responses:
 
   utter_default:
     - text: "No he entendido bien. ¿Puedes repetirlo?"
+  
+  utter_confirmacion:
+    - text: "✅ ¡Perfecto! Tu cita ha sido reservada correctamente."
 
 actions:
   - action_set_contexto
@@ -108,6 +136,11 @@ actions:
   - action_cancelar_cita
   - action_confirmar_cancelacion
   - action_responder_bot_challenge
+  # Actions de URGENCIAS
+  - action_urgencia_dental
+  - action_urgencia_peluqueria
+  - action_urgencia_fisioterapia
+  - action_buscar_urgencia_proxima
 
 session_config:
   session_expiration_time: 60

@@ -19,15 +19,11 @@ nlu:
   examples: |
     - quiero un corte
     - quiero un cortesito
-    - corte de pelo
-    - tinte
     - peinado
     - barba
     - mechas
     - fisioterapia
     - masaje
-    - punción seca
-    - osteopatía
     - limpieza
     - empaste
     - revisión

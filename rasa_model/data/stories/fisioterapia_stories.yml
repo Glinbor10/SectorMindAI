@@ -1,0 +1,50 @@
+version: "3.1"
+
+stories:
+# ========================================
+# HISTORIAS ESPECÍFICAS PARA FISIOTERAPIA
+# ========================================
+
+# --- HISTORIA 1: Dolor agudo espalda (urgencia) ---
+- story: urgencia_dolor_espalda
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: dolor_agudo_espalda
+  - action: action_urgencia_fisioterapia
+  - action: action_buscar_urgencia_proxima
+  - intent: informar_fecha
+  - action: action_reservar_cita
+  - action: utter_confirmacion
+
+# --- HISTORIA 2: Lesión deportiva (urgencia) ---
+- story: urgencia_lesion_deportiva
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: lesion_deportiva
+  - action: action_urgencia_fisioterapia
+  - action: action_buscar_urgencia_proxima
+  - intent: informar_fecha
+  - action: action_reservar_cita
+  - action: utter_confirmacion
+
+# --- HISTORIA 3: Contractura muscular ---
+- story: contractura_cita
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: contractura_muscular
+  - action: action_urgencia_fisioterapia
+  - intent: informar_fecha
+  - action: action_mostrar_disponibilidad
+  - intent: inform
+    entities:
+    - fecha
+  - action: action_reservar_cita
+  - action: utter_confirmacion
+
+

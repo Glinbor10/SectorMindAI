@@ -1,0 +1,52 @@
+version: "3.1"
+
+nlu:
+# ========================================
+# INTENTS ESPECÍFICOS PARA DENTISTA
+# ========================================
+
+- intent: urgencia_dental_dolor
+  examples: |
+    - me duele mucho un diente
+    - me duele muchísimo una muela
+    - tengo un dolor de muelas insoportable
+    - dolor de diente muy fuerte
+    - tengo dolor intenso en un diente
+    - me está matando el dolor de muela
+    - no aguanto el dolor de diente
+    - me duele horrible un diente
+    - dolor agudo en muela
+    - tengo un diente que me duele mucho
+
+- intent: urgencia_dental_bracket
+  examples: |
+    - se me ha caído un bracket
+    - se me cayó el bracket
+    - se me despegó un bracket
+    - perdí un bracket de los dientes
+    - se me salió un bracket
+    - tengo un bracket suelto
+    - se me rompió un bracket
+    - bracket despegado
+    - se me ha soltado la ortodoncia
+
+- intent: urgencia_dental_diente
+  examples: |
+    - se me ha caído un diente
+    - se me cayó un diente
+    - se me rompió un diente
+    - tengo un diente roto
+    - se me partió un diente
+    - perdí un diente
+    - diente roto
+    - me faltan pedazos de un diente
+    - se me quebró un diente
+
+- intent: perdida_empaste
+  examples: |
+    - se me cayó un empaste
+    - perdí un empaste
+    - se me salió el empaste
+    - empaste caído
+    - tengo un hueco en el diente donde estaba el empaste
+    - se me ha desprendido un empaste
