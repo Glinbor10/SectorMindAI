@@ -1,118 +1,46 @@
 version: "3.1"
-nlu:
-# =================================================================
-# 1. INTENTS PRINCIPALES
-# =================================================================
 
-# Saludos y despedidas
+nlu:
 - intent: greet
   examples: |
     - hola
     - buenos días
-    - buenas tardes
-    - qué tal
-    - cómo estás
-    - hola, quiero reservar
-    - quiero hacer una reserva
+    - /greet{"negocio": "FisioMente Centro"}
+    - /greet{"negocio": "Peluquería Estilo"}
+    - /greet{"negocio": "Taller Paco"}
 
 - intent: goodbye
   examples: |
     - adiós
     - hasta luego
     - chao
-    - nos vemos
-    - que tengas buen día
 
-# Intención principal de reserva
-- intent: reservar_cita
+- intent: reservar_servicio
   examples: |
-    - quiero reservar una cita
-    - me gustaría agendar un servicio
-    - necesito una reserva
-    - hagamos una cita
-    - ¿puedo reservar un [corte](servicio)?
-    - quiero reservar un [corte de pelo](servicio) en [Peluquería Estilo](negocio)
-    - reserva para un [empaste](servicio) en [Clínica Dental Sonrisa](negocio)
+    - [punción seca](servicio)
+    - quiero [masaje](servicio)
+    - [corte de pelo](servicio)
+    - [cambio de aceite](servicio)
+    - [limpieza dental](servicio)
+    - necesito [fisioterapia](servicio)
+    - [tinte](servicio)
+    - solo [revisión](servicio)
+    - quiero reservar [manicura](servicio)
 
-# =================================================================
-# 2. ENTIDADES Y SINÓNIMOS (Para capturar datos clave)
-# =================================================================
-
-# SINÓNIMOS DE NEGOCIO (Si el usuario es vago)
-- synonym: Peluquería Estilo
-  examples: |
-    - Estilo
-    - la pelu
-    - peluquería
-    - la de la esquina
-
-- synonym: Clínica Dental Sonrisa
-  examples: |
-    - dentista
-    - la clínica
-    - el doctor
-
-# SINÓNIMOS DE SERVICIO (Para manejar "arreglos" o jerga)
-- synonym: Corte de pelo
-  examples: |
-    - corte
-    - arreglo
-    - un retoke
-    - sanear puntas
-    - cortar un poco
-
-- synonym: Empaste
-  examples: |
-    - rellenar caries
-    - tapar un agujero
-    - arreglar un diente
-
-# ENTIDADES DE NEGOCIO (Nombres reales que el modelo debe reconocer)
-- intent: elegir_negocio
-  examples: |
-    - quiero ir a [Peluquería Estilo](negocio)
-    - para [Clínica Dental Sonrisa](negocio)
-    - en [Fisio Avanza](negocio)
-    - el de [Dentista Salud](negocio)
-
-# ENTIDADES DE SERVICIO
-- intent: elegir_servicio
-  examples: |
-    - el servicio de [corte de pelo](servicio)
-    - quiero [tinte](servicio)
-    - necesito una [limpieza dental](servicio)
-    - [masaje deportivo](servicio)
-
-# ENTIDADES DE FECHA Y HORA (Rasa usa un extractor pre-entrenado para esto, duckling, pero añadimos ejemplos)
-# Nota: La entidad 'fecha' se entrena en español.
-- intent: elegir_fecha
-  examples: |
-    - el [lunes](fecha)
-    - [mañana](fecha)
-    - [pasado mañana](fecha)
-    - el [15 de agosto](fecha)
-    - [hoy por la tarde](fecha)
-    - [a las 5 de la tarde](fecha)
-    - [el martes a las 11](fecha)
-    - [este viernes por la mañana](fecha)
-
-# =================================================================
-# 3. AFIRMACIONES Y NEGACIONES
-# =================================================================
 - intent: affirm
   examples: |
     - sí
     - correcto
-    - claro que sí
-    - estoy de acuerdo
-    - eso es
-    - sí, resérvalo
+    - vale
+    - perfecto
 
 - intent: deny
   examples: |
     - no
-    - no quiero
-    - cancelar
-    - para nada
-    - ese no
-    - no estoy seguro
+    - espera
+    - corregir
+
+- intent: bot_challenge
+  examples: |
+    - eres un bot?
+    - eres humano?

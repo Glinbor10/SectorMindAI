@@ -1,15 +1,13 @@
-# backend/routes/citas.py
 from flask import Blueprint, jsonify, request
 import sqlite3
 from ..db import get_db_connection 
+# IMPORTANTE: Importamos ambas funciones de lógica
 from ..logic import obtener_tramos_disponibles, verificar_solapamiento 
 
-# Definimos el Blueprint. Aquí no usamos url_prefix para que las rutas sean /citas y /disponibilidad
+# Definimos el Blueprint
 citas_bp = Blueprint('citas', __name__)
 
-
-# Endpoint: Obtener Citas (GET /citas)
-# AHORA ADMITE FILTROS: ?cliente_id=1  O  ?negocio_id=2
+# 1. OBTENER CITAS (GET /citas)
 @citas_bp.route('/citas', methods=['GET'])
 def obtener_citas():
     cliente_id = request.args.get('cliente_id')
@@ -17,7 +15,7 @@ def obtener_citas():
 
     conn = get_db_connection()
     
-    # Preparamos una consulta que une tablas para dar información útil (nombres en vez de solo IDs)
+    # Preparamos una consulta que une tablas para dar información útil
     query = '''
         SELECT 
             c.id, c.fecha_hora_cita, c.estado, c.duracion_minutos,
@@ -41,52 +39,17 @@ def obtener_citas():
     if negocio_id:
         conditions.append("c.negocio_id = ?")
         params.append(negocio_id)
-    
+        
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
-    
-    # Ordenar por fecha más reciente
+        
     query += " ORDER BY c.fecha_hora_cita DESC"
 
     citas = conn.execute(query, params).fetchall()
     conn.close()
-    
     return jsonify([dict(row) for row in citas])
 
-# --- ENDPOINT DE DISPONIBILIDAD (CRÍTICO PARA RASA) ---
-
-# Endpoint: Obtener Disponibilidad (POST /disponibilidad)
-@citas_bp.route('/disponibilidad', methods=['POST'])
-def obtener_disponibilidad():
-    data = request.get_json()
-    negocio_id = data.get('negocio_id')
-    servicio_id = data.get('servicio_id')
-    fecha = data.get('fecha') # Formato esperado: YYYY-MM-DD
-
-    if not (negocio_id and servicio_id and fecha):
-        return jsonify({'error': 'Faltan negocio_id, servicio_id o fecha'}), 400
-
-    conn = get_db_connection()
-    # Llamamos a la función de lógica
-    resultado = obtener_tramos_disponibles(negocio_id, servicio_id, fecha, conn)
-    conn.close()
-    
-    if 'error' in resultado:
-        return jsonify(resultado), 400
-        
-    return jsonify(resultado), 200
-
-# --- ENDPOINTS DE CITAS ---
-
-# Endpoint: Listar citas (GET /citas)
-@citas_bp.route('/citas', methods=['GET'])
-def listar_citas():
-    conn = get_db_connection()
-    citas = conn.execute('SELECT * FROM citas').fetchall()
-    conn.close()
-    return jsonify([dict(row) for row in citas])
-
-# Endpoint: Crear cita (POST /citas)
+# 2. CREAR CITA (POST /citas)
 @citas_bp.route('/citas', methods=['POST'])
 def crear_cita():
     data = request.get_json()
@@ -94,6 +57,10 @@ def crear_cita():
     servicio_id = data.get('servicio_id')
     fecha_hora_cita = data.get('fecha_hora_cita') # Esperado: 'YYYY-MM-DD HH:MM:SS'
     
+    # En un caso real, el cliente_id vendría del token de sesión.
+    # Aquí simulamos que es el usuario 2 (un cliente de prueba) si no se envía.
+    cliente_id = data.get('cliente_id', 2) 
+
     if not (negocio_id and servicio_id and fecha_hora_cita):
         return jsonify({'error': 'Faltan datos obligatorios'}), 400
 
@@ -109,15 +76,37 @@ def crear_cita():
     # Si es válida, procedemos con la inserción
     cur = conn.cursor()
     try:
+        # Obtenemos duración para guardarla en la cita (histórico)
+        duracion = conn.execute('SELECT duracion_minutos FROM servicios WHERE id = ?', (servicio_id,)).fetchone()['duracion_minutos']
+
         cur.execute(
-            'INSERT INTO citas (negocio_id, servicio_id, fecha_hora_cita) VALUES (?, ?, ?)',
-            (negocio_id, servicio_id, fecha_hora_cita)
+            'INSERT INTO citas (negocio_id, servicio_id, cliente_id, fecha_hora_cita, duracion_minutos, estado) VALUES (?, ?, ?, ?, ?, ?)',
+            (negocio_id, servicio_id, cliente_id, fecha_hora_cita, duracion, 'confirmada')
         )
         conn.commit()
-        cita_id = cur.lastrowid
-        return jsonify({'id': cita_id, 'mensaje': 'Cita creada y validada correctamente'}), 201
-    except sqlite3.Error as e:
-        conn.rollback()
-        return jsonify({'error': f'Error al insertar en la base de datos: {e}'}), 500
+        new_id = cur.lastrowid
+        return jsonify({'id': new_id, 'message': 'Cita creada exitosamente'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# 3. CONSULTAR DISPONIBILIDAD (POST /disponibilidad) - ¡ESTA ES LA NUEVA!
+@citas_bp.route('/disponibilidad', methods=['POST'])
+def consultar_disponibilidad():
+    data = request.get_json()
+    negocio_id = data.get('negocio_id')
+    fecha_str = data.get('fecha') # Esperamos 'YYYY-MM-DD'
+
+    if not (negocio_id and fecha_str):
+        return jsonify({'error': 'Faltan datos (negocio_id, fecha)'}), 400
+
+    conn = get_db_connection()
+    try:
+        # Usamos tu lógica existente en logic.py
+        horarios_libres = obtener_tramos_disponibles(negocio_id, fecha_str, conn)
+        return jsonify({'horarios': horarios_libres})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     finally:
         conn.close()

@@ -5,16 +5,12 @@ intents:
   - goodbye
   - affirm
   - deny
-  - reservar_cita
-  - elegir_negocio
-  - elegir_servicio
-  - elegir_fecha
+  - reservar_servicio
   - bot_challenge
 
 entities:
   - negocio
   - servicio
-  - fecha
 
 slots:
   negocio:
@@ -31,50 +27,21 @@ slots:
       - type: from_entity
         entity: servicio
 
-  fecha:
-    type: text
-    influence_conversation: true
-    mappings:
-      - type: from_entity
-        entity: fecha
-
-  disponibilidad:
-    type: any
-    influence_conversation: false
-    mappings:
-      - type: custom
-
 responses:
-  # Saludo genérico (si no sabemos dónde estamos)
-  utter_greet:
-    - text: "¡Hola! Soy Sector Mind AI. ¿En qué negocio quieres reservar hoy?"
-
-  # --- NUEVO: Saludo Contextual (Se usa cuando la web envía el nombre) ---
   utter_greet_con_negocio:
-    - text: "¡Hola! En {negocio} estamos deseando atenderle. ¿Qué servicio necesita hoy?"
+    - text: "¡Hola! Bienvenido a {negocio}. ¿Qué servicio te gustaría reservar hoy?"
+
+  utter_confirmar_reserva:
+    - text: "Perfecto. Buscando disponibilidad para **{servicio}** en **{negocio}**. ¿Te parece bien?"
 
   utter_goodbye:
-    - text: "¡Hasta luego! Gracias por usar nuestro servicio."
+    - text: "¡Hasta luego! Gracias por tu visita."
 
   utter_iamabot:
-    - text: "Soy un bot, impulsado por Rasa."
+    - text: "Soy un bot inteligente creado con Rasa."
 
-  utter_ask_negocio:
-    - text: "¿Me puedes decir el nombre del negocio?"
-
-  utter_ask_servicio:
-    - text: "¿Qué servicio te gustaría reservar?"
-
-  utter_ask_fecha:
-    - text: "¿Para qué fecha y hora?"
-
-  utter_ask_confirmacion:
-    - text: "¿Confirmas la reserva?"
-
-actions:
-  - action_validar_entidades
-  - action_mostrar_disponibilidad
-  - action_reservar_cita
+  utter_default:
+    - text: "No he entendido bien. ¿Quieres reservar un servicio?"
 
 session_config:
   session_expiration_time: 60
