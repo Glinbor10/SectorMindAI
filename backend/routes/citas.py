@@ -180,7 +180,7 @@ def cancelar_cita(cita_id):
             return jsonify({'error': 'Cita no encontrada'}), 404
         
         # Cambiar estado a "cancelada" en lugar de eliminar
-        conn.execute('UPDATE citas SET estado = ? WHERE id = ?', ('cancelada', cita_id))
+        conn.execute('UPDATE citas SET estado = ? WHERE id = ?', ('cancelado', cita_id))
         conn.commit()
         
         return jsonify({'message': 'Cita cancelada exitosamente'}), 200

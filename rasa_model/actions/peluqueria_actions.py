@@ -1,7 +1,7 @@
 from typing import Any, Text, Dict, List
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk.events import SlotSet, ActionExecutionRejected
+from rasa_sdk.events import SlotSet
 import requests
 from datetime import datetime, timedelta
 
@@ -23,7 +23,7 @@ class ActionUrgenciaPeluqueria(Action):
         # Validar que el negocio es del tipo correcto
         if tipo_negocio != "peluqueria":
             dispatcher.utter_message(text="⚠️ Este negocio no ofrece servicios de peluquería. ¿En qué puedo ayudarte?")
-            return [ActionExecutionRejected(self.name())]
+            return []
 
         intent = tracker.latest_message.get('intent', {}).get('name')
         
