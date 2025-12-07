@@ -144,19 +144,53 @@ def populate_api():
     except Exception as e:
         print(f"       [FAIL] {e}")
 
-    # --- C. CREAR NEGOCIOS ---
+    # --- C. CREAR NEGOCIOS + SERVICIOS + HORARIOS ---
+    created_negocios = []
     if prop_id:
         print("    🏢 Creando Negocios...")
         for negocio in NEGOCIOS:
-            negocio['propietario_id'] = prop_id
+            payload = {
+                "nombre": negocio["nombre"],
+                "tipo_negocio": negocio["tipo_negocio"],
+                "direccion": negocio["direccion"],
+                "descripcion": negocio.get("descripcion"),
+                "foto_url": negocio.get("foto_url"),
+                "propietario_id": prop_id
+            }
             try:
-                r = requests.post(f"{API_URL}/negocios/", json=negocio)
+                r = requests.post(f"{API_URL}/negocios/", json=payload)
                 if r.status_code == 201:
-                    print(f"       [OK] {negocio['nombre']}")
+                    new_id = r.json().get('id')
+                    created_negocios.append({"id": new_id, **negocio})
+                    print(f"       [OK] {negocio['nombre']} (ID: {new_id})")
                 else:
                     print(f"       [ERROR] {r.text}")
             except Exception as e:
                 print(f"       [FAIL] {e}")
+
+        # Insertar horarios y servicios directamente en la DB (no hay endpoint dedicado)
+        if created_negocios:
+            try:
+                conn = sqlite3.connect(DB_PATH)
+                cur = conn.cursor()
+                for n in created_negocios:
+                    neg_id = n["id"]
+                    # Horarios
+                    for h in n.get("horarios", []):
+                        cur.execute(
+                            "INSERT INTO horarios_negocio (negocio_id, dia_semana, hora_apertura, hora_cierre) VALUES (?, ?, ?, ?)",
+                            (neg_id, h["dia_semana"], h["hora_apertura"], h["hora_cierre"])
+                        )
+                    # Servicios
+                    for s in n.get("servicios", []):
+                        cur.execute(
+                            "INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES (?, ?, ?, ?)",
+                            (neg_id, s["nombre"], s["precio"], s["duracion_minutos"])
+                        )
+                conn.commit()
+                conn.close()
+            except Exception as e:
+                print(f"       [ERROR] Insertando horarios/servicios: {e}")
     else:
         print("    ⚠️ Saltando creación de negocios porque falló el registro del propietario.")
 

@@ -50,6 +50,8 @@ def crear_negocio():
     nombre = data.get('nombre')
     tipo_negocio = data.get('tipo_negocio', 'general')  # Valor por defecto si no se envía
     direccion = data.get('direccion')
+    descripcion = data.get('descripcion')
+    foto_url = data.get('foto_url')
     propietario_id = data.get('propietario_id') # En producción, esto vendría del token de sesión
 
     if not (nombre and direccion and propietario_id):
@@ -59,8 +61,8 @@ def crear_negocio():
     try:
         cur = conn.cursor()
         cur.execute(
-            'INSERT INTO negocios (nombre, tipo_negocio, direccion, propietario_id) VALUES (?, ?, ?, ?)',
-            (nombre, tipo_negocio, direccion, propietario_id)
+            'INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_url, propietario_id) VALUES (?, ?, ?, ?, ?, ?)',
+            (nombre, tipo_negocio, direccion, descripcion, foto_url, propietario_id)
         )
         conn.commit()
         new_id = cur.lastrowid

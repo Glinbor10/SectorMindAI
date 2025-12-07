@@ -65,10 +65,15 @@
                 </div>
             </div>
             <div class="lg:col-span-2 space-y-6">
-                <h3 class="text-xl font-bold text-slate-900 flex items-center">
-                    <i data-lucide="calendar-check" class="mr-2 text-indigo-600"></i>
-                    Mis Próximas Citas
-                </h3>
+                <div class="flex items-center justify-between gap-3 flex-wrap">
+                    <h3 class="text-xl font-bold text-slate-900 flex items-center">
+                        <i data-lucide="calendar-check" class="mr-2 text-indigo-600"></i>
+                        Mis Citas
+                    </h3>
+                    <button id="toggle-history" class="text-sm font-medium px-4 py-2 rounded-lg border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition">
+                        Ver histórico
+                    </button>
+                </div>
                 <div id="citas-container" class="space-y-4">
                     <div class="text-center py-12 bg-white rounded-2xl border border-slate-200 border-dashed">
                         <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full inline-block"></div>
@@ -121,6 +126,7 @@
         let modifySelectedTime = null;
         let modifyAvailableDates = {};
         const citasDataMap = new Map(); // Almacenar datos de citas por ID
+        let showHistory = false;
 
         window.onload = async () => {
             const userStr = localStorage.getItem('sector_mind_user');
@@ -130,6 +136,14 @@
             updateUI(); // Cargar navbar
             await refreshUserData();
             loadMyCitations();
+            
+            const toggleBtn = document.getElementById('toggle-history');
+            toggleBtn.addEventListener('click', () => {
+                showHistory = !showHistory;
+                toggleBtn.textContent = showHistory ? 'Ver próximas' : 'Ver histórico';
+                loadMyCitations();
+            });
+            
             lucide.createIcons();
         };
 
@@ -184,26 +198,29 @@
                 const res = await fetch(`${API_URL}/citas?cliente_id=${currentUser.id}`);
                 const allCitas = await res.json();
                 
-                // Filtrar solo citas confirmadas (no canceladas)
-                let citas = allCitas.filter(cita => cita.estado !== 'cancelada' && cita.estado !== 'cancelado');
-                
-                // Separar citas futuras y pasadas
                 const ahora = new Date();
-                const citasFuturas = citas.filter(cita => new Date(cita.fecha_hora_cita) >= ahora);
-                const citasPasadas = citas.filter(cita => new Date(cita.fecha_hora_cita) < ahora);
-                
-                // Ordenar futuras de más pronto a más tarde (ascendente)
-                citasFuturas.sort((a, b) => new Date(a.fecha_hora_cita) - new Date(b.fecha_hora_cita));
-                
-                // Ordenar pasadas de más reciente a más antigua (descendente)
-                citasPasadas.sort((a, b) => new Date(b.fecha_hora_cita) - new Date(a.fecha_hora_cita));
-                
-                // Combinar: futuras primero, luego pasadas
-                citas = [...citasFuturas, ...citasPasadas];
+                const esCancelada = c => c.estado === 'cancelada' || c.estado === 'cancelado';
+                const esConfirmada = c => c.estado === 'confirmada';
+
+                const futurasConfirmadas = allCitas.filter(c => esConfirmada(c) && new Date(c.fecha_hora_cita) >= ahora);
+                const pasadasConfirmadas = allCitas.filter(c => esConfirmada(c) && new Date(c.fecha_hora_cita) < ahora);
+                const canceladas = allCitas.filter(c => esCancelada(c));
+
+                futurasConfirmadas.sort((a, b) => new Date(a.fecha_hora_cita) - new Date(b.fecha_hora_cita));
+                pasadasConfirmadas.sort((a, b) => new Date(b.fecha_hora_cita) - new Date(a.fecha_hora_cita));
+                canceladas.sort((a, b) => new Date(b.fecha_hora_cita) - new Date(a.fecha_hora_cita));
+
+                let citas = [];
+                if (showHistory) {
+                    citas = [...futurasConfirmadas, ...pasadasConfirmadas, ...canceladas];
+                } else {
+                    citas = futurasConfirmadas;
+                }
                 
                 container.innerHTML = '';
                 if (citas.length === 0) {
-                    container.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl border border-slate-100"><i data-lucide="coffee" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i><p class="text-slate-500">No tienes citas pendientes.</p><a href="/" class="text-indigo-600 font-bold text-sm hover:underline mt-2 block">Reservar ahora</a></div>`;
+                    const mensaje = showHistory ? 'No hay histórico de citas.' : 'No tienes citas pendientes.';
+                    container.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl border border-slate-100"><i data-lucide="coffee" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i><p class="text-slate-500">${mensaje}</p><a href="/" class="text-indigo-600 font-bold text-sm hover:underline mt-2 block">Reservar ahora</a></div>`;
                 } else {
                     citas.forEach(cita => {
                         // Guardar datos de la cita en el Map
@@ -218,10 +235,11 @@
                         });
                         
                         const dateObj = new Date(cita.fecha_hora_cita);
+                        const isPast = dateObj < ahora;
                         const fechaStr = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
                         const horaStr = dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-                        const estadoColor = cita.estado === 'confirmada' ? 'green' : cita.estado === 'cancelada' ? 'red' : 'yellow';
-                        const estadoTexto = cita.estado === 'confirmada' ? 'Confirmada' : cita.estado === 'cancelada' ? 'Cancelada' : 'Pendiente';
+                        const estadoColor = cita.estado === 'confirmada' ? (isPast ? 'slate' : 'green') : (cita.estado === 'cancelada' || cita.estado === 'cancelado') ? 'red' : 'yellow';
+                        const estadoTexto = cita.estado === 'confirmada' ? (isPast ? 'Finalizada' : 'Confirmada') : (cita.estado === 'cancelada' || cita.estado === 'cancelado') ? 'Cancelada' : 'Pendiente';
                         
                         const card = document.createElement('div');
                         card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition";
@@ -246,7 +264,7 @@
                                     <span class="inline-block px-2 py-1 bg-${estadoColor}-100 text-${estadoColor}-700 text-xs rounded-md font-bold uppercase mt-1">${estadoTexto}</span>
                                 </div>
                             </div>
-                            ${cita.estado !== 'cancelada' ? `
+                            ${(cita.estado !== 'cancelada' && cita.estado !== 'cancelado' && !isPast) ? `
                             <div class="flex gap-2 mt-4 pt-4 border-t border-slate-100">
                                 <button data-cita-id="${cita.id}" class="btn-modificar flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
                                     <i data-lucide="edit" class="w-4 h-4"></i> Modificar
