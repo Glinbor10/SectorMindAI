@@ -3,6 +3,7 @@ import os
 import requests
 import json
 import shutil
+from datetime import datetime, timedelta
 
 # --- CONFIGURACIÓN ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,11 +23,11 @@ PROPIETARIO_DATA = {
     "foto_perfil_url": "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80"
 }
 
-# 2. Cliente (Email válido, Password simple: 'u')
+# 2. Cliente (Email válido, Password simple: 'c')
 CLIENTE_DATA = {
     "nombre": "Ursula Usuario",
     "email": "cliente@sectormind.com",      # Email válido
-    "password": "u",                        # Contraseña 'u'
+    "password": "c",                        # Contraseña 'c'
     "rol": "cliente",
     "foto_perfil_url": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80"
 }
@@ -159,10 +160,74 @@ def populate_api():
     else:
         print("    ⚠️ Saltando creación de negocios porque falló el registro del propietario.")
 
+def add_past_citas():
+    """Añade citas pasadas completadas al cliente Úrsula."""
+    print(f"\n4️⃣  AÑADIENDO CITAS PASADAS...")
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Obtener ID de Úrsula
+        cursor.execute("SELECT id FROM usuarios WHERE nombre = 'Ursula Usuario'")
+        result = cursor.fetchone()
+        
+        if not result:
+            print("    ⚠️ Usuario 'Ursula Usuario' no encontrado")
+            conn.close()
+            return
+        
+        ursula_id = result[0]
+        
+        # Obtener un negocio y servicios
+        cursor.execute("SELECT id FROM negocios LIMIT 1")
+        negocio_result = cursor.fetchone()
+        
+        if not negocio_result:
+            print("    ⚠️ No hay negocios disponibles")
+            conn.close()
+            return
+        
+        negocio_id = negocio_result[0]
+        
+        cursor.execute("SELECT id, duracion_minutos FROM servicios LIMIT 2")
+        servicios = cursor.fetchall()
+        
+        if len(servicios) < 2:
+            print("    ⚠️ Se necesitan al menos 2 servicios disponibles")
+            conn.close()
+            return
+        
+        # Crear dos citas pasadas (hace 5 y 3 días)
+        fecha_pasada_1 = (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d 10:00:00')
+        fecha_pasada_2 = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d 14:30:00')
+        
+        servicio_1_id, duracion_1 = servicios[0]
+        servicio_2_id, duracion_2 = servicios[1]
+        
+        cursor.execute(
+            "INSERT INTO citas (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion_minutos, estado) VALUES (?, ?, ?, ?, ?, ?)",
+            (negocio_id, ursula_id, servicio_1_id, fecha_pasada_1, duracion_1, 'confirmada')
+        )
+        
+        cursor.execute(
+            "INSERT INTO citas (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion_minutos, estado) VALUES (?, ?, ?, ?, ?, ?)",
+            (negocio_id, ursula_id, servicio_2_id, fecha_pasada_2, duracion_2, 'confirmada')
+        )
+        
+        conn.commit()
+        print(f"    ✅ 2 citas pasadas añadidas a Úrsula:")
+        print(f"       - Cita 1: {fecha_pasada_1}")
+        print(f"       - Cita 2: {fecha_pasada_2}")
+        
+        conn.close()
+    except Exception as e:
+        print(f"    ❌ ERROR: {e}")
+
 def main():
     clean_uploads()
     if init_db():
         populate_api()
+        add_past_citas()
         print("\n✨ ¡SISTEMA RESTAURADO COMPLETAMENTE! ✨")
         print(f"   -> Login Propietario: {PROPIETARIO_DATA['email']} / {PROPIETARIO_DATA['password']}")
         print(f"   -> Login Cliente:     {CLIENTE_DATA['email']} / {CLIENTE_DATA['password']}")

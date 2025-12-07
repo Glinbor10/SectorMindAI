@@ -98,7 +98,7 @@ async function waitForRasaToBeReady(nombreNegocio) {
             }
         } catch (error) {
             attempts++;
-            statusText.innerText = `Servidor cargando... Intento ${attempts} (Esperando a Rasa)`;
+            statusText.innerText = "Servidor cargando...";
             console.log("Esperando a Rasa Server en localhost:5005...");
         }
 
@@ -164,8 +164,19 @@ function renderServices(servicios) {
     if (!servicios || servicios.length === 0) { list.innerHTML = '<p class=\"text-slate-400 italic\">No hay servicios.</p>'; return; }
     servicios.forEach(s => {
         const div = document.createElement('div');
-        div.className = "flex justify-between items-center p-4 border border-slate-100 rounded-2xl hover:border-indigo-100 hover:bg-indigo-50/30 transition";
-        div.innerHTML = `<div><h4 class=\"font-bold text-slate-800\">${s.nombre}</h4><p class=\"text-xs text-slate-500 flex items-center gap-1\"><i data-lucide=\"clock\" class=\"w-3 h-3\"></i> ${s.duracion_minutos} min</p></div><span class=\"font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg\">${s.precio}€</span>`;
+        div.className = "flex justify-between items-center p-4 border-2 border-slate-100 rounded-2xl hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md transition cursor-pointer group";
+        div.onclick = () => openBookingModal(s);
+        div.innerHTML = `
+            <div>
+                <h4 class="font-bold text-slate-800 group-hover:text-indigo-700 transition">${s.nombre}</h4>
+                <p class="text-xs text-slate-500 flex items-center gap-1">
+                    <i data-lucide="clock" class="w-3 h-3"></i> ${s.duracion_minutos} min
+                </p>
+            </div>
+            <div class="text-right">
+                <span class="block font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg group-hover:bg-indigo-100 transition">${s.precio}€</span>
+            </div>
+        `;
         list.appendChild(div);
     });
     lucide.createIcons();
@@ -333,4 +344,305 @@ function speakText(text) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'es-ES';
     window.speechSynthesis.speak(utterance);
+}
+
+// ============================================
+// RESERVA MANUAL DE CITAS (MODAL)
+// ============================================
+
+let selectedService = null;
+let selectedDate = null;
+let selectedTime = null;
+let availableDates = {};
+
+async function openBookingModal(servicio) {
+    if (!currentUser) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Inicia sesión',
+            text: 'Debes iniciar sesión para reservar una cita',
+            confirmButtonColor: '#4f46e5'
+        });
+        return;
+    }
+
+    selectedService = servicio;
+    selectedDate = null;
+    selectedTime = null;
+    availableDates = {};
+
+    const modal = document.getElementById('modal-booking');
+    const serviceInfo = document.getElementById('booking-service-info');
+    
+    serviceInfo.querySelector('span').textContent = `${servicio.nombre} - ${servicio.precio}€ (${servicio.duracion_minutos} min)`;
+    
+    // Ocultar sección de horarios
+    document.getElementById('booking-time-section').classList.add('hidden');
+    document.getElementById('booking-time-slots').innerHTML = '';
+    
+    // Deshabilitar botón de confirmar
+    const confirmBtn = document.getElementById('booking-confirm-btn');
+    confirmBtn.disabled = true;
+    confirmBtn.className = "w-full bg-slate-300 text-slate-500 py-4 rounded-xl font-bold cursor-not-allowed transition shadow-lg flex items-center justify-center gap-2";
+    confirmBtn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i> Selecciona fecha y hora';
+    
+    modal.classList.remove('hidden');
+    
+    // Cargar calendario inteligente
+    await loadSmartCalendar();
+    
+    lucide.createIcons();
+}
+
+async function loadSmartCalendar() {
+    const calendarContainer = document.getElementById('booking-calendar');
+    calendarContainer.innerHTML = '<div class="col-span-7 text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><p class="text-slate-500 mt-3">Cargando días disponibles...</p></div>';
+    
+    const today = new Date();
+    const daysToShow = 21; // Mostrar próximas 3 semanas
+    
+    // Obtener disponibilidad para los próximos días
+    const disponibilidadPromises = [];
+    for (let i = 0; i < daysToShow; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        const dateStr = date.toISOString().split('T')[0];
+        disponibilidadPromises.push(
+            fetch(`${API_URL}/disponibilidad`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    negocio_id: businessData.id,
+                    servicio_id: selectedService.id,
+                    fecha: dateStr
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const horarios = data.disponibles || [];
+                    return { date: dateStr, hasSlots: horarios.length > 0, horarios };
+                })
+                .catch(() => ({ date: dateStr, hasSlots: false, horarios: [] }))
+        );
+    }
+    
+    const results = await Promise.all(disponibilidadPromises);
+    
+    // Guardar datos de disponibilidad
+    results.forEach(result => {
+        if (result.hasSlots) {
+            availableDates[result.date] = result.horarios;
+        }
+    });
+    
+    // Limpiar y crear estructura del calendario
+    calendarContainer.innerHTML = '';
+    
+    // Headers de días
+    const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    dayHeaders.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'text-center text-xs font-bold text-slate-400 py-2';
+        header.textContent = day;
+        calendarContainer.appendChild(header);
+    });
+    
+    // Añadir espacios vacíos para alinear el primer día
+    const firstDate = new Date(today);
+    const firstDayOfWeek = firstDate.getDay();
+    for (let i = 0; i < firstDayOfWeek; i++) {
+        const emptyCell = document.createElement('div');
+        calendarContainer.appendChild(emptyCell);
+    }
+    
+    // Renderizar días
+    results.forEach(result => {
+        const date = new Date(result.date);
+        const dayButton = document.createElement('button');
+        dayButton.type = 'button';
+        dayButton.className = result.hasSlots 
+            ? 'p-3 rounded-lg border-2 border-green-200 bg-green-50 hover:border-green-500 hover:bg-green-100 transition text-sm font-medium text-green-700 hover:text-green-900'
+            : 'p-3 rounded-lg border border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed';
+        
+        const dayNum = date.getDate();
+        const monthShort = date.toLocaleDateString('es-ES', { month: 'short' });
+        
+        dayButton.innerHTML = `<div class="text-lg font-bold">${dayNum}</div><div class="text-xs">${monthShort}</div>`;
+        
+        if (result.hasSlots) {
+            dayButton.onclick = () => selectDate(result.date, dayButton);
+        } else {
+            dayButton.disabled = true;
+        }
+        
+        calendarContainer.appendChild(dayButton);
+    });
+}
+
+function closeBookingModal() {
+    document.getElementById('modal-booking').classList.add('hidden');
+    selectedService = null;
+    selectedDate = null;
+    selectedTime = null;
+}
+
+function selectDate(dateStr, buttonElement) {
+    // Remover selección previa
+    document.querySelectorAll('#booking-calendar button').forEach(btn => {
+        if (btn.className.includes('green')) {
+            btn.className = 'p-3 rounded-lg border-2 border-green-200 bg-green-50 hover:border-green-500 hover:bg-green-100 transition text-sm font-medium text-green-700 hover:text-green-900';
+        }
+    });
+    
+    // Marcar como seleccionado
+    buttonElement.className = 'p-3 rounded-lg border-2 border-indigo-600 bg-indigo-600 text-white transition text-sm font-bold shadow-md';
+    
+    selectedDate = dateStr;
+    selectedTime = null;
+    
+    // Mostrar horarios disponibles
+    const timeSlotsContainer = document.getElementById('booking-time-slots');
+    const timeSection = document.getElementById('booking-time-section');
+    
+    timeSection.classList.remove('hidden');
+    timeSlotsContainer.innerHTML = '';
+    
+    const horarios = availableDates[dateStr] || [];
+    
+    if (horarios.length === 0) {
+        timeSlotsContainer.innerHTML = '<div class="col-span-full text-center py-4 text-slate-400">No hay horarios disponibles</div>';
+        updateBookingButton();
+        return;
+    }
+    
+    horarios.forEach(hora => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = "p-3 border-2 border-slate-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition text-sm font-medium text-slate-700 hover:text-indigo-700";
+        // Extraer solo la hora (HH:MM) del formato completo
+        const horaFormateada = new Date(hora).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        button.textContent = horaFormateada;
+        button.onclick = () => selectTimeSlot(hora, button);
+        timeSlotsContainer.appendChild(button);
+    });
+    
+    updateBookingButton();
+    lucide.createIcons();
+}
+
+function selectTimeSlot(hora, buttonElement) {
+    // Remover selección previa
+    document.querySelectorAll('#booking-time-slots button').forEach(btn => {
+        btn.className = "p-3 border-2 border-slate-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition text-sm font-medium text-slate-700 hover:text-indigo-700";
+    });
+    
+    // Marcar como seleccionado
+    buttonElement.className = "p-3 border-2 border-indigo-600 bg-indigo-600 rounded-lg text-white font-bold text-sm shadow-md";
+    
+    selectedTime = hora;
+    updateBookingButton();
+}
+
+function updateBookingButton() {
+    const confirmBtn = document.getElementById('booking-confirm-btn');
+    
+    if (selectedDate && selectedTime) {
+        confirmBtn.disabled = false;
+        confirmBtn.className = "w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2";
+        confirmBtn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i> Confirmar Reserva';
+        lucide.createIcons();
+    } else {
+        confirmBtn.disabled = true;
+        confirmBtn.className = "w-full bg-slate-300 text-slate-500 py-4 rounded-xl font-bold cursor-not-allowed transition shadow-lg flex items-center justify-center gap-2";
+        confirmBtn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i> Selecciona fecha y hora';
+        lucide.createIcons();
+    }
+}
+
+async function confirmBooking() {
+    if (!selectedService || !selectedDate || !selectedTime) {
+        console.error('Faltan datos:', { selectedService, selectedDate, selectedTime });
+        return;
+    }
+    
+    // selectedTime ya viene como 'YYYY-MM-DD HH:MM:SS' desde el backend
+    const fecha_hora_cita = selectedTime;
+    
+    console.log('Enviando reserva:', {
+        cliente_id: currentUser.id,
+        negocio_id: businessData.id,
+        servicio_id: selectedService.id,
+        servicio_nombre: selectedService.nombre,
+        fecha_hora_cita: fecha_hora_cita
+    });
+    
+    try {
+        const response = await fetch(`${API_URL}/citas`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cliente_id: currentUser.id,
+                negocio_id: businessData.id,
+                servicio_id: selectedService.id,
+                fecha_hora_cita: fecha_hora_cita,
+                estado: 'confirmada'
+            })
+        });
+        
+        if (response.ok) {
+            // Guardar datos antes de cerrar el modal
+            const servicioInfo = {
+                nombre: selectedService.nombre,
+                precio: selectedService.precio,
+                duracion_minutos: selectedService.duracion_minutos
+            };
+            
+            closeBookingModal();
+            
+            const dateObj = new Date(fecha_hora_cita);
+            const fechaLegible = dateObj.toLocaleDateString('es-ES', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            const horaLegible = dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            
+            Swal.fire({
+                icon: 'success',
+                title: '¡Cita Reservada!',
+                html: `
+                    <div class="text-center">
+                        <p class="text-lg mb-4">Tu cita ha sido confirmada</p>
+                        <div class="bg-indigo-50 p-6 rounded-xl">
+                            <p class="text-sm text-indigo-600 font-bold uppercase mb-2">${servicioInfo.nombre}</p>
+                            <p class="text-2xl font-bold text-indigo-900 mb-1">${fechaLegible}</p>
+                            <p class="text-xl text-indigo-700">a las ${horaLegible}</p>
+                            <div class="mt-4 pt-4 border-t border-indigo-200">
+                                <p class="text-indigo-600"><span class="font-bold">${servicioInfo.precio}€</span> • ${servicioInfo.duracion_minutos} minutos</p>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                confirmButtonText: '¡Perfecto!',
+                confirmButtonColor: '#4f46e5'
+            });
+        } else {
+            const error = await response.json();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al reservar',
+                text: error.error || 'No se pudo completar la reserva',
+                confirmButtonColor: '#4f46e5'
+            });
+        }
+    } catch (error) {
+        console.error('Error completo:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de conexión',
+            text: `No se pudo conectar con el servidor: ${error.message}`,
+            confirmButtonColor: '#4f46e5'
+        });
+    }
 }

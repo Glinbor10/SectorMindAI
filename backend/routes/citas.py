@@ -19,6 +19,7 @@ def obtener_citas():
     query = '''
         SELECT 
             c.id, c.fecha_hora_cita, c.estado, c.duracion_minutos,
+            c.negocio_id, c.servicio_id,
             n.nombre as negocio_nombre, 
             s.nombre as servicio_nombre, 
             s.precio,
@@ -70,6 +71,8 @@ def crear_cita():
     es_valida, mensaje = verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita, conn)
     
     if not es_valida:
+        print(f"❌ ERROR AL CREAR CITA: {mensaje}")
+        print(f"   Datos recibidos: negocio_id={negocio_id}, servicio_id={servicio_id}, fecha_hora_cita={fecha_hora_cita}")
         conn.close()
         return jsonify({'error': f'No se puede crear la cita: {mensaje}'}), 409 # 409 Conflict
 
@@ -81,7 +84,7 @@ def crear_cita():
 
         cur.execute(
             'INSERT INTO citas (negocio_id, servicio_id, cliente_id, fecha_hora_cita, duracion_minutos, estado) VALUES (?, ?, ?, ?, ?, ?)',
-            (negocio_id, servicio_id, cliente_id, fecha_hora_cita, duracion, 'confirmado')
+            (negocio_id, servicio_id, cliente_id, fecha_hora_cita, duracion, 'confirmada')
         )
         conn.commit()
         new_id = cur.lastrowid
@@ -95,11 +98,13 @@ def crear_cita():
 @citas_bp.route('/disponibilidad', methods=['POST'])
 def consultar_disponibilidad():
     data = request.get_json()
+    print(f"📅 Datos recibidos en /disponibilidad: {data}")
     negocio_id = data.get('negocio_id')
     servicio_id = data.get('servicio_id')  # Ahora requerimos servicio_id
     fecha_str = data.get('fecha') # Esperamos 'YYYY-MM-DD'
 
     if not (negocio_id and servicio_id and fecha_str):
+        print(f"❌ Faltan datos: negocio_id={negocio_id}, servicio_id={servicio_id}, fecha={fecha_str}")
         return jsonify({'error': 'Faltan datos (negocio_id, servicio_id, fecha)'}), 400
 
     conn = get_db_connection()
@@ -116,7 +121,54 @@ def consultar_disponibilidad():
     finally:
         conn.close()
 
-# 4. ELIMINAR/CANCELAR CITA (DELETE /citas/<id>)
+# 4. MODIFICAR CITA (PUT /citas/<id>)
+@citas_bp.route('/citas/<int:cita_id>', methods=['PUT'])
+def modificar_cita(cita_id):
+    data = request.get_json()
+    servicio_id = data.get('servicio_id')
+    fecha_hora_cita = data.get('fecha_hora_cita')
+    
+    if not (servicio_id and fecha_hora_cita):
+        return jsonify({'error': 'Faltan datos obligatorios'}), 400
+    
+    conn = get_db_connection()
+    
+    try:
+        # Verificar que la cita existe
+        cita = conn.execute('SELECT negocio_id FROM citas WHERE id = ?', (cita_id,)).fetchone()
+        
+        if not cita:
+            return jsonify({'error': 'Cita no encontrada'}), 404
+        
+        negocio_id = cita['negocio_id']
+        
+        # VALIDACIÓN DE DISPONIBILIDAD
+        es_valida, mensaje = verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita, conn)
+        
+        if not es_valida:
+            print(f"❌ ERROR AL MODIFICAR CITA: {mensaje}")
+            print(f"   Datos recibidos: cita_id={cita_id}, servicio_id={servicio_id}, fecha_hora_cita={fecha_hora_cita}")
+            conn.close()
+            return jsonify({'error': f'No se puede modificar la cita: {mensaje}'}), 409
+        
+        # Obtener duración del servicio
+        duracion = conn.execute('SELECT duracion_minutos FROM servicios WHERE id = ?', (servicio_id,)).fetchone()['duracion_minutos']
+        
+        # Actualizar la cita
+        conn.execute(
+            'UPDATE citas SET servicio_id = ?, fecha_hora_cita = ?, duracion_minutos = ? WHERE id = ?',
+            (servicio_id, fecha_hora_cita, duracion, cita_id)
+        )
+        conn.commit()
+        
+        return jsonify({'message': 'Cita modificada exitosamente'}), 200
+    except Exception as e:
+        print(f"❌ ERROR: {e}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# 5. ELIMINAR/CANCELAR CITA (DELETE /citas/<id>)
 @citas_bp.route('/citas/<int:cita_id>', methods=['DELETE'])
 def cancelar_cita(cita_id):
     conn = get_db_connection()
@@ -127,8 +179,8 @@ def cancelar_cita(cita_id):
         if not cita:
             return jsonify({'error': 'Cita no encontrada'}), 404
         
-        # Cambiar estado a "cancelado" en lugar de eliminar
-        conn.execute('UPDATE citas SET estado = ? WHERE id = ?', ('cancelado', cita_id))
+        # Cambiar estado a "cancelada" en lugar de eliminar
+        conn.execute('UPDATE citas SET estado = ? WHERE id = ?', ('cancelada', cita_id))
         conn.commit()
         
         return jsonify({'message': 'Cita cancelada exitosamente'}), 200

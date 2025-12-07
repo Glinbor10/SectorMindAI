@@ -64,7 +64,7 @@ def verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita_str, conn):
 
     # 3. Verificar solapamiento con otras citas
     citas_existentes = conn.execute(
-        'SELECT c.fecha_hora_cita, s.duracion_minutos FROM citas c JOIN servicios s ON c.servicio_id = s.id WHERE c.negocio_id = ? AND date(c.fecha_hora_cita) = ? AND c.estado = "confirmado"',
+        'SELECT c.fecha_hora_cita, s.duracion_minutos FROM citas c JOIN servicios s ON c.servicio_id = s.id WHERE c.negocio_id = ? AND date(c.fecha_hora_cita) = ? AND c.estado = "confirmada"',
         (negocio_id, fecha_dia)
     ).fetchall()
 
@@ -106,7 +106,7 @@ def obtener_tramos_disponibles(negocio_id, servicio_id, fecha_solicitada, conn):
 
     # 2. Obtener citas existentes
     citas_existentes = conn.execute(
-        'SELECT c.fecha_hora_cita, s.duracion_minutos FROM citas c JOIN servicios s ON c.servicio_id = s.id WHERE c.negocio_id = ? AND date(c.fecha_hora_cita) = ? AND c.estado = "confirmado"',
+        'SELECT c.fecha_hora_cita, s.duracion_minutos FROM citas c JOIN servicios s ON c.servicio_id = s.id WHERE c.negocio_id = ? AND date(c.fecha_hora_cita) = ? AND c.estado = "confirmada"',
         (negocio_id, fecha_solicitada)
     ).fetchall()
 

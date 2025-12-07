@@ -1,7 +1,7 @@
 from typing import Any, Text, Dict, List
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk.events import SlotSet
+from rasa_sdk.events import SlotSet, ActionExecutionRejected
 import requests
 from datetime import datetime, timedelta
 
@@ -27,7 +27,7 @@ class ActionUrgenciaDental(Action):
         # Validar que el negocio es del tipo correcto
         if tipo_negocio != "dentista":
             dispatcher.utter_message(text="⚠️ Este negocio no ofrece servicios dentales. ¿En qué puedo ayudarte?")
-            return []
+            return [ActionExecutionRejected(self.name())]
 
         if not negocio_id or not cliente_id:
             dispatcher.utter_message(text="⚠️ Necesito que inicies sesión para ayudarte con urgencias.")
@@ -141,10 +141,43 @@ class ActionBuscarUrgenciaProxima(Action):
                 mensaje += "\n"
 
             if not huecos_hoy and not huecos_manana:
+                # Buscar en los próximos 7 días
                 mensaje = "😔 No hay huecos disponibles hoy ni mañana.\n\n"
-                mensaje += "Déjame buscar en los próximos días. ¿Qué día te vendría bien?"
+                mensaje += "📆 **Próximos días disponibles:**\n\n"
+                
+                dias_encontrados = 0
+                for i in range(2, 8):  # Días 2-7 (después de mañana)
+                    if dias_encontrados >= 3:  # Mostrar máximo 3 días
+                        break
+                    
+                    fecha_futura = (datetime.now() + timedelta(days=i)).strftime('%Y-%m-%d')
+                    response_futura = requests.get(
+                        f"{API_URL}/negocios/{negocio_id}/disponibilidad",
+                        params={"fecha": fecha_futura},
+                        timeout=5
+                    )
+                    
+                    if response_futura.status_code == 200:
+                        huecos_futuros = response_futura.json()
+                        if huecos_futuros:
+                            # Formatear fecha legible
+                            fecha_obj = datetime.strptime(fecha_futura, '%Y-%m-%d')
+                            dia_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'][fecha_obj.weekday()]
+                            fecha_legible = f"{dia_semana} {fecha_obj.day}/{fecha_obj.month}"
+                            
+                            mensaje += f"🟢 **{fecha_legible}:**\n"
+                            for hueco in huecos_futuros[:3]:
+                                mensaje += f"   • {hueco}\n"
+                            mensaje += "\n"
+                            dias_encontrados += 1
+                
+                if dias_encontrados == 0:
+                    mensaje += "No hay huecos disponibles en los próximos 7 días. 😞\n"
+                    mensaje += "¿Quieres que te avise cuando haya disponibilidad?"
+                else:
+                    mensaje += "Dime cuál te viene mejor y te lo reservo."
             else:
-                mensaje += "Dime cuál te viene mejor y te lo reservo. 🦷"
+                mensaje += "Dime cuál te viene mejor y te lo reservo."
 
             dispatcher.utter_message(text=mensaje)
             return []
