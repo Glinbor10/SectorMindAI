@@ -4,6 +4,88 @@ Todas las modificaciones notables en el proyecto Sector Mind AI se documentarán
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere al versionado semántico.
 
+## [v0.4.0] - 2025-12-20 (Profesionalización con Docker y PostgreSQL)
+
+### ✨ Añadido (Added)
+
+**Orquestación Profesional:**
+- **Docker Compose:** Sistema de 4 microservicios completamente containerizado
+  - `backend`: Flask API en contenedor con volumen de rasa_model
+  - `postgres`: PostgreSQL 15-Alpine con persistencia garantizada
+  - `rasa`: Motor de diálogo Rasa 3.6.13
+  - `rasa-actions`: Servidor de acciones personalizadas
+- **Red Docker Interna:** Comunicación segura entre servicios en red privada `sector_mind_net`
+- **Volúmenes Persistentes:** 
+  - Base de datos PostgreSQL (volumen named)
+  - Modelo Rasa (volumen bind mount)
+
+**Infraestructura y DevOps:**
+- **Action Buttons en VS Code:** Interfaz gráfica para operaciones comunes
+  - 🚀 `INICIAR TODO SECTOR MIND` - Levanta stack completo
+  - 🛑 `STOP DOCKER` - Detiene e elimina contenedores
+  - 🧪 `TESTS` - Ejecuta suite unificada de tests
+- **Scripts PowerShell Profesionales:**
+  - `start_docker.ps1` - Manejo robusto de errores, esperas inteligentes
+  - `stop_docker.ps1` - Limpieza completa de contenedores
+  - `run_tests.ps1` - Ejecución flexible con flags (-BackendOnly, -RasaOnly, -Coverage)
+- **CI/CD Ready:** Dockerfile optimizado con multi-stage build, setuptools/wheel preinstalados
+
+**Base de Datos:**
+- **Migración PostgreSQL 100%:** Sustitución completa de SQLite
+  - Transacciones ACID garantizadas
+  - RealDictCursor para resultados dict-like
+  - Preparación para escalabilidad horizontal
+- **Schema Mejorado:** 7 tablas relacionales normalizadas con constraints integrity
+- **manage_db.py Refactorizado:** Adaptado exclusivamente a PostgreSQL
+
+**Testing e Integración:**
+- **Suite Unificada:** 104 tests (75 backend + 29 Rasa) con ejecución centralizada
+  - Backend: 100% cobertura en rutas críticas
+  - Rasa: Tests parametrizados con mocking de APIs
+  - Fechas dinámicas en tests para evitar fallos temporales
+- **Ejecución desde Docker:** Tests se ejecutan dentro del contenedor backend
+- **Resumen de Tests Mejorado:** Salida con conteo de tests pasados vs. exit codes
+
+**Frontend:**
+- **Fotos de Negocios Reales:** URLs actualizadas a Unsplash/Pexels con verificación manual
+- **Credenciales Simplificadas:** Contraseñas cortas (p, c) para pruebas rápidas
+
+### 🔧 Cambiado (Changed)
+
+**Backend:**
+- **Eliminación Total de SQLite:** Cero imports de sqlite3 en codebase
+  - `db.py` - Usa psycopg2 exclusivamente
+  - `db_utils.py` - Adaptación de queries de '?' a '%s'
+  - Todas las rutas - Usan PostgreSQL con RETURNING id
+
+**Tests:**
+- **Fixtures Dinámicos:** `logic_test_data` ahora genera cliente_id en runtime
+- **Gestión de Errores HTTP:** Status codes corregidos (409 para conflictos de horario)
+- **Fecha Dinámica Rasa:** `test_cancelar_cita_lista_citas` usa datetime.now() + timedelta
+
+**Dependencias:**
+- **requirements.txt Pinned:** Versiones exactas para reproducibilidad
+  - Flask==3.0.0
+  - psycopg2-binary==2.9.9
+  - rasa==3.6.13
+  - pytest==7.4.3
+
+**Documentación:**
+- **README Restructurado:** Secciones de Arquitectura, Uso Rápido, Instalación
+- **Arquitectura de Microservicios:** Diagrama ASCII y tabla de servicios
+- **Guía de Action Buttons:** Instrucciones paso a paso
+
+### 🐛 Corregido (Fixed)
+
+- **Bug: Photo URLs Corruptas** - Actualización a URLs válidas de Unsplash/Pexels
+- **Bug: Tests de Rasa Fallando por Fechas** - Implementación de cálculo dinámico
+- **Bug: Rasa Tests No Ejecutables** - Montaje de volumen rasa_model en backend container
+- **Bug: Dependencias de Compilación** - Adición de build-essential en Dockerfile
+- **Bug: setuptools/wheel Incompatibles** - Upgrade automático en Dockerfile
+- **Bug: Fixtures Hardcodeados** - Cliente_id ahora dinámico en conftest.py
+
+---
+
 ## [v0.3.0] - 2025-12-06 (Calidad y Testing Comprehensivo)
 
 ### 🧪 Testing & Calidad (Added)

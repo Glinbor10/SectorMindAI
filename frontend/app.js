@@ -1,5 +1,12 @@
-const API_URL = 'http://localhost:5000';
-const RASA_URL = 'http://localhost:5005/webhooks/rest/webhook';
+// Detección automática de entorno Docker vs Local
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_URL = isLocalhost ? 'http://localhost:5000' : `http://${window.location.hostname}:5000`;
+const RASA_URL = isLocalhost ? 'http://localhost:5005/webhooks/rest/webhook' : `http://${window.location.hostname}:5005/webhooks/rest/webhook`;
+
+console.log(`🌐 Entorno: ${isLocalhost ? 'LOCAL' : 'DOCKER/PRODUCCIÓN'}`);
+console.log(`📡 API_URL: ${API_URL}`);
+console.log(`🤖 RASA_URL: ${RASA_URL}`);
+
 let currentUser = null;
 let businessData = null;
 let recognition = null;

@@ -16,7 +16,7 @@ def allowed_file(filename):
 @usuarios_bp.route('/<int:user_id>', methods=['GET'])
 def obtener_usuario(user_id):
     conn = get_db_connection()
-    user = conn.execute('SELECT id, nombre, email, rol, foto_perfil_url FROM usuarios WHERE id = ?', (user_id,)).fetchone()
+    user = conn.execute('SELECT id, nombre, email, rol, foto_perfil_url FROM usuarios WHERE id = %s', (user_id,)).fetchone()
     conn.close()
     if user is None:
         return jsonify({'error': 'Usuario no encontrado'}), 404
@@ -38,7 +38,7 @@ def actualizar_usuario(user_id):
 
         # 1. Actualizar Nombre si viene
         if nombre:
-            updates.append('nombre = ?')
+            updates.append('nombre = %s')
             params.append(nombre)
 
         # 2. Procesar Archivo si viene
@@ -68,7 +68,7 @@ def actualizar_usuario(user_id):
                 # Como tu app.py sirve archivos estáticos desde frontend, la url es /uploads/filename
                 foto_url = f"/uploads/{filename}"
                 
-                updates.append('foto_perfil_url = ?')
+                updates.append('foto_perfil_url = %s')
                 params.append(foto_url)
             else:
                 return jsonify({'error': 'Tipo de archivo no permitido (solo jpg, png)'}), 400
@@ -78,7 +78,7 @@ def actualizar_usuario(user_id):
 
         params.append(user_id)
         
-        query = f"UPDATE usuarios SET {', '.join(updates)} WHERE id = ?"
+        query = f"UPDATE usuarios SET {', '.join(updates)} WHERE id = %s"
         result = conn.execute(query, params)
         conn.commit()
         
@@ -87,7 +87,7 @@ def actualizar_usuario(user_id):
             return jsonify({'error': 'Usuario no encontrado'}), 404
 
         # Devolver usuario actualizado
-        updated_user = conn.execute('SELECT id, nombre, email, rol, foto_perfil_url FROM usuarios WHERE id = ?', (user_id,)).fetchone()
+        updated_user = conn.execute('SELECT id, nombre, email, rol, foto_perfil_url FROM usuarios WHERE id = %s', (user_id,)).fetchone()
         return jsonify(dict(updated_user)), 200
 
     except Exception as e:

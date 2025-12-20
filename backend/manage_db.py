@@ -1,77 +1,87 @@
-import sqlite3
+# backend/manage_db.py
+# filepath: backend/manage_db.py
+"""
+Script maestro para gestión de base de datos PostgreSQL en Docker.
+Solo actúa sobre PostgreSQL. SQLite ha sido eliminado.
+"""
+import psycopg2
+import psycopg2.extras
 import os
 import requests
-import json
 import shutil
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- CONFIGURACIÓN ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, '..', 'database', 'tfg_data.db')
-SCHEMA_PATH = os.path.join(BASE_DIR, '..', 'database', 'schema.sql')
 UPLOADS_PATH = os.path.join(BASE_DIR, '..', 'frontend', 'uploads')
-API_URL = "http://127.0.0.1:5000"
 
-# --- DATOS DE PRUEBA CORREGIDOS ---
+# PostgreSQL EXCLUSIVAMENTE
+DATABASE_URL = os.getenv('DATABASE_URL')
+if not DATABASE_URL:
+    raise ValueError("❌ ERROR: DATABASE_URL no definida. Revisa .env")
 
-# 1. Propietario (Email válido, Password simple: 'p')
+API_URL = os.getenv('API_URL_INTERNAL', 'http://127.0.0.1:5000')
+
+print("🐘 GESTOR DE BD: PostgreSQL únicamente")
+
+# --- DATOS DE PRUEBA ---
 PROPIETARIO_DATA = {
     "nombre": "Pedro Propietario",
-    "email": "propietario@sectormind.com",  # Email válido
-    "password": "p",                        # Contraseña 'p'
+    "email": "propietario@sectormind.com",
+    "password": "p",
     "rol": "propietario",
     "foto_perfil_url": "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80"
 }
 
-# 2. Cliente (Email válido, Password simple: 'c')
 CLIENTE_DATA = {
     "nombre": "Ursula Usuario",
-    "email": "cliente@sectormind.com",      # Email válido
-    "password": "c",                        # Contraseña 'c'
+    "email": "cliente@sectormind.com",
+    "password": "c",
     "rol": "cliente",
     "foto_perfil_url": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80"
 }
 
-# 3. Horarios Genéricos
 HORARIO_PARTIDO = []
-for dia in range(5): 
+for dia in range(5):
     HORARIO_PARTIDO.extend([
         {"dia_semana": dia, "hora_apertura": "09:30:00", "hora_cierre": "13:30:00"},
         {"dia_semana": dia, "hora_apertura": "16:30:00", "hora_cierre": "20:00:00"}
     ])
 
-# 4. Negocios (Se asignarán a Pedro)
 NEGOCIOS = [
     {
         "nombre": "Peluquería Estilo & Glamour",
         "tipo_negocio": "peluqueria",
         "direccion": "Av. de la Moda, 45, Madrid",
-        "descripcion": "Especialistas en cambios de imagen radicales y colorimetría avanzada.",
-        "foto_url": "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=80",
+        "descripcion": "Especialistas en cambios de imagen radicales.",
+        "foto_url": "https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&w=800&q=80",
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Corte de pelo", "precio": 15.00, "duracion_minutos": 30},
-            {"nombre": "Tinte completo", "precio": 45.00, "duracion_minutos": 90}
+            {"nombre": "Corte de Pelo", "precio": 25.00, "duracion_minutos": 30},
+            {"nombre": "Tinte", "precio": 60.00, "duracion_minutos": 90}
         ]
     },
     {
-        "nombre": "Clínica Dental Sonrisa",
+        "nombre": "Clínica Dental Smile",
         "tipo_negocio": "dentista",
-        "direccion": "Calle Salud, 12, Planta 2",
-        "descripcion": "Tu salud bucodental en las mejores manos. Ortodoncia invisible.",
-        "foto_url": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1200&q=80",
+        "direccion": "Calle de la Salud, 12, Barcelona",
+        "descripcion": "Cuidamos tu sonrisa con tecnología moderna.",
+        "foto_url": "https://images.pexels.com/photos/3587352/pexels-photo-3587352.jpeg?w=800",
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Limpieza dental", "precio": 50.00, "duracion_minutos": 45},
-            {"nombre": "Empaste simple", "precio": 60.00, "duracion_minutos": 60}
+            {"nombre": "Limpieza", "precio": 50.00, "duracion_minutos": 30},
+            {"nombre": "Endodoncia", "precio": 200.00, "duracion_minutos": 60}
         ]
     },
     {
         "nombre": "FisioMente Centro",
         "tipo_negocio": "fisioterapia",
         "direccion": "Plaza del Deporte, s/n",
-        "descripcion": "Recupérate de tus lesiones con nuestro equipo de expertos.",
-        "foto_url": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80",
+        "descripcion": "Recupérate de tus lesiones con expertos.",
+        "foto_url": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800",
         "horarios": HORARIO_PARTIDO,
         "servicios": [
             {"nombre": "Masaje deportivo", "precio": 40.00, "duracion_minutos": 45},
@@ -80,7 +90,9 @@ NEGOCIOS = [
     }
 ]
 
+
 def clean_uploads():
+    """🧹 Limpia la carpeta de uploads."""
     print(f"\n1️⃣  LIMPIANDO CARPETA UPLOADS...")
     if os.path.exists(UPLOADS_PATH):
         for filename in os.listdir(UPLOADS_PATH):
@@ -94,114 +106,154 @@ def clean_uploads():
                 print(f"    ⚠️ Error borrando {file_path}: {e}")
         print("    ✅ Carpeta 'frontend/uploads' vaciada.")
     else:
-        os.makedirs(UPLOADS_PATH)
+        os.makedirs(UPLOADS_PATH, exist_ok=True)
         print("    ✅ Carpeta 'frontend/uploads' creada.")
 
+
 def init_db():
-    print(f"\n2️⃣  RESETEANDO BASE DE DATOS...")
+    """🗄️ Reinicializa la BD PostgreSQL."""
+    print(f"\n2️⃣  REINICIALIZANDO BASE DE DATOS POSTGRESQL...")
     try:
-        if os.path.exists(DB_PATH):
-            os.remove(DB_PATH)
-        conn = sqlite3.connect(DB_PATH)
-        with open(SCHEMA_PATH, 'r', encoding='utf-8') as f:
-            conn.executescript(f.read())
+        conn = psycopg2.connect(DATABASE_URL)
+        cursor = conn.cursor()
+        
+        # 🚨 PELIGROSO: Elimina todas las tablas (solo en desarrollo)
+        print("    ⚠️ Eliminando todas las tablas...")
+        cursor.execute("""
+            DROP TABLE IF EXISTS citas CASCADE;
+            DROP TABLE IF EXISTS servicios CASCADE;
+            DROP TABLE IF EXISTS horarios_negocio CASCADE;
+            DROP TABLE IF EXISTS negocios CASCADE;
+            DROP TABLE IF EXISTS usuarios CASCADE;
+        """)
+        conn.commit()
+        print("    ✅ Tablas eliminadas.")
+        
+        # Crear schema desde archivo
+        schema_path = os.path.join(BASE_DIR, '..', 'database', 'schema_postgres.sql')
+        with open(schema_path, 'r', encoding='utf-8') as f:
+            schema_sql = f.read()
+        
+        cursor.execute(schema_sql)
+        conn.commit()
+        print("    ✅ Esquema PostgreSQL aplicado.")
+        
+        cursor.close()
         conn.close()
-        print("    ✅ Tablas creadas desde cero.")
         return True
+        
     except Exception as e:
-        print(f"    ❌ ERROR CRÍTICO DB: {e}")
+        print(f"    ❌ ERROR AL INICIALIZAR BD: {e}")
         return False
 
+
 def populate_api():
+    """👥 Puebla datos de prueba vía API."""
     print(f"\n3️⃣  POBLANDO DATOS VÍA API...")
+    
+    # Verificar que Flask está corriendo
     try:
         requests.get(API_URL)
     except:
-        print("    ⚠️  FLASK ESTÁ APAGADO. Enciéndelo en otra terminal con: python -m backend.app")
+        print("    ⚠️ FLASK ESTÁ APAGADO. Enciéndelo con: python -m backend.app")
         return
 
-    # --- A. CREAR PROPIETARIO ---
+    # --- CREAR PROPIETARIO ---
     print(f"    👤 Registrando Propietario...")
     prop_id = None
     try:
         res = requests.post(f"{API_URL}/auth/register", data=PROPIETARIO_DATA)
         if res.status_code == 201:
             prop_id = res.json()['id']
-            print(f"       [OK] {PROPIETARIO_DATA['nombre']} (ID: {prop_id})")
+            print(f"       ✅ {PROPIETARIO_DATA['nombre']} (ID: {prop_id})")
         else:
-            print(f"       [ERROR] {res.text}")
+            print(f"       ❌ {res.text}")
     except Exception as e:
-        print(f"       [FAIL] {e}")
+        print(f"       ❌ {e}")
 
-    # --- B. CREAR CLIENTE ---
+    # --- CREAR CLIENTE ---
     print(f"    👤 Registrando Cliente...")
     try:
         res = requests.post(f"{API_URL}/auth/register", data=CLIENTE_DATA)
         if res.status_code == 201:
-            print(f"       [OK] {CLIENTE_DATA['nombre']} (ID: {res.json()['id']})")
+            print(f"       ✅ {CLIENTE_DATA['nombre']} (ID: {res.json()['id']})")
         else:
-            print(f"       [ERROR] {res.text}")
+            print(f"       ❌ {res.text}")
     except Exception as e:
-        print(f"       [FAIL] {e}")
+        print(f"       ❌ {e}")
 
-    # --- C. CREAR NEGOCIOS + SERVICIOS + HORARIOS ---
+    # --- CREAR NEGOCIOS + SERVICIOS + HORARIOS ---
+    if not prop_id:
+        print("    ⚠️ No hay propietario. Saltando negocios.")
+        return
+    
+    print("    🏢 Creando Negocios...")
     created_negocios = []
-    if prop_id:
-        print("    🏢 Creando Negocios...")
-        for negocio in NEGOCIOS:
-            payload = {
-                "nombre": negocio["nombre"],
-                "tipo_negocio": negocio["tipo_negocio"],
-                "direccion": negocio["direccion"],
-                "descripcion": negocio.get("descripcion"),
-                "foto_url": negocio.get("foto_url"),
-                "propietario_id": prop_id
-            }
-            try:
-                r = requests.post(f"{API_URL}/negocios/", json=payload)
-                if r.status_code == 201:
-                    new_id = r.json().get('id')
-                    created_negocios.append({"id": new_id, **negocio})
-                    print(f"       [OK] {negocio['nombre']} (ID: {new_id})")
-                else:
-                    print(f"       [ERROR] {r.text}")
-            except Exception as e:
-                print(f"       [FAIL] {e}")
+    
+    for negocio in NEGOCIOS:
+        payload = {
+            "nombre": negocio["nombre"],
+            "tipo_negocio": negocio["tipo_negocio"],
+            "direccion": negocio["direccion"],
+            "descripcion": negocio.get("descripcion"),
+            "foto_url": negocio.get("foto_url"),
+            "propietario_id": prop_id
+        }
+        
+        try:
+            r = requests.post(f"{API_URL}/negocios/", json=payload)
+            if r.status_code == 201:
+                new_id = r.json().get('id')
+                created_negocios.append({"id": new_id, **negocio})
+                print(f"       ✅ {negocio['nombre']} (ID: {new_id})")
+            else:
+                print(f"       ❌ {r.text}")
+        except Exception as e:
+            print(f"       ❌ {e}")
 
-        # Insertar horarios y servicios directamente en la DB (no hay endpoint dedicado)
-        if created_negocios:
-            try:
-                conn = sqlite3.connect(DB_PATH)
-                cur = conn.cursor()
-                for n in created_negocios:
-                    neg_id = n["id"]
-                    # Horarios
-                    for h in n.get("horarios", []):
-                        cur.execute(
-                            "INSERT INTO horarios_negocio (negocio_id, dia_semana, hora_apertura, hora_cierre) VALUES (?, ?, ?, ?)",
-                            (neg_id, h["dia_semana"], h["hora_apertura"], h["hora_cierre"])
-                        )
-                    # Servicios
-                    for s in n.get("servicios", []):
-                        cur.execute(
-                            "INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES (?, ?, ?, ?)",
-                            (neg_id, s["nombre"], s["precio"], s["duracion_minutos"])
-                        )
-                conn.commit()
-                conn.close()
-            except Exception as e:
-                print(f"       [ERROR] Insertando horarios/servicios: {e}")
-    else:
-        print("    ⚠️ Saltando creación de negocios porque falló el registro del propietario.")
+    # --- INSERTAR HORARIOS Y SERVICIOS DIRECTAMENTE EN BD ---
+    if created_negocios:
+        print("    ⏰ Insertando horarios y servicios...")
+        try:
+            conn = psycopg2.connect(DATABASE_URL)
+            cursor = conn.cursor()
+            
+            for negocio in created_negocios:
+                neg_id = negocio["id"]
+                
+                # Insertar horarios
+                for h in negocio.get("horarios", []):
+                    cursor.execute(
+                        "INSERT INTO horarios_negocio (negocio_id, dia_semana, hora_apertura, hora_cierre) VALUES (%s, %s, %s, %s)",
+                        (neg_id, h["dia_semana"], h["hora_apertura"], h["hora_cierre"])
+                    )
+                
+                # Insertar servicios
+                for s in negocio.get("servicios", []):
+                    cursor.execute(
+                        "INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES (%s, %s, %s, %s)",
+                        (neg_id, s["nombre"], s["precio"], s["duracion_minutos"])
+                    )
+            
+            conn.commit()
+            print("       ✅ Horarios y servicios insertados.")
+            
+            cursor.close()
+            conn.close()
+            
+        except Exception as e:
+            print(f"       ❌ ERROR: {e}")
+
 
 def add_past_citas():
-    """Añade citas pasadas completadas al cliente Úrsula."""
+    """📅 Añade citas pasadas al cliente de prueba."""
     print(f"\n4️⃣  AÑADIENDO CITAS PASADAS...")
+    
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
-        # Obtener ID de Úrsula
+        # Obtener ID del cliente
         cursor.execute("SELECT id FROM usuarios WHERE nombre = 'Ursula Usuario'")
         result = cursor.fetchone()
         
@@ -210,61 +262,66 @@ def add_past_citas():
             conn.close()
             return
         
-        ursula_id = result[0]
+        cliente_id = result[0]
         
-        # Obtener un negocio y servicios
+        # Obtener primer negocio y 2 servicios
         cursor.execute("SELECT id FROM negocios LIMIT 1")
-        negocio_result = cursor.fetchone()
-        
-        if not negocio_result:
+        result = cursor.fetchone()
+        if not result:
             print("    ⚠️ No hay negocios disponibles")
             conn.close()
             return
         
-        negocio_id = negocio_result[0]
+        negocio_id = result[0]
         
         cursor.execute("SELECT id, duracion_minutos FROM servicios LIMIT 2")
         servicios = cursor.fetchall()
         
         if len(servicios) < 2:
-            print("    ⚠️ Se necesitan al menos 2 servicios disponibles")
+            print("    ⚠️ Se necesitan al menos 2 servicios")
             conn.close()
             return
         
-        # Crear dos citas pasadas (hace 5 y 3 días)
+        # Crear 2 citas pasadas
         fecha_pasada_1 = (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d 10:00:00')
         fecha_pasada_2 = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d 14:30:00')
         
-        servicio_1_id, duracion_1 = servicios[0]
-        servicio_2_id, duracion_2 = servicios[1]
-        
         cursor.execute(
-            "INSERT INTO citas (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion_minutos, estado) VALUES (?, ?, ?, ?, ?, ?)",
-            (negocio_id, ursula_id, servicio_1_id, fecha_pasada_1, duracion_1, 'confirmada')
+            "INSERT INTO citas (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion_minutos, estado) VALUES (%s, %s, %s, %s, %s, %s)",
+            (negocio_id, cliente_id, servicios[0][0], fecha_pasada_1, servicios[0][1], 'confirmada')
         )
         
         cursor.execute(
-            "INSERT INTO citas (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion_minutos, estado) VALUES (?, ?, ?, ?, ?, ?)",
-            (negocio_id, ursula_id, servicio_2_id, fecha_pasada_2, duracion_2, 'confirmada')
+            "INSERT INTO citas (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion_minutos, estado) VALUES (%s, %s, %s, %s, %s, %s)",
+            (negocio_id, cliente_id, servicios[1][0], fecha_pasada_2, servicios[1][1], 'confirmada')
         )
         
         conn.commit()
-        print(f"    ✅ 2 citas pasadas añadidas a Úrsula:")
-        print(f"       - Cita 1: {fecha_pasada_1}")
-        print(f"       - Cita 2: {fecha_pasada_2}")
+        print(f"    ✅ 2 citas pasadas añadidas a Úrsula")
         
+        cursor.close()
         conn.close()
+        
     except Exception as e:
         print(f"    ❌ ERROR: {e}")
 
+
 def main():
+    """🚀 Ejecuta el pipeline completo."""
+    print("=" * 60)
+    print("🐘 GESTOR DE BASE DE DATOS - POSTGRESQL EXCLUSIVAMENTE")
+    print("=" * 60)
+    
     clean_uploads()
     if init_db():
         populate_api()
         add_past_citas()
         print("\n✨ ¡SISTEMA RESTAURADO COMPLETAMENTE! ✨")
-        print(f"   -> Login Propietario: {PROPIETARIO_DATA['email']} / {PROPIETARIO_DATA['password']}")
-        print(f"   -> Login Cliente:     {CLIENTE_DATA['email']} / {CLIENTE_DATA['password']}")
+        print(f"   → Propietario: {PROPIETARIO_DATA['email']}")
+        print(f"   → Cliente:     {CLIENTE_DATA['email']}")
+    else:
+        print("\n❌ No se pudo inicializar la base de datos.")
+
 
 if __name__ == '__main__':
     main()

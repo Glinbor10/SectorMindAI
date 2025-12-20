@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
-import sqlite3
-from ..db import get_db_connection 
+from ..db import get_db_connection
+from ..db_utils import adapt_query 
 
 negocios_bp = Blueprint('negocios', __name__, url_prefix='/negocios')
 
@@ -18,7 +18,7 @@ def listar_negocios():
     params = []
     
     if propietario_id:
-        query += " WHERE n.propietario_id = ?"
+        query += " WHERE n.propietario_id = %s"
         params.append(propietario_id)
         
     negocios = conn.execute(query, params).fetchall()
@@ -33,7 +33,7 @@ def obtener_negocio(negocio_id):
         SELECT n.*, u.nombre as propietario_nombre 
         FROM negocios n 
         JOIN usuarios u ON n.propietario_id = u.id
-        WHERE n.id = ?
+        WHERE n.id = %s
     """
     negocio = conn.execute(query, (negocio_id,)).fetchone()
     conn.close()
@@ -59,13 +59,13 @@ def crear_negocio():
 
     conn = get_db_connection()
     try:
-        cur = conn.cursor()
-        cur.execute(
-            'INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_url, propietario_id) VALUES (?, ?, ?, ?, ?, ?)',
+        # PostgreSQL EXCLUSIVAMENTE
+        cursor = conn.execute(
+            adapt_query('INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_url, propietario_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id'),
             (nombre, tipo_negocio, direccion, descripcion, foto_url, propietario_id)
         )
+        new_id = cursor.fetchone()['id']
         conn.commit()
-        new_id = cur.lastrowid
         return jsonify({'id': new_id, 'message': 'Negocio creado exitosamente'}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -77,11 +77,12 @@ def crear_negocio():
 def actualizar_negocio(negocio_id):
     data = request.get_json()
     
+    nombre = data.get('nombre')
     descripcion = data.get('descripcion')
     foto_url = data.get('foto_url')
     direccion = data.get('direccion')
 
-    if not any([descripcion, foto_url, direccion]):
+    if not any([nombre, descripcion, foto_url, direccion]):
          return jsonify({'error': 'No hay datos para actualizar'}), 400
 
     conn = get_db_connection()
@@ -89,19 +90,22 @@ def actualizar_negocio(negocio_id):
         updates = []
         params = []
 
+        if nombre is not None:
+            updates.append("nombre = %s")
+            params.append(nombre)
         if descripcion is not None:
-            updates.append("descripcion = ?")
+            updates.append("descripcion = %s")
             params.append(descripcion)
         if foto_url is not None:
-            updates.append("foto_url = ?")
+            updates.append("foto_url = %s")
             params.append(foto_url)
         if direccion is not None:
-            updates.append("direccion = ?")
+            updates.append("direccion = %s")
             params.append(direccion)
 
         params.append(negocio_id)
 
-        query = f"UPDATE negocios SET {', '.join(updates)} WHERE id = ?"
+        query = f"UPDATE negocios SET {', '.join(updates)} WHERE id = %s"
         
         cursor = conn.execute(query, params)
         conn.commit()
@@ -122,7 +126,7 @@ def obtener_servicios_negocio(negocio_id):
     conn = get_db_connection()
     try:
         # Obtenemos nombre e id de los servicios
-        query = "SELECT id, nombre, duracion_minutos, precio FROM servicios WHERE negocio_id = ?"
+        query = "SELECT id, nombre, duracion_minutos, precio FROM servicios WHERE negocio_id = %s"
         servicios = conn.execute(query, (negocio_id,)).fetchall()
         return jsonify([dict(row) for row in servicios])
     except Exception as e:
@@ -135,9 +139,18 @@ def obtener_servicios_negocio(negocio_id):
 def obtener_horarios_negocio(negocio_id):
     conn = get_db_connection()
     try:
-        query = "SELECT dia_semana, hora_apertura, hora_cierre FROM horarios_negocio WHERE negocio_id = ? ORDER BY dia_semana, hora_apertura"
+        query = "SELECT dia_semana, hora_apertura, hora_cierre FROM horarios_negocio WHERE negocio_id = %s ORDER BY dia_semana, hora_apertura"
         horarios = conn.execute(query, (negocio_id,)).fetchall()
-        return jsonify([dict(row) for row in horarios])
+        # Convertir time objects a strings para PostgreSQL
+        result = []
+        for row in horarios:
+            horario_dict = dict(row)
+            if 'hora_apertura' in horario_dict:
+                horario_dict['hora_apertura'] = str(horario_dict['hora_apertura'])
+            if 'hora_cierre' in horario_dict:
+                horario_dict['hora_cierre'] = str(horario_dict['hora_cierre'])
+            result.append(horario_dict)
+        return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

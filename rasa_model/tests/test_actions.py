@@ -387,18 +387,22 @@ def test_responder_bot_challenge_sin_negocio(mock_get, dispatcher, tracker, doma
 
 @patch('rasa_model.actions.actions.requests.get')
 def test_cancelar_cita_lista_citas(mock_get, dispatcher, tracker, domain):
-    """Test que lista citas disponibles para cancelar."""
+    """Test que lista citas disponibles para cancelar (dinámico)."""
+    # Generar fechas futuras dinámicamente
+    fecha_cita_1 = (datetime.now() + timedelta(days=2)).strftime('%Y-%m-%d 10:00:00')
+    fecha_cita_2 = (datetime.now() + timedelta(days=3)).strftime('%Y-%m-%d 11:00:00')
+    
     mock_get.return_value.status_code = 200
     mock_get.return_value.json.return_value = [
         {
             'id': 1,
-            'fecha_hora_cita': '2025-12-08 10:00:00',
+            'fecha_hora_cita': fecha_cita_1,
             'servicio_nombre': 'Corte',
             'estado': 'confirmado'
         },
         {
             'id': 2,
-            'fecha_hora_cita': '2025-12-09 11:00:00',
+            'fecha_hora_cita': fecha_cita_2,
             'servicio_nombre': 'Tinte',
             'estado': 'confirmado'
         }

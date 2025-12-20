@@ -1,6 +1,6 @@
 # backend/logic.py
 from datetime import datetime, timedelta
-import sqlite3
+from .db_utils import adapt_query
 
 # ======================================================================
 # 📅 CONFIGURACIÓN
@@ -19,7 +19,7 @@ def verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita_str, conn):
     
     # 1. Obtener duración
     servicio_info = conn.execute(
-        'SELECT duracion_minutos FROM servicios WHERE id = ?', (servicio_id,)
+        adapt_query('SELECT duracion_minutos FROM servicios WHERE id = %s'), (servicio_id,)
     ).fetchone()
     if not servicio_info:
         return False, "Servicio no válido."
@@ -37,7 +37,7 @@ def verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita_str, conn):
 
     # 2. Verificar horarios de apertura (Múltiples tramos: mañana/tarde)
     horarios = conn.execute(
-        'SELECT hora_apertura, hora_cierre FROM horarios_negocio WHERE negocio_id = ? AND dia_semana = ?',
+        adapt_query('SELECT hora_apertura, hora_cierre FROM horarios_negocio WHERE negocio_id = %s AND dia_semana = %s'),
         (negocio_id, dia_semana)
     ).fetchall()
     
@@ -48,12 +48,16 @@ def verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita_str, conn):
     
     # Verificamos si la cita encaja TOTALMENTE en alguno de los tramos
     for horario in horarios:
+        # Convertir time objects a strings si es necesario (PostgreSQL)
+        hora_apertura_str = str(horario['hora_apertura']) if not isinstance(horario['hora_apertura'], str) else horario['hora_apertura']
+        hora_cierre_str = str(horario['hora_cierre']) if not isinstance(horario['hora_cierre'], str) else horario['hora_cierre']
+        
         try:
-            apertura = datetime.strptime(f"{fecha_dia} {horario['hora_apertura']}", '%Y-%m-%d %H:%M:%S')
-            cierre = datetime.strptime(f"{fecha_dia} {horario['hora_cierre']}", '%Y-%m-%d %H:%M:%S')
+            apertura = datetime.strptime(f"{fecha_dia} {hora_apertura_str}", '%Y-%m-%d %H:%M:%S')
+            cierre = datetime.strptime(f"{fecha_dia} {hora_cierre_str}", '%Y-%m-%d %H:%M:%S')
         except ValueError:
-            apertura = datetime.strptime(f"{fecha_dia} {horario['hora_apertura']}", '%Y-%m-%d %H:%M')
-            cierre = datetime.strptime(f"{fecha_dia} {horario['hora_cierre']}", '%Y-%m-%d %H:%M')
+            apertura = datetime.strptime(f"{fecha_dia} {hora_apertura_str}", '%Y-%m-%d %H:%M')
+            cierre = datetime.strptime(f"{fecha_dia} {hora_cierre_str}", '%Y-%m-%d %H:%M')
 
         if inicio_solicitado >= apertura and fin_solicitado <= cierre:
             dentro_de_horario = True
@@ -64,12 +68,17 @@ def verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita_str, conn):
 
     # 3. Verificar solapamiento con otras citas
     citas_existentes = conn.execute(
-        'SELECT c.fecha_hora_cita, s.duracion_minutos FROM citas c JOIN servicios s ON c.servicio_id = s.id WHERE c.negocio_id = ? AND date(c.fecha_hora_cita) = ? AND c.estado IN ("confirmada", "confirmado")',
-        (negocio_id, fecha_dia)
+        adapt_query('SELECT c.fecha_hora_cita, s.duracion_minutos FROM citas c JOIN servicios s ON c.servicio_id = s.id WHERE c.negocio_id = %s AND date(c.fecha_hora_cita) = %s AND c.estado IN (%s, %s)'),
+        (negocio_id, fecha_dia, 'confirmada', 'confirmado')
     ).fetchall()
 
     for cita in citas_existentes:
-        inicio_cita = datetime.strptime(cita['fecha_hora_cita'], '%Y-%m-%d %H:%M:%S')
+        # PostgreSQL puede devolver datetime directo, SQLite devuelve string
+        if isinstance(cita['fecha_hora_cita'], str):
+            inicio_cita = datetime.strptime(cita['fecha_hora_cita'], '%Y-%m-%d %H:%M:%S')
+        else:
+            inicio_cita = cita['fecha_hora_cita']
+        
         fin_cita = inicio_cita + timedelta(minutes=cita['duracion_minutos'])
         
         # Lógica de colisión estricta: (StartA < EndB) and (EndA > StartB)
@@ -85,7 +94,7 @@ def obtener_tramos_disponibles(negocio_id, servicio_id, fecha_solicitada, conn):
     Ej: Si paso=15min, prueba 9:00, 9:15, 9:30 para ver si cabe el servicio.
     """
     
-    servicio_info = conn.execute('SELECT duracion_minutos FROM servicios WHERE id = ?', (servicio_id,)).fetchone()
+    servicio_info = conn.execute(adapt_query('SELECT duracion_minutos FROM servicios WHERE id = %s'), (servicio_id,)).fetchone()
     if not servicio_info: return {'error': 'Servicio no encontrado'}
     duracion_servicio = servicio_info['duracion_minutos']
 
@@ -97,7 +106,7 @@ def obtener_tramos_disponibles(negocio_id, servicio_id, fecha_solicitada, conn):
 
     # 1. Obtener Horarios (Mañana y Tarde)
     horarios = conn.execute(
-        'SELECT hora_apertura, hora_cierre FROM horarios_negocio WHERE negocio_id = ? AND dia_semana = ? ORDER BY hora_apertura',
+        adapt_query('SELECT hora_apertura, hora_cierre FROM horarios_negocio WHERE negocio_id = %s AND dia_semana = %s ORDER BY hora_apertura'),
         (negocio_id, dia_semana)
     ).fetchall()
 
@@ -106,13 +115,17 @@ def obtener_tramos_disponibles(negocio_id, servicio_id, fecha_solicitada, conn):
 
     # 2. Obtener citas existentes
     citas_existentes = conn.execute(
-        'SELECT c.fecha_hora_cita, s.duracion_minutos FROM citas c JOIN servicios s ON c.servicio_id = s.id WHERE c.negocio_id = ? AND date(c.fecha_hora_cita) = ? AND c.estado IN ("confirmada", "confirmado")',
-        (negocio_id, fecha_solicitada)
+        adapt_query('SELECT c.fecha_hora_cita, s.duracion_minutos FROM citas c JOIN servicios s ON c.servicio_id = s.id WHERE c.negocio_id = %s AND date(c.fecha_hora_cita) = %s AND c.estado IN (%s, %s)'),
+        (negocio_id, fecha_solicitada, 'confirmada', 'confirmado')
     ).fetchall()
 
     tramos_ocupados = []
     for cita in citas_existentes:
-        inicio = datetime.strptime(cita['fecha_hora_cita'], '%Y-%m-%d %H:%M:%S')
+        # PostgreSQL puede devolver datetime directo, SQLite devuelve string
+        if isinstance(cita['fecha_hora_cita'], str):
+            inicio = datetime.strptime(cita['fecha_hora_cita'], '%Y-%m-%d %H:%M:%S')
+        else:
+            inicio = cita['fecha_hora_cita']
         fin = inicio + timedelta(minutes=cita['duracion_minutos'])
         tramos_ocupados.append((inicio, fin))
 
@@ -125,12 +138,16 @@ def obtener_tramos_disponibles(negocio_id, servicio_id, fecha_solicitada, conn):
 
     # 3. Iterar sobre cada turno (Mañana / Tarde)
     for turno in horarios:
+        # Convertir time objects a strings si es necesario (PostgreSQL)
+        hora_apertura_str = str(turno['hora_apertura']) if not isinstance(turno['hora_apertura'], str) else turno['hora_apertura']
+        hora_cierre_str = str(turno['hora_cierre']) if not isinstance(turno['hora_cierre'], str) else turno['hora_cierre']
+        
         try:
-            hora_inicio_turno = datetime.strptime(f"{fecha_solicitada} {turno['hora_apertura']}", '%Y-%m-%d %H:%M:%S')
-            hora_fin_turno = datetime.strptime(f"{fecha_solicitada} {turno['hora_cierre']}", '%Y-%m-%d %H:%M:%S')
+            hora_inicio_turno = datetime.strptime(f"{fecha_solicitada} {hora_apertura_str}", '%Y-%m-%d %H:%M:%S')
+            hora_fin_turno = datetime.strptime(f"{fecha_solicitada} {hora_cierre_str}", '%Y-%m-%d %H:%M:%S')
         except:
-            hora_inicio_turno = datetime.strptime(f"{fecha_solicitada} {turno['hora_apertura']}", '%Y-%m-%d %H:%M')
-            hora_fin_turno = datetime.strptime(f"{fecha_solicitada} {turno['hora_cierre']}", '%Y-%m-%d %H:%M')
+            hora_inicio_turno = datetime.strptime(f"{fecha_solicitada} {hora_apertura_str}", '%Y-%m-%d %H:%M')
+            hora_fin_turno = datetime.strptime(f"{fecha_solicitada} {hora_cierre_str}", '%Y-%m-%d %H:%M')
 
         # Empezamos a buscar desde que abre el turno
         hora_candidata = hora_inicio_turno

@@ -1,161 +1,228 @@
 # Memoria Técnica - Sector Mind AI
 
-## 1. Introducción y Objetivos
+## 📋 Introducción
 
-Sector Mind AI nace con el objetivo de modernizar la gestión de reservas en pequeños negocios (peluquerías, clínicas dentales, fisioterapia) mediante el uso de Inteligencia Artificial Conversacional. El sistema busca eliminar la barrera tecnológica de los formularios web tradicionales, permitiendo una interacción natural por voz y texto.
+**Sector Mind AI** es una plataforma de gestión de reservas inteligente con IA conversacional para pequeños negocios (peluquerías, clínicas dentales, fisioterapia). Elimina la fricción de formularios web permitiendo reservas por voz y texto natural.
 
-## 2. Arquitectura y Elección de Tecnologías
+---
 
-Para el desarrollo de la plataforma, se ha optado por una arquitectura modular desacoplada:
+## 🏷️ Evolución por Versiones
 
-### 🧠 Motor Conversacional: Rasa Open Source
-Se ha seleccionado Rasa frente a alternativas en la nube por su capacidad de ejecución local y privacidad de datos.
-- **Estado Actual:** Configurado para detección de intenciones (NLU) y gestión de diálogo básica mediante reglas e historias.
-- **Conectividad:** Se comunica con el backend a través de un *Action Server* dedicado.
+### **v0.1.0 - Arquitectura Base (MVP)**
+**Fecha:** Noviembre 28, 2025
 
-### 🔌 Backend y API: Flask (Python)
-Actúa como el orquestador central del sistema:
-- **Gestión de Archivos:** Sistema de subida física de imágenes de perfil (`multipart/form-data`) almacenadas en servidor local.
-- **Autenticación:** Sistema de usuarios seguro con roles (Cliente/Propietario).
-- **Lógica de Negocio:** Algoritmos de disponibilidad horaria y gestión de base de datos SQLite.
+**Logros:**
+- ✅ Backend Flask modular (Blueprints)
+- ✅ Base de datos SQLite relacional (7 tablas)
+- ✅ Autenticación con roles (cliente/propietario)
+- ✅ API REST completa
+- ✅ Frontend SPA (HTML5 + JS)
+- ✅ Script manage_db.py para seeding
 
-## 3. Retos Técnicos y Soluciones (Evolución del Proyecto)
+**Retos:**
+- ⚠️ Entorno inconsistente (instalación manual)
+- ⚠️ SQLite con limitación de 1 writer (sin concurrencia)
+- ⚠️ 3+ procesos en terminales separadas
+- ⚠️ Sin testing automatizado
 
-### Fase v0.1: Infraestructura y Conectividad (Pasado)
-El objetivo inicial fue lograr que piezas tecnológicas dispares (Python, JS, SQLite, Rasa) se comunicaran entre sí sin errores.
+---
 
-- **A. Integración de Servicios:**
-    - *Reto:* Rasa y Flask son procesos independientes que no comparten memoria.
-    - *Solución:* Implementación de una arquitectura orientada a servicios (SOA) local usando REST API. El `action_server` de Rasa actúa como puente HTTP para consultar la base de datos de Flask.
+### **v0.2.0 - Inteligencia Conversacional**
+**Fecha:** Noviembre 29, 2025
 
-- **B. Despliegue Local (Dependency Hell):**
-    - *Reto:* Conflictos de versiones entre las librerías de IA (TensorFlow, Rasa) y el Backend web.
-    - *Solución:* Aislamiento estricto con entornos virtuales y control de dependencias mediante `requirements.txt`.
+**Logros:**
+- ✅ Rasa NLU integrado (24 intents iniciales)
+- ✅ 7 Rasa Actions custom conectadas a backend
+- ✅ Detección inteligente de tipo de negocio
+- ✅ Web Speech API (STT/TTS)
+- ✅ Validación contextual de servicios
 
-### Fase v0.2: Experiencia de Usuario y Multimedia (Presente)
-Una vez el sistema funcionaba, el reto fue hacerlo usable, seguro y moderno.
+**Retos:**
+- ⚠️ Comunicación HTTP entre procesos Python
+- ⚠️ Dependencias conflictivas (TensorFlow, Rasa vs Flask)
+- ⚠️ Reentrenamiento manual del modelo
+- ⚠️ Testing de acciones complejo
 
-- **A. Interacción por Voz (Web Speech API):**
-    - *Reto:* Permitir hablar con el bot sin latencia extrema ni costes de APIs en la nube.
-    - *Solución:* Delegar el reconocimiento de voz (STT) y la síntesis (TTS) al navegador del cliente. Esto envía texto limpio al servidor, reduciendo drásticamente la carga de procesamiento y la latencia.
+---
 
-- **B. Persistencia y Seguridad:**
-    - *Reto:* El sistema olvidaba qué negocio visitaba el usuario al recargar la página y permitía el uso anónimo de la IA.
-    - *Solución:* Implementación de `localStorage` para mantener el estado de navegación y un sistema de "Lock Screen" (Pantalla de Bloqueo) que restringe el acceso al agente hasta que existe una sesión válida.
+### **v0.3.0 - Testing Comprehensivo**
+**Fecha:** Diciembre 6, 2025
 
-- **C. Gestión de Errores e Integridad:**
-    - *Reto:* Inconsistencias entre la sesión del navegador y la base de datos tras reinicios (IDs de usuario obsoletos).
-    - *Solución:* Blindaje de los endpoints de la API. Si un ID no existe, el servidor devuelve un 404 controlado que fuerza el cierre de sesión en el cliente, evitando bloqueos.
+**Logros:**
+- ✅ 123 tests automatizados (106 backend + 17 Rasa)
+- ✅ Coverage 92% en backend
+- ✅ Sistema de contexto por tipo de negocio (24 intents)
+- ✅ Fixtures dinámicos
+- ✅ Reportes HTML de coverage
 
-## 4. Calidad y Testing del Sistema
+**Métricas:**
+- Coverage global: 82%
+- 123 tests: 100% passing
+- 24 intents contextuales
 
-### A. Estrategia de Testing Implementada
-El proyecto cuenta con **123 tests automatizados** distribuidos estratégicamente:
+---
 
-#### **Backend (106 tests - 92% coverage)**
-- **test_auth.py (21 tests):** Validación completa de registro y login
-  - Tests de seguridad: password hashing, no exposición de credenciales
-  - Validación de uploads de archivos (foto de perfil)
-  - Coverage: 98%
+### **v0.4.0 - Profesionalización con Docker y PostgreSQL**
+**Fecha:** Diciembre 20, 2025 ← **ESTADO ACTUAL**
 
-- **test_citas.py (21 tests):** Sistema de reservas
-  - Tests de lógica de negocio: solapamientos, horarios, disponibilidad
-  - Validación de estados (confirmado, cancelado)
-  - Coverage: 92%
+**Logros:**
+- ✅ Docker Compose: 4 microservicios orquestados
+  - Backend Flask
+  - PostgreSQL 15-Alpine
+  - Rasa Core
+  - Rasa Actions Server
+- ✅ Migración 100% SQLite → PostgreSQL
+- ✅ 104 tests (75 backend + 29 Rasa) - 100% passing
+- ✅ Action Buttons VS Code (🚀 START, 🛑 STOP, 🧪 TESTS)
+- ✅ CI/CD automático (GitHub Actions + Trunk-based)
+- ✅ Documentación profesional (README, CHANGELOG, RASA)
 
-- **test_negocios.py (23 tests):** Gestión de negocios
-  - CRUD completo con validaciones
-  - Tests de relaciones (servicios, horarios, propietarios)
-  - Coverage: 92%
+**Problemas Resueltos:**
+1. **SQLite → PostgreSQL:** Adaptación de queries (? → %), fixtures dinámicos, RETURNING id
+2. **Docker Build:** gcc + setuptools en Dockerfile
+3. **Volume Mounting:** Agregado rasa_model en docker-compose.yml
+4. **Fechas Hardcodeadas:** datetime.now() + timedelta para tests perpetuos
+5. **CI/CD PostgreSQL:** Health checks + DATABASE_URL env var
 
-- **test_usuarios.py (19 tests):** Perfiles de usuario
-  - Sistema de actualización con file uploads
-  - Validación de extensiones de archivos
-  - Tests de seguridad (404 para usuarios inexistentes)
-  - Coverage: 93%
+**Métricas:**
+- 104 tests: 100% passing
+- 2 minutos setup (vs 30+ antes)
+- Production-ready ✅
 
-- **test_logic.py (20 tests):** Algoritmos de disponibilidad
-  - 11 tests para `verificar_solapamiento()`
-  - 9 tests para `obtener_tramos_disponibles()`
-  - Coverage: 92%
+---
 
-#### **Rasa Actions (17 tests - 50% coverage)**
-Tests unitarios con mocking de API calls para las 7 acciones custom:
-- ActionSetContexto, ActionNormalizarServicio
-- ActionMostrarDisponibilidad, ActionReservarCita
-- ActionInfoNegocio, ActionCancelarCita
-- ActionResponderBotChallenge
+## 📊 Comparativa v0.1.0 vs v0.4.0
 
-### B. Técnicas de Testing Aplicadas
-1. **Aislamiento de Tests:** Uso de BD temporales (`tempfile.mkstemp()`) para evitar contaminación entre tests
-2. **Mocking de APIs:** `unittest.mock` para simular llamadas HTTP sin dependencias externas
-3. **Test Fixtures:** Fixtures de pytest para configuración reutilizable
-4. **Coverage Analysis:** Reporte HTML detallado con líneas específicas no cubiertas
+| Aspecto | v0.1.0 | v0.4.0 | Mejora |
+|---------|--------|--------|--------|
+| **BD** | SQLite | PostgreSQL | ACID + escalable |
+| **Concurrencia** | 1 writer | Multi-cliente | Production-ready |
+| **Containerización** | Manual | Docker Compose | Reproducible |
+| **Setup Time** | 30+ min | 2 min | -93% |
+| **Testing** | ❌ Ninguno | 104 tests | Confiable |
+| **Entorno** | ≠ Producción | = Producción | Sin sorpresas |
+| **CI/CD** | ❌ No | ✅ GitHub Actions | Automatizado |
 
-### C. Comandos de Testing
+---
+
+## 💻 Flujo Actual de Desarrollo (v0.4.0)
+
+### Inicio de Sesión
+
+**Opción A: VS Code Action Button (Recomendado)**
+```
+🚀 START → Click
+```
+Resultado: Stack completo en 2 minutos
+- Backend: http://localhost:5000
+- PostgreSQL: Conectado
+- Rasa: http://localhost:5005
+
+**Opción B: Terminal**
 ```bash
-# Ejecutar TODOS los tests del proyecto (123 tests: backend + Rasa)
-pytest -v
-
-# TODOS los tests con coverage completo y reporte HTML
-pytest --cov=backend --cov=rasa_model/actions --cov-report=html --cov-report=term
-
-# Solo backend (106 tests)
-pytest backend/tests/ -v --cov=backend --cov-report=term-missing
-
-# Solo Rasa (17 tests)
-pytest rasa_model/tests/ -v
-
-# Tests específicos por módulo
-pytest backend/tests/test_auth.py -v        # 21 tests de autenticación
-pytest backend/tests/test_citas.py -v       # 21 tests de reservas
-pytest backend/tests/test_usuarios.py -v    # 19 tests de usuarios
+docker-compose up -d
 ```
 
-## 5. Estado Actual: v0.3.0 (Producción-Ready con Testing Comprehensivo)
+### Ejecutar Tests
 
-El sistema ha alcanzado un estado de **madurez enterprise-grade** con:
+**Opción A: VS Code**
+```
+🧪 TESTS → Click
+```
 
-### ✅ Logros Completados
-- **Infraestructura Robusta:** Arquitectura modular con separación clara de responsabilidades
-- **IA Funcional:** Sistema de reservas automáticas end-to-end con NLU avanzado
-- **Testing Comprehensivo:** 123 tests con 82% de coverage global
-- **Calidad de Código:** Tests aislados, fixtures reutilizables, mocking de APIs
-- **Documentación Completa:** README, MEMORIA y CHANGELOG actualizados
+**Opción B: Terminal**
+```bash
+.\run_tests.ps1                    # Todos (104)
+.\run_tests.ps1 -BackendOnly       # Solo backend (75)
+.\run_tests.ps1 -RasaOnly          # Solo Rasa (29)
+.\run_tests.ps1 -Coverage          # Con reporte HTML
+```
 
-### 📊 Métricas de Calidad
-- **Backend Coverage:** 92% (routes: 92-98%, logic: 92%)
-- **Rasa Coverage:** 50% (17 tests unitarios con mocking)
-- **Tiempo de Ejecución:** ~13 segundos para 123 tests
-- **Tasa de Éxito:** 100% (123/123 tests passing)
+**Output Esperado:**
+```
+[BACKEND] 75 tests passed ✅
+[RASA] 29 tests passed ✅
+[TOTAL] 104 tests passed ✅
+```
 
-## 6. Próximos Pasos: Optimización y Producción (Fase v0.4)
+### Cierre de Sesión
 
-Actualmente el sistema está **production-ready** para despliegues locales. Los siguientes pasos son:
+**Opción A: VS Code**
+```
+🛑 STOP → Click
+```
 
-- **Perfeccionamiento del Slot Filling:**
-    - *Objetivo:* Implementar *Rasa Forms* para asegurar la recolección estricta de todos los datos necesarios antes de intentar una reserva
-    - *Beneficio:* Reducir errores de usuario y mejorar la tasa de conversión de reservas
+**Opción B: Terminal**
+```bash
+.\stop_docker.ps1
+```
 
-- **Gestión de Contexto Complejo:**
-    - *Objetivo:* Que el bot recuerde el contexto de conversaciones pasadas (ej: "quiero lo mismo de la última vez")
-    - *Implementación:* Persistencia de slots en base de datos
+---
 
-- **Migración a Producción Cloud:**
-    - *Objetivo:* Migrar de SQLite a PostgreSQL para entornos multi-usuario
-    - *Infraestructura:* Desplegar en contenedores Docker con Docker Compose
-    - *CI/CD:* Integración de tests automáticos en pipeline de despliegue
+## 🎙️ Próximos Pasos (v0.5.0+)
 
-- **Incrementar Coverage de Rasa:**
-    - *Objetivo:* Alcanzar 80%+ de coverage en actions mediante tests de integración completos
-    - *Estrategia:* Tests de flujos completos sin mocking para validar integración real
+### **v0.5.0 - Urgencias y Habla Avanzada** (Enero)
+- Detección de urgencias por palabras clave más exactas
+- Variaciones lingüísticas (sinónimos, regiones corporales, intensidades)
+- Flujos conversacionales mejorados
+- Usar JWT y React si las jefas lo recomiendan
 
-- **Optimización de Performance:**
-    - *Objetivo:* Reducir latencia de respuesta del bot a <500ms
-    - *Implementación:* Caché de servicios y horarios, optimización de queries SQL
 
-### Usuarios de desarrollo disponibles
+---
 
-✨ ¡SISTEMA RESTAURADO COMPLETAMENTE! ✨
-   -> Login Propietario: propietario@sectormind.com / p
-   -> Login Cliente:     cliente@sectormind.com / u
+## 🚀 Roadmap General
+
+| Versión | Fecha | Foco |
+|---------|-------|------|
+| **v0.4.0** | ✅ Dec 20 | Profesionalización Docker |
+| **v0.5.0** | Jan 10 | Urgencias + Habla Avanzada |
+| **v0.5.1** | Jan 24 | Reservas por Voz |
+| **v0.5.2** | Feb 7 | Contexto Profundo |
+| **v0.6.0** | Feb 28 | Dashboard Admin |
+| **v1.0.0** | Mar 31 | SaaS Multi-Tenant |
+
+---
+
+## 📋 Criterios de Aceptación
+
+Cada release debe cumplir:
+1. ✅ 100% tests pasando
+2. ✅ Documentación actualizada
+3. ✅ Demo funcional
+
+---
+
+**Actualizado:** 20 Diciembre 2025  
+**Versión Actual:** v0.4.0 (Production-Ready)  
+**Estado:** ✅ Profesionalización Completa
+  - 24 intents iniciales (distribuidos entre dentista, peluquería, fisioterapia)
+  - Extracción de entities (servicios, fechas, tipos de urgencia)
+- **Rasa Actions Custom:** 7 acciones personalizadas para conectar NLU con lógica de negocio
+  - `ActionSetContexto`: Detecta tipo de negocio
+  - `ActionNormalizarServicio`: Fuzzy matching de servicios
+  - `ActionMostrarDisponibilidad`: Consulta horarios
+  - `ActionReservarCita`: Creación de citas
+  - `ActionCancelarCita`: Cancelación de citas
+  - `ActionInfoNegocio`: Información del negocio
+  - `ActionResponderBotChallenge`: Respuestas contextuales
+- **Sistema de Contexto:** Detección inteligente de tipo de negocio (dentista/peluquería/fisioterapia)
+- **Validación Contextual:** El bot rechaza automáticamente servicios incompatibles
+  - Ejemplo: No permite corte de cabello en clínica dental
+- **Interfaz de Voz:** Integración de Web Speech API (STT/TTS) en frontend
+- **Reconocimiento Avanzado:** Detección de intenciones complejas y flexibilidad en expresiones del usuario
+
+#### 🎯 Motivo de la Versión
+Transformar un sistema de formularios tradicional en una **interfaz conversacional inteligente**. Permitir a usuarios interactuar de forma natural sin conocer estructura de comandos.
+
+#### ⚠️ Complicaciones Identificadas
+1. **Comunicación Procesos Python:** Rasa y Flask corren como procesos separados
+   - Necesidad de IPC (Inter-Process Communication) vía HTTP
+   - Latencia adicional entre llamadas
+2. **Dependencias Conflictivas:**
+   - Rasa requiere TensorFlow 2.x
+   - Backend requiere Flask + psycopg2
+   - python-Levenshtein necesita compilación (gcc)
+   - → Conflictos de versiones en requirements.txt
+3. **Training y Actualización de Modelo:** Cambios en NLU requieren reentrenamiento manual
+4. **Testing de Acciones:** Difícil mockar llamadas HTTP entre servicios
+5.**Docker y PostgreSQL:** El cambio fue más difícil de lo imaginado habiendo que tocar muchas líneas de código y archivos.

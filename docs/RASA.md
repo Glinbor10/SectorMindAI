@@ -4,14 +4,100 @@ Este documento detalla el funcionamiento actual del módulo de Inteligencia Arti
 
 ---
 
-## 1. Rol de Rasa en el Proyecto
+## 1. Rol de Rasa en el Proyecto (v0.4.0)
+
 Rasa actúa como el **cerebro conversacional** y el orquestador de la lógica de negocio de cara al usuario. Su función no es solo "chatear", sino estructurar datos no estructurados (lenguaje natural) para interactuar con la API Backend (Flask).
 
-### Arquitectura de Conexión
-1. **Frontend:** Captura texto o voz y lo envía a Rasa.
-2. **Rasa NLU:** Entiende la intención (*Intent*) y extrae datos clave (*Entities*).
-3. **Rasa Core:** Decide la siguiente acción (responder texto o ejecutar código).
-4. **Action Server:** Ejecuta lógica Python para conectar con el Backend Flask (Puerto 5000).
+### Arquitectura de Conexión (Containerizada)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Docker Compose Network (sector_mind_net)                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Frontend (navegador)                                        │
+│        │                                                     │
+│        │ HTTP (puerto 5000 mapeado)                         │
+│        ▼                                                     │
+│  ┌─────────────────────┐                                   │
+│  │   Backend (Flask)   │                                   │
+│  │    :5000            │                                   │
+│  │                     │◄──┐                               │
+│  │  - API REST         │   │                               │
+│  │  - Auth             │   │                               │
+│  │  - Logic            │   │ HTTP :5055 (interno)         │
+│  │  - DB Queries       │   │                               │
+│  └─────────────────────┘   │                               │
+│         │                  │                               │
+│         │ conexión TCP     │                               │
+│         ▼                  │                               │
+│  ┌──────────────────────┐  │                               │
+│  │  PostgreSQL 15       │  │                               │
+│  │  :5432               │  │                               │
+│  │  (persistencia)      │  │                               │
+│  └──────────────────────┘  │                               │
+│                             │                               │
+│         ┌───────────────────┘                               │
+│         │                                                   │
+│         ▼                                                   │
+│  ┌────────────────────────────┐                            │
+│  │  Rasa Actions Server       │                            │
+│  │  :5055 (HTTP)              │                            │
+│  │                            │                            │
+│  │  Ejecuta acciones custom:  │                            │
+│  │  - SET_CONTEXTO            │                            │
+│  │  - NORMALIZAR_SERVICIO     │                            │
+│  │  - MOSTRAR_DISPONIBILIDAD  │                            │
+│  │  - RESERVAR_CITA           │                            │
+│  │  - etc.                    │                            │
+│  └────────────────────────────┘                            │
+│         │                                                   │
+│         │ JSON/HTTP (requests)                             │
+│         ▼                                                   │
+│  ┌────────────────────────────┐                            │
+│  │  Rasa Core                 │                            │
+│  │  :5005 (HTTP)              │                            │
+│  │                            │                            │
+│  │  - NLU (procesamiento)     │                            │
+│  │  - Policy (decisiones)     │                            │
+│  │  - Slot management         │                            │
+│  │  - Response generation     │                            │
+│  └────────────────────────────┘                            │
+│                                                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Ventajas de la Ejecución en Docker (v0.4.0)
+
+1. **Aislamiento:** Rasa no interfiere con Backend
+2. **Versionado:** Exactamente `rasa:3.6.13` en todos los ambientes
+3. **Persistencia del Modelo:** Volumen bind mount de `./rasa_model`
+4. **Escalabilidad:** Fácil escalar a múltiples replicas de Rasa
+5. **Reproducibilidad:** Ambiente idéntico en dev/staging/prod
+6. **Logs Centralizados:** Visibles con `docker logs sector_mind_rasa`
+
+### Cómo Levantar Rasa en Docker
+
+**Opción 1: Automático (Recomendado)**
+```bash
+# Desde VS Code: Run Task → 🚀 INICIAR TODO SECTOR MIND
+# O desde PowerShell:
+docker-compose up -d
+```
+
+**Opción 2: Manual (Desarrollo)** 
+```bash
+# Terminal 1: Rasa Core
+cd rasa_model
+docker run -it -p 5005:5005 \
+  -v $(pwd):/app \
+  rasa/rasa:3.6.13 run --enable-api
+
+# Terminal 2: Rasa Actions
+docker run -it -p 5055:5055 \
+  -v $(pwd):/app \
+  rasa/rasa:3.6.13 run actions
+```
 
 ---
 

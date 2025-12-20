@@ -1,0 +1,13 @@
+# Dockerfile para Rasa Actions Server con dependencias personalizadas
+FROM rasa/rasa-sdk:3.6.2
+
+# Cambiar al usuario root para instalar paquetes
+USER root
+
+# Instalar dependencias adicionales necesarias para las acciones
+RUN pip install --no-cache-dir requests python-dotenv
+
+# Volver al usuario rasa
+USER 1001
+
+# El working dir y comando por defecto vienen de la imagen base

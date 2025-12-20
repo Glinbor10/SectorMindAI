@@ -1,0 +1,4 @@
+# Endpoints configuration for running Rasa inside Docker Compose
+# Points Rasa Core to the actions server container by service name
+action_endpoint:
+  url: "http://rasa-actions:5055/webhook"

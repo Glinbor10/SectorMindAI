@@ -1,12 +1,19 @@
 from typing import Any, Text, Dict, List
+import os
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
 import requests
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 # --- CONFIGURACIÓN API ---
-API_URL = "http://localhost:5000"
+# Usar hostname Docker por defecto
+API_URL = os.getenv("API_URL", "http://backend:5000")
+print(f"🔗 Rasa Actions conectando a API: {API_URL}")
 
 # Importar actions específicas de contexto (urgencias solamente)
 from .dentista_actions import (
