@@ -44,17 +44,11 @@ def apply_migration(conn, version, sql):
         if statement:
             cursor.execute(statement)
     
-    # Registrar migración aplicada
-    if USE_POSTGRES:
-        cursor.execute(
-            "INSERT INTO schema_migrations (version) VALUES (%s)",
-            (version,)
-        )
-    else:
-        cursor.execute(
-            "INSERT INTO schema_migrations (version) VALUES (%s)",
-            (version,)
-        )
+    # Registrar migración aplicada (PostgreSQL EXCLUSIVAMENTE)
+    cursor.execute(
+        "INSERT INTO schema_migrations (version) VALUES (%s)",
+        (version,)
+    )
     
     conn.commit()
     print(f"  ✅ Migración {version} aplicada correctamente")
