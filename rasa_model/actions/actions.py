@@ -30,8 +30,6 @@ from .base_actions import ActionUrgenciaBase
 
 
 class ActionSetContexto(Action):
-    """Captura los metadatos del frontend (cliente_id, negocio_id) al iniciar conversación"""
-
     def name(self) -> Text:
         return "action_set_contexto"
 
@@ -39,16 +37,16 @@ class ActionSetContexto(Action):
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
 
-        # Obtener metadatos del mensaje inicial
         metadata = tracker.latest_message.get('metadata', {})
-        
-        cliente_id = metadata.get('cliente_id')
-        negocio_id = metadata.get('negocio_id')
-        negocio_nombre = metadata.get('negocio_nombre')
 
-        # Consultar tipo de negocio desde la API
-        tipo_negocio = None
-        if negocio_id:
+        # Prioridad: metadata > slot actual
+        cliente_id = metadata.get('cliente_id') or tracker.get_slot("cliente_id")
+        negocio_id = metadata.get('negocio_id') or tracker.get_slot("negocio_id")
+        tipo_negocio = metadata.get('tipo_negocio') or tracker.get_slot("tipo_negocio")
+        negocio_nombre = metadata.get('negocio_nombre') or tracker.get_slot("negocio")
+
+        # Si no hay tipo_negocio pero sí negocio_id, intenta consultarlo (opcional)
+        if not tipo_negocio and negocio_id:
             try:
                 response = requests.get(f"{API_URL}/negocios/{negocio_id}", timeout=5)
                 if response.status_code == 200:
@@ -57,12 +55,12 @@ class ActionSetContexto(Action):
             except Exception as e:
                 print(f"Error consultando tipo de negocio: {e}")
 
-        # Guardar en slots para usar en las siguientes actions
+        # No resetea slots si ya tienen valor
         return [
             SlotSet("cliente_id", cliente_id),
             SlotSet("negocio_id", negocio_id),
-            SlotSet("negocio", negocio_nombre),
-            SlotSet("tipo_negocio", tipo_negocio)
+            SlotSet("tipo_negocio", tipo_negocio),
+            SlotSet("negocio", negocio_nombre)
         ]
 
 
@@ -80,6 +78,9 @@ class ActionNormalizarServicio(Action):
         negocio_nombre = tracker.get_slot("negocio")
         negocio_id = tracker.get_slot("negocio_id")
         tipo_negocio = tracker.get_slot("tipo_negocio")
+
+        print(f"🔍 ActionNormalizarServicio - Mensaje: '{mensaje_usuario}'")
+        print(f"   Negocio ID: {negocio_id}, Tipo: {tipo_negocio}")
 
         if not negocio_id:
             dispatcher.utter_message(text="No sé en qué negocio estás. Por favor, selecciona uno desde la web.")
@@ -114,21 +115,30 @@ class ActionNormalizarServicio(Action):
             servicio_detectado = None
             servicio_id = None
             
+            print(f"   Buscando en {len(servicios_disponibles)} servicios...")
+            
             for servicio in servicios_disponibles:
                 nombre_servicio = servicio['nombre'].lower()
                 # Búsqueda flexible: si alguna palabra clave coincide
                 palabras = nombre_servicio.split()
-                if any(palabra in mensaje_usuario for palabra in palabras if len(palabra) > 3):
+                palabras_filtradas = [p for p in palabras if len(p) > 3]
+                
+                print(f"     Servicio '{servicio['nombre']}' -> palabras clave: {palabras_filtradas}")
+                
+                if any(palabra in mensaje_usuario for palabra in palabras_filtradas):
                     servicio_detectado = servicio['nombre']
                     servicio_id = servicio['id']
+                    print(f"     ✅ COINCIDENCIA ENCONTRADA: {servicio_detectado}")
                     break
             
             if servicio_detectado:
+                print(f"   Resultado final: Servicio detectado = {servicio_detectado}")
                 return [
                     SlotSet("servicio", servicio_detectado),
                     SlotSet("servicio_id", servicio_id)
                 ]
             else:
+                print("   Resultado final: No se detectó ningún servicio")
                 # No se encontró, ofrecer opciones
                 opciones = ", ".join([s['nombre'] for s in servicios_disponibles])
                 dispatcher.utter_message(
@@ -287,12 +297,23 @@ class ActionReservarCita(Action):
             )
 
             if response.status_code == 201:
+                # Obtener tipo de negocio para emoji contextual
+                tipo_negocio = tracker.get_slot("tipo_negocio")
+                
+                # Emojis específicos según tipo de negocio
+                emoji_dict = {
+                    "dentista": "🦷",
+                    "fisioterapia": "🧘",
+                    "peluqueria": "💇"
+                }
+                emoji = emoji_dict.get(tipo_negocio, "✅")
+                
                 # Formatear fecha para mostrar
                 fecha_obj = datetime.strptime(fecha_reserva, '%Y-%m-%d %H:%M:%S')
                 fecha_legible = fecha_obj.strftime('%d/%m/%Y a las %H:%M')
                 
                 dispatcher.utter_message(
-                    text=f"✅ ¡Reserva confirmada!\n\n"
+                    text=f"{emoji} ¡Reserva confirmada!\n\n"
                          f"**Servicio:** {servicio}\n"
                          f"**Fecha:** {fecha_legible}\n\n"
                          f"Te esperamos. ¡Gracias por confiar en nosotros!"
@@ -566,6 +587,7 @@ class ActionConsultarCitasUsuario(Action):
 
         cliente_id = tracker.get_slot("cliente_id")
         negocio_id = tracker.get_slot("negocio_id")
+        tipo_negocio = tracker.get_slot("tipo_negocio")
 
         if not cliente_id:
             dispatcher.utter_message(text="Debes iniciar sesión para ver tus citas.")
@@ -576,8 +598,7 @@ class ActionConsultarCitasUsuario(Action):
             response = requests.get(
                 f"{API_URL}/citas",
                 params={
-                    "cliente_id": cliente_id,
-                    "negocio_id": negocio_id
+                    "cliente_id": cliente_id
                 },
                 timeout=5
             )
@@ -587,6 +608,10 @@ class ActionConsultarCitasUsuario(Action):
                 return []
 
             citas = response.json()
+            
+            # Filtrar por tipo de negocio si está especificado
+            if tipo_negocio:
+                citas = [c for c in citas if c.get('tipo_negocio') == tipo_negocio]
             
             # Filtrar solo citas futuras y confirmadas
             hoy = datetime.now()
@@ -815,4 +840,59 @@ class ActionResponderBotChallenge(Action):
             dispatcher.utter_message(
                 text=f"Soy el asistente virtual de **{negocio_nombre}**, potenciado por **Sector Mind AI**."
             )
+            return []
+
+
+class ActionCancelarCitaConfirmada(Action):
+    """Cancela la cita seleccionada y limpia slots relevantes"""
+
+    def name(self) -> Text:
+        return "action_cancelar_cita_confirmada"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+
+        cliente_id = tracker.get_slot("cliente_id")
+        cita_id = tracker.get_slot("cita_a_cancelar_id")
+        tipo_negocio = tracker.get_slot("tipo_negocio")
+
+        if not cliente_id:
+            dispatcher.utter_message(text="Debes iniciar sesión para cancelar citas.")
+            return []
+
+        if not cita_id:
+            dispatcher.utter_message(text="No tengo identificada la cita a cancelar.")
+            return []
+
+        try:
+            response = requests.delete(f"{API_URL}/citas/{cita_id}", timeout=5)
+
+            if response.status_code in (200, 204):
+                # Emoji por tipo de negocio (coherencia visual)
+                emoji_dict = {
+                    "dentista": "🦷",
+                    "fisioterapia": "🧘",
+                    "peluqueria": "💇",
+                }
+                emoji = emoji_dict.get(tipo_negocio, "✅")
+
+                # Usar utter para confirmación de eliminación
+                dispatcher.utter_message(text=f"{emoji} Cita cancelada correctamente.")
+                # Alternativa: dispatcher.utter_message(response="utter_confirmacion_eliminada")
+
+                return [
+                    SlotSet("cita_a_cancelar_id", None),
+                    SlotSet("fecha", None),
+                    SlotSet("servicio", None),
+                ]
+            else:
+                dispatcher.utter_message(text="No pude cancelar la cita. Intenta más tarde.")
+                return []
+
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al cancelar la cita: {str(e)}")
             return []

@@ -4,6 +4,7 @@ intents:
   - greet
   - goodbye
   - affirm
+  - afirmar
   - deny
   - reservar_servicio
   - informar_fecha
@@ -13,20 +14,26 @@ intents:
   - consultar_ubicacion
   - consultar_mis_citas
   - cancelar_cita
+  - cambiar_horario
   - info_general
   - inform
   - pedir_mas_opciones
   - nlu_fallback
   # Intents de URGENCIAS (contextuales por tipo de negocio)
+  - urgencia_dentista
+  - urgencia_fisioterapia
+  - urgencia_peluqueria
   - urgencia_dental_dolor
   - urgencia_dental_bracket
   - urgencia_dental_diente
   - perdida_empaste
   - corte_urgente_evento
+  - corte_regular
   - desastre_tinte
   - dolor_agudo_espalda
   - lesion_deportiva
   - contractura_muscular
+  - urgencia_fisio_aguda
   - limpieza_dental
   - masaje_descarga
   - tinte_regular
@@ -37,34 +44,37 @@ entities:
   - fecha
 
 slots:
-  negocio:
+  cliente_id:
     type: text
-    influence_conversation: false
-    mappings:
-      - type: from_entity
-        entity: negocio
-
-  negocio_id:
-    type: text
-    influence_conversation: false
+    influence_conversation: true
     mappings:
       - type: custom
 
-  cliente_id:
+  negocio_id:
     type: text
-    influence_conversation: false
+    influence_conversation: true
     mappings:
       - type: custom
 
   tipo_negocio:
+    type: categorical
+    values:
+      - dentista
+      - peluqueria
+      - fisioterapia
+    influence_conversation: true
+    mappings:
+      - type: custom
+
+  negocio:
     type: text
-    influence_conversation: false
+    influence_conversation: true
     mappings:
       - type: custom
 
   servicio:
     type: text
-    influence_conversation: false
+    influence_conversation: true
     mappings:
       - type: from_entity
         entity: servicio
@@ -79,10 +89,12 @@ slots:
 
   fecha:
     type: text
-    influence_conversation: false
+    influence_conversation: true
     mappings:
       - type: from_text
         intent: informar_fecha
+      - type: from_entity
+        entity: fecha
 
   horarios_disponibles:
     type: any
@@ -130,8 +142,23 @@ responses:
   utter_default:
     - text: "No he entendido bien. ¿Puedes repetirlo?"
   
+  utter_pedir_negocio:
+    - text: "¿Para qué negocio necesitas ayuda? (dentista, fisioterapia, peluqueria)"
+
   utter_confirmacion:
     - text: "✅ ¡Perfecto! Tu cita ha sido reservada correctamente."
+
+  utter_urgencia_confirmada:
+    - text: "¡Urgencia confirmada! Te atenderemos lo antes posible."
+
+  utter_confirmar_cancelacion:
+    - text: "¿Seguro que quieres cancelar esta cita? Responde 'sí' para confirmar o 'no' para mantenerla."
+
+  utter_confirmacion_eliminada:
+    - text: "✅ Cita cancelada correctamente. Si quieres, puedo ayudarte a reservar una nueva."
+
+  utter_pedir_nueva_fecha:
+    - text: "¿Qué fecha y hora prefieres para reprogramar? (Ej.: 'mañana a las 10', 'el viernes por la tarde')"
 
 actions:
   - action_set_contexto
@@ -145,6 +172,7 @@ actions:
   - action_consultar_citas_usuario
   - action_cancelar_cita
   - action_confirmar_cancelacion
+  - action_cancelar_cita_confirmada
   - action_responder_bot_challenge
   # Actions de URGENCIAS
   - action_urgencia_dental

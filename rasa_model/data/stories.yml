@@ -2,24 +2,13 @@ version: "3.1"
 
 stories:
 
-- story: Reserva completa con disponibilidad
+- story: Saludo inicial
   steps:
   - intent: greet
   - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio
   - action: utter_greet_con_negocio
-  - intent: reservar_servicio
-  - action: action_normalizar_servicio
-  - action: action_mostrar_disponibilidad
-  - intent: informar_fecha
-  - action: action_reservar_cita
-  
-- story: Usuario dice servicio directamente sin saludar
-  steps:
-  - intent: reservar_servicio
-  - action: action_normalizar_servicio
-  - action: action_mostrar_disponibilidad
-  - intent: informar_fecha
-  - action: action_reservar_cita
 
 - story: Despedida
   steps:
@@ -51,61 +40,3 @@ stories:
   - intent: consultar_mis_citas
   - action: action_consultar_citas_usuario
 
-- story: Cancelar una cita - confirmar directamente
-  steps:
-  - intent: cancelar_cita
-  - action: action_cancelar_cita
-  - intent: affirm
-  - action: action_cancelar_cita
-
-- story: Cancelar una cita - seleccionar de lista
-  steps:
-  - intent: cancelar_cita
-  - action: action_cancelar_cita
-  - intent: inform
-  - action: action_confirmar_cancelacion
-  - intent: affirm
-  - action: action_cancelar_cita
-
-- story: Cancelar cita - usuario dice no
-  steps:
-  - intent: cancelar_cita
-  - action: action_cancelar_cita
-  - intent: deny
-  - action: utter_goodbye
-
-- story: Reserva servicio normal dentista
-  steps:
-  - intent: greet
-  - action: action_set_contexto
-  - action: utter_greet_con_negocio
-  - intent: limpieza_dental
-  - action: action_normalizar_servicio
-  - action: action_mostrar_disponibilidad
-  - intent: informar_fecha
-  - action: action_reservar_cita
-  - action: utter_confirmacion
-
-- story: Reserva servicio normal fisioterapia
-  steps:
-  - intent: greet
-  - action: action_set_contexto
-  - action: utter_greet_con_negocio
-  - intent: masaje_descarga
-  - action: action_normalizar_servicio
-  - action: action_mostrar_disponibilidad
-  - intent: informar_fecha
-  - action: action_reservar_cita
-  - action: utter_confirmacion
-
-- story: Reserva servicio normal peluqueria
-  steps:
-  - intent: greet
-  - action: action_set_contexto
-  - action: utter_greet_con_negocio
-  - intent: tinte_regular
-  - action: action_normalizar_servicio
-  - action: action_mostrar_disponibilidad
-  - intent: informar_fecha
-  - action: action_reservar_cita
-  - action: utter_confirmacion

@@ -1,48 +1,93 @@
 version: "3.1"
 
 nlu:
-# ========================================
-# INTENTS ESPECÍFICOS PARA FISIOTERAPIA
-# ========================================
-
-- intent: dolor_agudo_espalda
-  examples: |
-    - me duele mucho la espalda
-    - dolor de espalda intenso
-    - tengo la espalda bloqueada
-    - no puedo moverme del dolor de espalda
-    - espalda muy dolorida
-    - dolor lumbar fuerte
-    - dolor cervical agudo
-
-- intent: lesion_deportiva
-  examples: |
-    - me he lesionado jugando
-    - lesión deportiva
-    - me he hecho daño en el fútbol
-    - esguince
-    - me he lesionado corriendo
-    - tengo una lesión muscular
-    - rotura fibrilar
-    - me duele después de entrenar
-
-- intent: contractura_muscular
-  examples: |
-    - tengo una contractura
-    - músculo contracturado
-    - nudo muscular
-    - tengo contractura en el cuello
-    - contractura en la espalda
-    - músculo agarrotado
-    - sobrecarga muscular
-
+# --- SERVICIOS REGULARES ---
 - intent: masaje_descarga
   examples: |
     - quiero un masaje
     - masaje de descarga
     - masaje relajante
-    - necesito un masaje
-    - masaje terapéutico
-    - drenaje linfático
+    - necesito un masaje terapéutico
+    - sesión de fisioterapia normal
+    - descargar piernas
+    - masaje muscular
+    - relajacion fisica
+    - masaje para tension
+    - fisioterapia relajante
+    - descarga de espalda
+    - masaje corporal
 
+# --- URGENCIAS Y LESIONES ---
+- intent: lesion_deportiva
+  examples: |
+    - me he lesionado jugando al futbol
+    - esguince de tobillo en partido
+    - rotura fibrilar en la pierna
+    - me he hecho daño entrenando la espalda
+    - lesión muscular aguda en cuello
+    - torcedura de rodilla
+    - lesion en hombro
+    - daño deportivo en espalda
+    - ruptura muscular
+    - esguince en pie
+    - lesion de cuello
+    - problema deportivo en pierna
 
+- intent: urgencia_fisio_aguda
+  examples: |
+    - tengo la espalda bloqueada
+    - no puedo moverme del dolor de lumbar
+    - latigazo cervical urgente en cuello
+    - emergencia fisioterapia por espalda
+    - socorro me he quedado pillado de la espalda
+    - dolor lumbar insoportable
+    - bloqueo en cuello
+    - urgencia por dolor de espalda
+    - no me muevo por lesion
+    - dolor agudo en lumbar
+    - cuello bloqueado
+    - espalda dolorida urgente
+
+- intent: urgencia_fisioterapia
+  examples: |
+    - urgencia en fisioterapia
+    - emergencia fisica general
+    - necesito fisioterapeuta urgentemente
+    - problema fisico urgente
+    - cita urgente para fisioterapia
+    - socorro fisico
+    - urgencia muscular
+    - emergencia terapeutica
+    - fisioterapia ahora mismo
+    - problema urgente en cuerpo
+    - ayuda fisica inmediata
+
+- intent: dolor_agudo_espalda
+  examples: |
+    - dolor agudo en la espalda
+    - espalda que duele mucho
+    - lumbar dolorida
+    - dolor intenso en espalda baja
+    - espalda bloqueada por dolor
+    - dolor agudo lumbar
+    - espalda con dolor agudo
+    - lumbar insoportable
+    - dolor de espalda agudo
+    - espalda dolorida
+    - lumbar con dolor
+    - dolor agudo en columna
+
+- intent: contractura_muscular
+  examples: |
+    - contractura en la espalda
+    - nudo muscular en cuello
+    - contractura de lumbar
+    - musculo contracturado en pierna
+    - tension muscular en espalda
+    - contractura en hombro
+    - nudo en cuello
+    - contractura muscular aguda
+    - tension en espalda
+    - musculo duro en lumbar
+    - contractura en brazo
+    - nudo muscular

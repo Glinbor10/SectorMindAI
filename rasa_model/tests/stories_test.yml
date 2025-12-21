@@ -1,0 +1,214 @@
+version: "3.1"
+
+stories:
+  # REGLA: Al saludar, SIEMPRE ejecutar action_set_contexto antes de responder
+  - story: saludo_obliga_contexto
+    metadata:
+      group: contexto_obligatorio
+    steps:
+      - intent: saludar
+      - action: action_set_contexto  # DEBE ejecutarse primero
+      - action: utter_saludar
+
+  # REGLA: Urgencias - Dolor de muelas DEBE identificar negocio dentista y lanzar urgencia
+  - story: urgencia_dentista_dolor_muelas
+    metadata:
+      group: urgencia_dentista
+    steps:
+      - intent: urgencia_dentista
+        entities:
+          - negocio_tipo: dentista
+      - action: action_set_contexto
+      - action: action_urgencia_dental  # DEBE lanzar urgencia dental
+      - action: utter_urgencia_confirmada
+
+  # REGLA: Urgencias - Dolor de espalda DEBE identificar negocio fisioterapia y lanzar urgencia
+  - story: urgencia_fisioterapia_dolor_espalda
+    metadata:
+      group: urgencia_fisioterapia
+    steps:
+      - intent: urgencia_fisioterapia
+        entities:
+          - negocio_tipo: fisioterapia
+      - action: action_set_contexto
+      - action: action_urgencia_fisioterapia  # DEBE lanzar urgencia fisioterapia
+      - action: utter_urgencia_confirmada
+
+  # REGLA: Urgencias - Dolor de cuero cabelludo DEBE identificar negocio peluqueria y lanzar urgencia
+  - story: urgencia_peluqueria_dolor_cuero
+    metadata:
+      group: urgencia_peluqueria
+    steps:
+      - intent: urgencia_peluqueria
+        entities:
+          - negocio_tipo: peluqueria
+      - action: action_set_contexto
+      - action: action_urgencia_peluqueria  # DEBE lanzar urgencia peluqueria
+      - action: utter_urgencia_confirmada
+
+  # REGLA: Citas - No se puede cancelar sin confirmar negocio
+  - story: cancelar_cita_sin_negocio_falla
+    metadata:
+      group: cancelacion_requiere_negocio
+    steps:
+      - intent: cancelar_cita
+      - action: utter_pedir_negocio  # DEBE pedir negocio antes de consultar citas
+      - intent: afirmar
+        entities:
+          - negocio_tipo: dentista
+      - action: action_set_contexto
+      - action: action_consultar_citas_usuario
+
+  # Cancelación de cita para dentista (después de confirmar negocio)
+  - story: cancelar_cita_dentista_confirmado
+    metadata:
+      group: cancelacion_dentista
+    steps:
+      - intent: cancelar_cita
+      - action: utter_pedir_negocio
+      - intent: afirmar
+        entities:
+          - negocio_tipo: dentista
+      - action: action_set_contexto
+      - action: action_consultar_citas_usuario
+      - intent: afirmar
+        entities:
+          - cita_id: "123"
+      - action: action_cancelar_cita
+      - action: action_confirmar_cancelacion
+
+  # Cancelación de cita para fisioterapia
+  - story: cancelar_cita_fisioterapia_confirmado
+    metadata:
+      group: cancelacion_fisioterapia
+    steps:
+      - intent: cancelar_cita
+      - action: utter_pedir_negocio
+      - intent: afirmar
+        entities:
+          - negocio_tipo: fisioterapia
+      - action: action_set_contexto
+      - action: action_consultar_citas_usuario
+      - intent: afirmar
+        entities:
+          - cita_id: "456"
+      - action: action_cancelar_cita
+      - action: action_confirmar_cancelacion
+
+  # Cancelación de cita para peluqueria
+  - story: cancelar_cita_peluqueria_confirmado
+    metadata:
+      group: cancelacion_peluqueria
+    steps:
+      - intent: cancelar_cita
+      - action: utter_pedir_negocio
+      - intent: afirmar
+        entities:
+          - negocio_tipo: peluqueria
+      - action: action_set_contexto
+      - action: action_consultar_citas_usuario
+      - intent: afirmar
+        entities:
+          - cita_id: "789"
+      - action: action_cancelar_cita
+      - action: action_confirmar_cancelacion
+
+  # Cambio de horario para dentista
+  - story: cambiar_horario_dentista
+    metadata:
+      group: cambio_horario_dentista
+    steps:
+      - intent: cambiar_horario
+      - action: action_consultar_citas_usuario
+      - intent: afirmar
+        entities:
+          - cita_id: "123"
+      - action: action_mostrar_disponibilidad
+      - intent: afirmar
+        entities:
+          - fecha: "2025-12-22"
+          - hora: "10:00"
+      - action: action_reservar_cita
+
+  # Cambio de horario para fisioterapia
+  - story: cambiar_horario_fisioterapia
+    metadata:
+      group: cambio_horario_fisioterapia
+    steps:
+      - intent: cambiar_horario
+      - action: action_consultar_citas_usuario
+      - intent: afirmar
+        entities:
+          - cita_id: "456"
+      - action: action_mostrar_disponibilidad
+      - intent: afirmar
+        entities:
+          - fecha: "2025-12-23"
+          - hora: "14:00"
+      - action: action_reservar_cita
+
+  # Cambio de horario para peluqueria
+  - story: cambiar_horario_peluqueria
+    metadata:
+      group: cambio_horario_peluqueria
+    steps:
+      - intent: cambiar_horario
+      - action: action_consultar_citas_usuario
+      - intent: afirmar
+        entities:
+          - cita_id: "789"
+      - action: action_mostrar_disponibilidad
+      - intent: afirmar
+        entities:
+          - fecha: "2025-12-24"
+          - hora: "16:00"
+      - action: action_reservar_cita
+  - story: cambiar_horario_dentista
+    steps:
+      - intent: cambiar_horario
+      - action: action_consultar_citas_usuario
+      - intent: afirmar
+        entities:
+          - cita_id: "123"
+      - action: action_mostrar_disponibilidad
+      - intent: afirmar
+        entities:
+          - fecha: "2025-12-22"
+          - hora: "10:00"
+      - action: action_reservar_cita
+    metadata:
+      group: cambio_horario_dentista
+
+  # Cambio de horario para fisioterapia
+  - story: cambiar_horario_fisioterapia
+    steps:
+      - intent: cambiar_horario
+      - action: action_consultar_citas_usuario
+      - intent: afirmar
+        entities:
+          - cita_id: "456"
+      - action: action_mostrar_disponibilidad
+      - intent: afirmar
+        entities:
+          - fecha: "2025-12-23"
+          - hora: "14:00"
+      - action: action_reservar_cita
+    metadata:
+      group: cambio_horario_fisioterapia
+
+  # Cambio de horario para peluqueria
+  - story: cambiar_horario_peluqueria
+    steps:
+      - intent: cambiar_horario
+      - action: action_consultar_citas_usuario
+      - intent: afirmar
+        entities:
+          - cita_id: "789"
+      - action: action_mostrar_disponibilidad
+      - intent: afirmar
+        entities:
+          - fecha: "2025-12-24"
+          - hora: "16:00"
+      - action: action_reservar_cita
+    metadata:
+      group: cambio_horario_peluqueria

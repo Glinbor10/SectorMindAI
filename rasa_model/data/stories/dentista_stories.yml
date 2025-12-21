@@ -1,5 +1,3 @@
-version: "3.1"
-
 stories:
 # ========================================
 # HISTORIAS ESPECÍFICAS PARA DENTISTA
@@ -10,45 +8,50 @@ stories:
   steps:
   - intent: greet
   - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: dentista
   - action: utter_greet_con_negocio
   - intent: urgencia_dental_dolor
   - action: action_urgencia_dental
   - action: action_buscar_urgencia_proxima
   - intent: informar_fecha
   - action: action_reservar_cita
-  - action: utter_confirmacion
 
 # --- HISTORIA 2: Urgencia bracket caído ---
 - story: urgencia_bracket_cita
   steps:
   - intent: greet
   - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: dentista
   - action: utter_greet_con_negocio
   - intent: urgencia_dental_bracket
   - action: action_urgencia_dental
   - action: action_buscar_urgencia_proxima
   - intent: informar_fecha
   - action: action_reservar_cita
-  - action: utter_confirmacion
 
 # --- HISTORIA 3: Urgencia diente roto/caído ---
 - story: urgencia_diente_roto
   steps:
   - intent: greet
   - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: dentista
   - action: utter_greet_con_negocio
   - intent: urgencia_dental_diente
   - action: action_urgencia_dental
   - action: action_buscar_urgencia_proxima
   - intent: informar_fecha
   - action: action_reservar_cita
-  - action: utter_confirmacion
 
 # --- HISTORIA 4: Empaste caído (menos urgente) ---
 - story: empaste_perdido
   steps:
   - intent: greet
   - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: dentista
   - action: utter_greet_con_negocio
   - intent: perdida_empaste
   - action: action_urgencia_dental
@@ -58,6 +61,64 @@ stories:
     entities:
     - fecha
   - action: action_reservar_cita
-  - action: utter_confirmacion
+
+# --- HISTORIA 5: Reserva servicio normal dentista ---
+- story: reserva_servicio_normal_dentista
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: dentista
+  - action: utter_greet_con_negocio
+  - intent: limpieza_dental
+  - action: action_normalizar_servicio
+  - action: action_mostrar_disponibilidad
+  - intent: informar_fecha
+  - action: action_reservar_cita
+
+# --- HISTORIA PARA URGENCIA GENERAL DENTISTA ---
+- story: urgencia_dentista_general
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: dentista
+  - action: utter_greet_con_negocio
+  - intent: urgencia_dentista
+  - action: action_urgencia_dental
+  - action: utter_urgencia_confirmada
+
+# --- GESTIÓN: Consultar citas usuario ---
+- story: dentista_consultar_citas
+  steps:
+  - intent: consultar_mis_citas
+  - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: dentista
+  - action: action_consultar_citas_usuario
+
+# --- GESTIÓN: Cancelar cita con confirmación ---
+- story: dentista_cancelar_cita_confirmada
+  steps:
+  - intent: cancelar_cita
+  - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: dentista
+  - action: action_cancelar_cita
+  - action: utter_confirmar_cancelacion
+  - intent: affirm
+  - action: action_cancelar_cita_confirmada
+  - action: utter_confirmacion_eliminada
+
+# --- GESTIÓN: Cambiar horario (reprogramar) ---
+- story: dentista_cambiar_horario
+  steps:
+  - intent: cambiar_horario
+  - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: dentista
+  - action: utter_pedir_nueva_fecha
+  - intent: informar_fecha
+  - action: action_reservar_cita
 
 

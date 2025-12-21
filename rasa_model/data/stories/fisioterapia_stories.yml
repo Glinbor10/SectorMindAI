@@ -1,5 +1,3 @@
-version: "3.1"
-
 stories:
 # ========================================
 # HISTORIAS ESPECÍFICAS PARA FISIOTERAPIA
@@ -10,32 +8,36 @@ stories:
   steps:
   - intent: greet
   - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: fisioterapia
   - action: utter_greet_con_negocio
   - intent: dolor_agudo_espalda
   - action: action_urgencia_fisioterapia
   - action: action_buscar_urgencia_proxima
   - intent: informar_fecha
   - action: action_reservar_cita
-  - action: utter_confirmacion
 
 # --- HISTORIA 2: Lesión deportiva (urgencia) ---
 - story: urgencia_lesion_deportiva
   steps:
   - intent: greet
   - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: fisioterapia
   - action: utter_greet_con_negocio
   - intent: lesion_deportiva
   - action: action_urgencia_fisioterapia
   - action: action_buscar_urgencia_proxima
   - intent: informar_fecha
   - action: action_reservar_cita
-  - action: utter_confirmacion
 
 # --- HISTORIA 3: Contractura muscular ---
 - story: contractura_cita
   steps:
   - intent: greet
   - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: fisioterapia
   - action: utter_greet_con_negocio
   - intent: contractura_muscular
   - action: action_urgencia_fisioterapia
@@ -45,6 +47,64 @@ stories:
     entities:
     - fecha
   - action: action_reservar_cita
-  - action: utter_confirmacion
+
+# --- HISTORIA 4: Reserva servicio normal fisioterapia ---
+- story: reserva_servicio_normal_fisioterapia
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: fisioterapia
+  - action: utter_greet_con_negocio
+  - intent: masaje_descarga
+  - action: action_normalizar_servicio
+  - action: action_mostrar_disponibilidad
+  - intent: informar_fecha
+  - action: action_reservar_cita
+
+# --- HISTORIA PARA URGENCIA GENERAL FISIOTERAPIA ---
+- story: urgencia_fisioterapia_general
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: fisioterapia
+  - action: utter_greet_con_negocio
+  - intent: urgencia_fisioterapia
+  - action: action_urgencia_fisioterapia
+  - action: utter_urgencia_confirmada
+
+# --- GESTIÓN: Consultar citas usuario ---
+- story: fisio_consultar_citas
+  steps:
+  - intent: consultar_mis_citas
+  - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: fisioterapia
+  - action: action_consultar_citas_usuario
+
+# --- GESTIÓN: Cancelar cita con confirmación ---
+- story: fisio_cancelar_cita_confirmada
+  steps:
+  - intent: cancelar_cita
+  - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: fisioterapia
+  - action: action_cancelar_cita
+  - action: utter_confirmar_cancelacion
+  - intent: affirm
+  - action: action_cancelar_cita_confirmada
+  - action: utter_confirmacion_eliminada
+
+# --- GESTIÓN: Cambiar horario (reprogramar) ---
+- story: fisio_cambiar_horario
+  steps:
+  - intent: cambiar_horario
+  - action: action_set_contexto
+  - slot_was_set:
+    - tipo_negocio: fisioterapia
+  - action: utter_pedir_nueva_fecha
+  - intent: informar_fecha
+  - action: action_reservar_cita
 
 

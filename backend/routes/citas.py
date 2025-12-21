@@ -30,7 +30,7 @@ def obtener_citas():
             SELECT 
                 c.id, c.cliente_id, c.fecha_hora_cita, c.estado, c.duracion_minutos,
                 c.negocio_id, c.servicio_id,
-                n.nombre as negocio_nombre, 
+                n.nombre as negocio_nombre, n.tipo_negocio,
                 s.nombre as servicio_nombre, 
                 s.precio,
                 u.nombre as cliente_nombre

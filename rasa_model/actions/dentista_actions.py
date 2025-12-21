@@ -5,8 +5,9 @@ from rasa_sdk.events import SlotSet
 import requests
 from datetime import datetime, timedelta
 from .base_actions import ActionUrgenciaBase
+import os
 
-API_URL = "http://localhost:5000"
+API_URL = os.getenv("API_URL", "http://backend:5000")
 
 
 class ActionUrgenciaDental(Action, ActionUrgenciaBase):

@@ -5,8 +5,9 @@ from rasa_sdk.events import SlotSet
 import requests
 from datetime import datetime, timedelta
 from .base_actions import ActionUrgenciaBase
+import os
 
-API_URL = "http://localhost:5000"
+API_URL = os.getenv("API_URL", "http://backend:5000")
 
 
 class ActionUrgenciaPeluqueria(Action, ActionUrgenciaBase):
@@ -41,7 +42,7 @@ class ActionUrgenciaPeluqueria(Action, ActionUrgenciaBase):
                           "• Trae foto del color original si tienes\n\n"
                           "Te busco hueco de urgencia. Tenemos experiencia arreglando estos casos.\n\n"
                           "¿Cuándo puedes venir? ¿Hoy mismo?",
-                "es_urgencia": True
+                "es_urgencia": False
             }
         }
 

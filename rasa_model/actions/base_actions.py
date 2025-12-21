@@ -11,8 +11,9 @@ class ActionUrgenciaBase:
     def validar_tipo_negocio(self, tipo_esperado: str, tracker: Tracker, dispatcher: CollectingDispatcher) -> bool:
         """Valida que el negocio sea del tipo correcto"""
         tipo_negocio = tracker.get_slot("tipo_negocio")
+        negocio_actual = tracker.get_slot("negocio") or "este negocio"
         if tipo_negocio != tipo_esperado:
-            dispatcher.utter_message(text=f"⚠️ Este negocio no ofrece servicios de {tipo_esperado}. ¿En qué puedo ayudarte?")
+            dispatcher.utter_message(text=f"Este servicio no está disponible en {negocio_actual}.")
             return False
         return True
 

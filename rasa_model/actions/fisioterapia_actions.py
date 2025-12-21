@@ -5,8 +5,9 @@ from rasa_sdk.events import SlotSet
 import requests
 from datetime import datetime, timedelta
 from .base_actions import ActionUrgenciaBase
+import os
 
-API_URL = "http://localhost:5000"
+API_URL = os.getenv("API_URL", "http://backend:5000")
 
 
 class ActionUrgenciaFisioterapia(Action, ActionUrgenciaBase):
@@ -28,8 +29,6 @@ class ActionUrgenciaFisioterapia(Action, ActionUrgenciaBase):
 
         intent = tracker.latest_message.get('intent', {}).get('name')
 
-        intent = tracker.latest_message.get('intent', {}).get('name')
-        
         respuestas = {
             "dolor_agudo_espalda": {
                 "mensaje": "🚨 **Dolor Agudo de Espalda**\n\n"
