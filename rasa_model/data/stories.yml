@@ -74,12 +74,38 @@ stories:
   - intent: deny
   - action: utter_goodbye
 
-- story: Pedir más opciones de horarios
+- story: Reserva servicio normal dentista
   steps:
-  - intent: reservar_servicio
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: limpieza_dental
   - action: action_normalizar_servicio
-  - action: action_mostrar_disponibilidad
-  - intent: pedir_mas_opciones
   - action: action_mostrar_disponibilidad
   - intent: informar_fecha
   - action: action_reservar_cita
+  - action: utter_confirmacion
+
+- story: Reserva servicio normal fisioterapia
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: masaje_descarga
+  - action: action_normalizar_servicio
+  - action: action_mostrar_disponibilidad
+  - intent: informar_fecha
+  - action: action_reservar_cita
+  - action: utter_confirmacion
+
+- story: Reserva servicio normal peluqueria
+  steps:
+  - intent: greet
+  - action: action_set_contexto
+  - action: utter_greet_con_negocio
+  - intent: tinte_regular
+  - action: action_normalizar_servicio
+  - action: action_mostrar_disponibilidad
+  - intent: informar_fecha
+  - action: action_reservar_cita
+  - action: utter_confirmacion

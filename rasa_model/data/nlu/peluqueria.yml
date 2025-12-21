@@ -27,4 +27,12 @@ nlu:
     - necesito corregir el color
     - tinte en mal estado
 
+- intent: tinte_regular
+  examples: |
+    - quiero teñirme el pelo
+    - tinte de pelo
+    - cambiar color de pelo
+    - balayage
+    - coloración capilar
+
 

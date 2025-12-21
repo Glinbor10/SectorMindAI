@@ -26,6 +26,7 @@ from .peluqueria_actions import (
 from .fisioterapia_actions import (
     ActionUrgenciaFisioterapia
 )
+from .base_actions import ActionUrgenciaBase
 
 
 class ActionSetContexto(Action):
@@ -78,9 +79,21 @@ class ActionNormalizarServicio(Action):
         mensaje_usuario = tracker.latest_message.get('text', '').lower()
         negocio_nombre = tracker.get_slot("negocio")
         negocio_id = tracker.get_slot("negocio_id")
+        tipo_negocio = tracker.get_slot("tipo_negocio")
 
         if not negocio_id:
             dispatcher.utter_message(text="No sé en qué negocio estás. Por favor, selecciona uno desde la web.")
+            return []
+
+        # Filtro de servicios cruzados
+        if tipo_negocio == "dentista" and any(word in mensaje_usuario for word in ["corte", "tinte", "masaje", "fisioterapia"]):
+            dispatcher.utter_message(text="Este es un negocio dental. Ofrecemos servicios como limpieza, empaste, revisiones. ¿Qué necesitas?")
+            return []
+        elif tipo_negocio == "peluqueria" and any(word in mensaje_usuario for word in ["empaste", "diente", "masaje", "fisioterapia"]):
+            dispatcher.utter_message(text="Esta es una peluquería. Ofrecemos cortes, tintes, peinados. ¿Qué necesitas?")
+            return []
+        elif tipo_negocio == "fisioterapia" and any(word in mensaje_usuario for word in ["empaste", "diente", "corte", "tinte"]):
+            dispatcher.utter_message(text="Este es un centro de fisioterapia. Ofrecemos masajes, tratamientos musculares. ¿Qué necesitas?")
             return []
 
         try:

@@ -16,3 +16,13 @@ rules:
     steps:
       - intent: bot_challenge
       - action: action_responder_bot_challenge
+
+  - rule: Responder a más opciones
+    steps:
+      - intent: pedir_mas_opciones
+      - action: utter_pedir_servicio
+
+  - rule: Fallback
+    steps:
+      - intent: nlu_fallback
+      - action: utter_default

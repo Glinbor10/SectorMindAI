@@ -50,3 +50,12 @@ nlu:
     - empaste caído
     - tengo un hueco en el diente donde estaba el empaste
     - se me ha desprendido un empaste
+
+- intent: limpieza_dental
+  examples: |
+    - quiero una limpieza
+    - necesito limpieza dental
+    - revisión y limpieza
+    - higiene bucal
+    - limpieza de boca
+    - profilaxis dental

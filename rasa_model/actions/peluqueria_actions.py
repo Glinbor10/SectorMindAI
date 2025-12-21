@@ -4,11 +4,12 @@ from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
 import requests
 from datetime import datetime, timedelta
+from .base_actions import ActionUrgenciaBase
 
 API_URL = "http://localhost:5000"
 
 
-class ActionUrgenciaPeluqueria(Action):
+class ActionUrgenciaPeluqueria(Action, ActionUrgenciaBase):
     """Maneja urgencias de peluquería (eventos, desastres de tinte)"""
 
     def name(self) -> Text:
@@ -18,11 +19,7 @@ class ActionUrgenciaPeluqueria(Action):
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
 
-        tipo_negocio = tracker.get_slot("tipo_negocio")
-        
-        # Validar que el negocio es del tipo correcto
-        if tipo_negocio != "peluqueria":
-            dispatcher.utter_message(text="⚠️ Este negocio no ofrece servicios de peluquería. ¿En qué puedo ayudarte?")
+        if not self.validar_tipo_negocio("peluqueria", tracker, dispatcher):
             return []
 
         intent = tracker.latest_message.get('intent', {}).get('name')

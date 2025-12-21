@@ -7,10 +7,10 @@ Solo actúa sobre PostgreSQL. SQLite ha sido eliminado.
 import psycopg2
 import psycopg2.extras
 import os
-import requests
 import shutil
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash
 
 load_dotenv()
 
@@ -114,7 +114,7 @@ def init_db():
     """🗄️ Reinicializa la BD PostgreSQL."""
     print(f"\n2️⃣  REINICIALIZANDO BASE DE DATOS POSTGRESQL...")
     try:
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
         cursor = conn.cursor()
         
         # 🚨 PELIGROSO: Elimina todas las tablas (solo en desarrollo)
@@ -147,77 +147,50 @@ def init_db():
         return False
 
 
-def populate_api():
-    """👥 Puebla datos de prueba vía API."""
-    print(f"\n3️⃣  POBLANDO DATOS VÍA API...")
+def populate_db():
+    """👥 Puebla datos de prueba directamente en BD."""
+    print(f"\n3️⃣  POBLANDO DATOS DIRECTAMENTE EN BD...")
     
-    # Verificar que Flask está corriendo
     try:
-        requests.get(API_URL)
-    except:
-        print("    ⚠️ FLASK ESTÁ APAGADO. Enciéndelo con: python -m backend.app")
-        return
-
-    # --- CREAR PROPIETARIO ---
-    print(f"    👤 Registrando Propietario...")
-    prop_id = None
-    try:
-        res = requests.post(f"{API_URL}/auth/register", data=PROPIETARIO_DATA)
-        if res.status_code == 201:
-            prop_id = res.json()['id']
-            print(f"       ✅ {PROPIETARIO_DATA['nombre']} (ID: {prop_id})")
-        else:
-            print(f"       ❌ {res.text}")
-    except Exception as e:
-        print(f"       ❌ {e}")
-
-    # --- CREAR CLIENTE ---
-    print(f"    👤 Registrando Cliente...")
-    try:
-        res = requests.post(f"{API_URL}/auth/register", data=CLIENTE_DATA)
-        if res.status_code == 201:
-            print(f"       ✅ {CLIENTE_DATA['nombre']} (ID: {res.json()['id']})")
-        else:
-            print(f"       ❌ {res.text}")
-    except Exception as e:
-        print(f"       ❌ {e}")
-
-    # --- CREAR NEGOCIOS + SERVICIOS + HORARIOS ---
-    if not prop_id:
-        print("    ⚠️ No hay propietario. Saltando negocios.")
-        return
-    
-    print("    🏢 Creando Negocios...")
-    created_negocios = []
-    
-    for negocio in NEGOCIOS:
-        payload = {
-            "nombre": negocio["nombre"],
-            "tipo_negocio": negocio["tipo_negocio"],
-            "direccion": negocio["direccion"],
-            "descripcion": negocio.get("descripcion"),
-            "foto_url": negocio.get("foto_url"),
-            "propietario_id": prop_id
-        }
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor = conn.cursor()
         
-        try:
-            r = requests.post(f"{API_URL}/negocios/", json=payload)
-            if r.status_code == 201:
-                new_id = r.json().get('id')
-                created_negocios.append({"id": new_id, **negocio})
-                print(f"       ✅ {negocio['nombre']} (ID: {new_id})")
-            else:
-                print(f"       ❌ {r.text}")
-        except Exception as e:
-            print(f"       ❌ {e}")
-
-    # --- INSERTAR HORARIOS Y SERVICIOS DIRECTAMENTE EN BD ---
-    if created_negocios:
-        print("    ⏰ Insertando horarios y servicios...")
-        try:
-            conn = psycopg2.connect(DATABASE_URL)
-            cursor = conn.cursor()
-            
+        # --- CREAR PROPIETARIO ---
+        print(f"    👤 Insertando Propietario...")
+        hashed_prop_password = generate_password_hash(PROPIETARIO_DATA['password'])
+        cursor.execute(
+            "INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_url) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (PROPIETARIO_DATA['nombre'], PROPIETARIO_DATA['email'], hashed_prop_password, PROPIETARIO_DATA['rol'], PROPIETARIO_DATA['foto_perfil_url'])
+        )
+        prop_id = cursor.fetchone()['id']
+        print(f"       ✅ {PROPIETARIO_DATA['nombre']} (ID: {prop_id})")
+        
+        # --- CREAR CLIENTE ---
+        print(f"    👤 Insertando Cliente...")
+        hashed_client_password = generate_password_hash(CLIENTE_DATA['password'])
+        cursor.execute(
+            "INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_url) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (CLIENTE_DATA['nombre'], CLIENTE_DATA['email'], hashed_client_password, CLIENTE_DATA['rol'], CLIENTE_DATA['foto_perfil_url'])
+        )
+        client_id = cursor.fetchone()['id']
+        print(f"       ✅ {CLIENTE_DATA['nombre']} (ID: {client_id})")
+        
+        # --- CREAR NEGOCIOS ---
+        print("    🏢 Insertando Negocios...")
+        created_negocios = []
+        
+        for negocio in NEGOCIOS:
+            cursor.execute(
+                "INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_url, propietario_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+                (negocio["nombre"], negocio["tipo_negocio"], negocio["direccion"], negocio.get("descripcion"), negocio.get("foto_url"), prop_id)
+            )
+            new_id = cursor.fetchone()['id']
+            created_negocios.append({"id": new_id, **negocio})
+            print(f"       ✅ {negocio['nombre']} (ID: {new_id})")
+        
+        # --- INSERTAR HORARIOS Y SERVICIOS ---
+        if created_negocios:
+            print("    ⏰ Insertando horarios y servicios...")
             for negocio in created_negocios:
                 neg_id = negocio["id"]
                 
@@ -235,14 +208,14 @@ def populate_api():
                         (neg_id, s["nombre"], s["precio"], s["duracion_minutos"])
                     )
             
-            conn.commit()
             print("       ✅ Horarios y servicios insertados.")
-            
-            cursor.close()
-            conn.close()
-            
-        except Exception as e:
-            print(f"       ❌ ERROR: {e}")
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+    except Exception as e:
+        print(f"    ❌ ERROR: {e}")
 
 
 def add_past_citas():
@@ -250,7 +223,7 @@ def add_past_citas():
     print(f"\n4️⃣  AÑADIENDO CITAS PASADAS...")
     
     try:
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
         cursor = conn.cursor()
         
         # Obtener ID del cliente
@@ -262,7 +235,7 @@ def add_past_citas():
             conn.close()
             return
         
-        cliente_id = result[0]
+        cliente_id = result['id']
         
         # Obtener primer negocio y 2 servicios
         cursor.execute("SELECT id FROM negocios LIMIT 1")
@@ -272,7 +245,7 @@ def add_past_citas():
             conn.close()
             return
         
-        negocio_id = result[0]
+        negocio_id = result['id']
         
         cursor.execute("SELECT id, duracion_minutos FROM servicios LIMIT 2")
         servicios = cursor.fetchall()
@@ -288,12 +261,12 @@ def add_past_citas():
         
         cursor.execute(
             "INSERT INTO citas (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion_minutos, estado) VALUES (%s, %s, %s, %s, %s, %s)",
-            (negocio_id, cliente_id, servicios[0][0], fecha_pasada_1, servicios[0][1], 'confirmada')
+            (negocio_id, cliente_id, servicios[0]['id'], fecha_pasada_1, servicios[0]['duracion_minutos'], 'confirmada')
         )
         
         cursor.execute(
             "INSERT INTO citas (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion_minutos, estado) VALUES (%s, %s, %s, %s, %s, %s)",
-            (negocio_id, cliente_id, servicios[1][0], fecha_pasada_2, servicios[1][1], 'confirmada')
+            (negocio_id, cliente_id, servicios[1]['id'], fecha_pasada_2, servicios[1]['duracion_minutos'], 'confirmada')
         )
         
         conn.commit()
@@ -314,7 +287,7 @@ def main():
     
     clean_uploads()
     if init_db():
-        populate_api()
+        populate_db()
         add_past_citas()
         print("\n✨ ¡SISTEMA RESTAURADO COMPLETAMENTE! ✨")
         print(f"   → Propietario: {PROPIETARIO_DATA['email']}")

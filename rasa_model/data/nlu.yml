@@ -5,6 +5,19 @@ nlu:
   examples: |
     - hola
     - buenos días
+    - buenas tardes
+    - buenas noches
+    - hey
+    - hola buenas
+    - qué tal
+    - cómo estás
+    - buenas
+    - hola hola
+    - saludos
+    - buen día
+    - hola amigo
+    - hola equipo
+    - hola chicos
     - /greet{"negocio": "FisioMente Centro"}
     - /greet{"negocio": "Peluquería Estilo"}
     - /greet{"negocio": "Taller Paco"}
@@ -65,6 +78,19 @@ nlu:
   examples: |
     - sí
     - si
+    - claro
+    - de acuerdo
+    - perfecto
+    - vale
+    - ok
+    - confirmado
+    - correcto
+    - por supuesto
+    - adelante
+    - genial
+    - está bien
+    - me parece bien
+    - sí por favor
     - Si
     - correcto
     - vale
@@ -81,6 +107,13 @@ nlu:
 - intent: bot_challenge
   examples: |
     - eres un bot?
+    - eres un robot?
+    - hablo con una IA?
+    - quién eres?
+    - eres humano?
+    - eres un bot?
+    - eres una máquina?
+    - estás vivo?
 
 - intent: consultar_horarios
   examples: |
@@ -171,3 +204,11 @@ nlu:
     - más opciones
     - hay más disponibilidad
     - muéstrame más días
+
+- intent: nlu_fallback
+  examples: |
+    - no entiendo
+    - no sé
+    - ayuda
+    - qué puedo hacer
+    - no lo sé

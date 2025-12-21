@@ -36,4 +36,13 @@ nlu:
     - músculo agarrotado
     - sobrecarga muscular
 
+- intent: masaje_descarga
+  examples: |
+    - quiero un masaje
+    - masaje de descarga
+    - masaje relajante
+    - necesito un masaje
+    - masaje terapéutico
+    - drenaje linfático
+
 

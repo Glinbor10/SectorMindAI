@@ -4,11 +4,12 @@ from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
 import requests
 from datetime import datetime, timedelta
+from .base_actions import ActionUrgenciaBase
 
 API_URL = "http://localhost:5000"
 
 
-class ActionUrgenciaDental(Action):
+class ActionUrgenciaDental(Action, ActionUrgenciaBase):
     """Maneja urgencias dentales con respuestas específicas según el tipo de emergencia"""
 
     def name(self) -> Text:
@@ -18,20 +19,15 @@ class ActionUrgenciaDental(Action):
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
 
+        if not self.validar_tipo_negocio("dentista", tracker, dispatcher):
+            return []
+
+        negocio_id, cliente_id = self.obtener_slots_basicos(tracker)
+        if not self.validar_slots_basicos(negocio_id, cliente_id, dispatcher):
+            return []
+
         # Obtener el intent que disparó esta acción
         intent = tracker.latest_message.get('intent', {}).get('name')
-        negocio_id = tracker.get_slot("negocio_id")
-        cliente_id = tracker.get_slot("cliente_id")
-        tipo_negocio = tracker.get_slot("tipo_negocio")
-
-        # Validar que el negocio es del tipo correcto
-        if tipo_negocio != "dentista":
-            dispatcher.utter_message(text="⚠️ Este negocio no ofrece servicios dentales. ¿En qué puedo ayudarte?")
-            return []
-
-        if not negocio_id or not cliente_id:
-            dispatcher.utter_message(text="⚠️ Necesito que inicies sesión para ayudarte con urgencias.")
-            return []
 
         # Respuestas específicas según el tipo de urgencia
         respuestas = {

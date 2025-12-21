@@ -741,7 +741,7 @@ def test_accion_dental_rechaza_peluqueria(dispatcher, domain):
     
     # Debe mostrar mensaje de error
     mensaje = dispatcher.utter_message.call_args[1]['text']
-    assert 'no ofrece servicios dentales' in mensaje
+    assert 'Este negocio no ofrece servicios de dentista' in mensaje
     
     # No debe retornar eventos
     assert events == []
@@ -759,7 +759,7 @@ def test_accion_peluqueria_rechaza_fisioterapia(dispatcher, domain):
     events = action.run(dispatcher, tracker, domain)
     
     mensaje = dispatcher.utter_message.call_args[1]['text']
-    assert 'no ofrece servicios de peluquería' in mensaje
+    assert 'Este negocio no ofrece servicios de peluqueria' in mensaje
     assert events == []
 
 
