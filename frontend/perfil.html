@@ -65,7 +65,7 @@
                     </div>
                 </div>
             </div>
-            <div class="lg:col-span-2 space-y-6">
+            <div id="citas-section" class="lg:col-span-2 space-y-6 hidden">
                 <div class="flex items-center justify-between gap-3 flex-wrap">
                     <h3 class="text-xl font-bold text-slate-900 flex items-center">
                         <i data-lucide="calendar-check" class="mr-2 text-indigo-600"></i>
@@ -136,15 +136,21 @@
             renderProfileData(currentUser);
             updateUI(); // Cargar navbar
             await refreshUserData();
-            loadMyCitations();
-            
-            const toggleBtn = document.getElementById('toggle-history');
-            toggleBtn.addEventListener('click', () => {
-                showHistory = !showHistory;
-                toggleBtn.textContent = showHistory ? 'Ver próximas' : 'Ver histórico';
+
+            // Mostrar sección de citas solo si el usuario NO es propietario
+            const citasSection = document.getElementById('citas-section');
+            if (currentUser.rol && currentUser.rol.toLowerCase() !== 'propietario') {
+                citasSection.classList.remove('hidden');
                 loadMyCitations();
-            });
-            
+                const toggleBtn = document.getElementById('toggle-history');
+                toggleBtn.addEventListener('click', () => {
+                    showHistory = !showHistory;
+                    toggleBtn.textContent = showHistory ? 'Ver próximas' : 'Ver histórico';
+                    loadMyCitations();
+                });
+            } else {
+                citasSection.classList.add('hidden');
+            }
             lucide.createIcons();
         };
 

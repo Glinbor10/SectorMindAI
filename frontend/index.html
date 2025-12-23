@@ -35,7 +35,7 @@
                         <i data-lucide="calendar" class="text-indigo-300 w-6 h-6 absolute opacity-40" stroke-width="1.5"></i>
                         <i data-lucide="brain-circuit" class="text-white w-5 h-5 relative z-10"></i>
                     </div>
-                    <span class="font-bold text-xl tracking-tight text-slate-900">Sector Mind AI</span>
+                    <span class="font-bold text-xl tracking-tight text-indigo-600">Sector Mind AI</span>
                 </div>
 
                 <div class="flex items-center space-x-4">
@@ -48,12 +48,13 @@
                         <span id="user-name-display" class="font-medium text-slate-700">Usuario</span>
                         <img id="user-avatar-display" src="" class="w-10 h-10 rounded-full border-2 border-indigo-100 object-cover bg-slate-200">
                     </div>
+                    <button id="logout-btn" onclick="logout()" class="hidden text-red-500 hover:text-red-700 font-medium text-sm border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition">Cerrar Sesión</button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <header class="relative pt-16 pb-20 lg:pt-24 lg:pb-28 overflow-hidden">
+    <header id="cliente-header" class="relative pt-16 pb-20 lg:pt-24 lg:pb-28 overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
             <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 mb-6">
                 Tu tiempo, <span class="text-indigo-600">mejor invertido.</span>
@@ -71,13 +72,35 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full flex-grow">
-        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-            <h2 class="text-2xl font-bold text-slate-900">Negocios Destacados</h2>
-            <div id="filters-container" class="flex flex-wrap gap-2"></div>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
+        <!-- Vista para Clientes (búsqueda general) -->
+        <div id="cliente-view">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <h2 class="text-2xl font-bold text-slate-900">Negocios Destacados</h2>
+                <div id="filters-container" class="flex flex-wrap gap-2"></div>
+            </div>
+            <div id="business-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="col-span-full text-center py-20"><p class="text-slate-500">Cargando...</p></div>
+            </div>
         </div>
-        <div id="business-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="col-span-full text-center py-20"><p class="text-slate-500">Cargando...</p></div>
+
+        <!-- Vista para Propietarios (mis negocios) -->
+        <div id="propietario-view" class="hidden">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2 flex items-center justify-center">
+                    <i data-lucide="building" class="mr-2 text-indigo-600"></i>
+                    <span class="text-slate-900">Tus Negocios</span>
+                </h2>
+                <p class="text-lg text-slate-600">Gestiona tus servicios y citas</p>
+            </div>
+            <div class="flex items-center justify-end gap-3 flex-wrap mb-8">
+                <button onclick="openCreateBusinessModal()" class="bg-indigo-600 text-white px-6 py-2 rounded-full font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Crear Nuevo Negocio
+                </button>
+            </div>
+            <div id="negocios-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="col-span-full text-center py-20"><p class="text-slate-500">Cargando tus negocios...</p></div>
+            </div>
         </div>
     </main>
 
@@ -172,17 +195,38 @@
 
         function updateUI() {
             const userStr = localStorage.getItem('sector_mind_user');
+            const logoutBtn = document.getElementById('logout-btn');
             if (userStr) {
                 currentUser = JSON.parse(userStr);
                 document.getElementById('auth-buttons').classList.add('hidden');
                 document.getElementById('user-menu').classList.remove('hidden');
                 document.getElementById('user-menu').classList.add('flex');
+                if (logoutBtn) logoutBtn.classList.remove('hidden');
                 document.getElementById('user-name-display').innerText = currentUser.nombre;
                 document.getElementById('user-avatar-display').src = currentUser.foto_perfil_url || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
+
+                // Mostrar vista apropiada según rol
+                if (currentUser.rol === 'propietario') {
+                    document.getElementById('cliente-header').classList.add('hidden');
+                    document.getElementById('cliente-view').classList.add('hidden');
+                    document.getElementById('propietario-view').classList.remove('hidden');
+                    loadMyBusinesses();
+                } else {
+                    document.getElementById('cliente-header').classList.remove('hidden');
+                    document.getElementById('cliente-view').classList.remove('hidden');
+                    document.getElementById('propietario-view').classList.add('hidden');
+                    loadBusinesses();
+                }
             } else {
                 document.getElementById('auth-buttons').classList.remove('hidden');
                 document.getElementById('user-menu').classList.add('hidden');
                 document.getElementById('user-menu').classList.remove('flex');
+                if (logoutBtn) logoutBtn.classList.add('hidden');
+                // Vista por defecto para usuarios no logueados (cliente)
+                document.getElementById('cliente-header').classList.remove('hidden');
+                document.getElementById('cliente-view').classList.remove('hidden');
+                document.getElementById('propietario-view').classList.add('hidden');
+                loadBusinesses();
             }
         }
 
@@ -198,6 +242,132 @@
                 generateFilters(allNegocios);
                 renderBusinessGrid(allNegocios);
             } catch (err) { grid.innerHTML = '<p class="text-red-500 col-span-full">Error al conectar.</p>'; }
+        }
+
+        async function loadMyBusinesses() {
+            const container = document.getElementById('negocios-container');
+            try {
+                const res = await fetch(`${API_URL}/negocios?propietario_id=${currentUser.id}`);
+                const negocios = await res.json();
+                
+                container.innerHTML = '';
+                if (negocios.length === 0) {
+                    container.innerHTML = `<div class="text-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed col-span-full"><i data-lucide="building" class="w-12 h-12 text-slate-300 mx-auto mb-4"></i><p class="text-slate-500 mb-4">No tienes negocios registrados.</p><button onclick="openCreateBusinessModal()" class="text-indigo-600 font-bold hover:underline">Crear tu primer negocio</button></div>`;
+                } else {
+                    negocios.forEach(negocio => {
+                        const card = document.createElement('div');
+                        card.className = "bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition cursor-pointer relative";
+                        card.onclick = () => window.location.href = `/gestion_negocio.html?id=${negocio.id}`;
+                        card.innerHTML = `
+                            <div class="h-48 overflow-hidden relative rounded-t-2xl">
+                                <img src="${negocio.foto_url || 'https://via.placeholder.com/400x200/6366f1/ffffff?text=' + encodeURIComponent(negocio.nombre)}" alt="${negocio.nombre}" class="w-full h-full object-cover">
+                                <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-indigo-600 shadow-sm capitalize">${negocio.tipo_negocio}</div>
+                                <button onclick="event.stopPropagation(); deleteBusiness(${negocio.id})" class="absolute top-4 left-4 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-sm transition" title="Eliminar negocio">
+                                    <i data-lucide="trash" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <div class="p-6">
+                                <h3 class="font-bold text-slate-900 text-lg mb-2">${negocio.nombre}</h3>
+                                <p class="text-slate-600 text-sm mb-4 line-clamp-2">${negocio.descripcion || 'Sin descripción'}</p>
+                                <div class="flex items-center text-slate-500 text-sm">
+                                    <i data-lucide="map-pin" class="w-4 h-4 mr-1"></i>
+                                    <span>${negocio.direccion}</span>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                }
+                // lucide.createIcons(); // Removido - se inicializa al final
+            } catch (err) { container.innerHTML = '<p class="text-red-500">Error al cargar negocios.</p>'; }
+        }
+
+        function openCreateBusinessModal() {
+            document.getElementById('modal-create-business').classList.remove('hidden');
+        }
+
+        function closeCreateBusinessModal() {
+            document.getElementById('modal-create-business').classList.add('hidden');
+            document.getElementById('business-name').value = '';
+            document.getElementById('business-type').value = 'general';
+            document.getElementById('business-address').value = '';
+            document.getElementById('business-description').value = '';
+            document.getElementById('business-photo').value = '';
+        }
+
+        async function handleCreateBusiness(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('nombre', document.getElementById('business-name').value);
+            formData.append('tipo_negocio', document.getElementById('business-type').value);
+            formData.append('direccion', document.getElementById('business-address').value);
+            formData.append('descripcion', document.getElementById('business-description').value);
+            formData.append('propietario_id', currentUser.id);
+            
+            // Agregar archivo si existe
+            const photoInput = document.getElementById('business-photo');
+            if (photoInput.files && photoInput.files[0]) {
+                formData.append('foto', photoInput.files[0]);
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/negocios/`, {
+                    method: 'POST',
+                    // No especificar Content-Type para que el navegador lo configure automáticamente con boundary
+                    body: formData  // Enviar FormData en lugar de JSON
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    closeCreateBusinessModal();
+                    Swal.fire({
+                        title: '¡Negocio creado!',
+                        text: 'Tu negocio ha sido registrado exitosamente',
+                        icon: 'success',
+                        confirmButtonColor: '#4f46e5'
+                    });
+                    loadMyBusinesses();
+                } else {
+                    Swal.fire('Error', result.error, 'error');
+                }
+            } catch (err) {
+                Swal.fire('Error', 'Error de conexión', 'error');
+            }
+        }
+
+        async function deleteBusiness(id) {
+            const result = await Swal.fire({
+                title: '¿Eliminar negocio?',
+                text: 'Esta acción no se puede deshacer y eliminará todos los servicios y citas asociadas',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`${API_URL}/negocios/${id}?propietario_id=${currentUser.id}`, {
+                        method: 'DELETE'
+                    });
+                    if (res.ok) {
+                        Swal.fire({
+                            title: 'Negocio eliminado',
+                            text: 'El negocio ha sido eliminado exitosamente',
+                            icon: 'success',
+                            confirmButtonColor: '#4f46e5'
+                        });
+                        loadMyBusinesses();
+                    } else {
+                        const data = await res.json();
+                        Swal.fire('Error', data.error, 'error');
+                    }
+                } catch (err) {
+                    Swal.fire('Error', 'Error de conexión', 'error');
+                }
+            }
         }
 
         function generateFilters(negocios) {
@@ -250,11 +420,9 @@
                 const cardLink = document.createElement('a');
                 cardLink.className = "group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 cursor-pointer flex flex-col h-full fade-in block text-left";
                 
-                // --- CAMBIO IMPORTANTE: Enlace al archivo detalle.html ---
-                cardLink.href = 'detalle.html'; 
-                // --------------------------------------------------------
+                cardLink.href = 'detalle.html';
 
-                cardLink.onclick = () => {
+                cardLink.onclick = (e) => {
                     localStorage.setItem('selected_business', JSON.stringify(negocio));
                 };
 
@@ -274,10 +442,15 @@
                 `;
                 grid.appendChild(cardLink);
             });
-            lucide.createIcons();
+            // lucide.createIcons(); // Removido - se inicializa al final
         }
 
         function capitalize(str) { return str ? str.charAt(0).toUpperCase() + str.slice(1) : ''; }
+
+        function logout() {
+            localStorage.removeItem('sector_mind_user');
+            window.location.href = '/';
+        }
 
         document.getElementById('search-input').addEventListener('input', (e) => {
             currentSearchTerm = e.target.value;
@@ -286,9 +459,66 @@
 
         window.onload = () => {
             updateUI();
-            loadBusinesses();
-            lucide.createIcons();
+            // Inicializar iconos después de que todo esté cargado
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 100);
         };
+
+        // También inicializar iconos cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 50);
+        });
     </script>
+
+    <!-- Modal de Crear Negocio -->
+    <div id="modal-create-business" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-slate-900">Crear Nuevo Negocio</h3>
+                <button onclick="closeCreateBusinessModal()" class="text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="handleCreateBusiness(event)" class="p-6 space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Nombre del Negocio</label>
+                    <input type="text" id="business-name" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Tipo de Negocio</label>
+                    <select id="business-type" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                        <option value="dentista">Dentista</option>
+                        <option value="peluqueria">Peluquería</option>
+                        <option value="fisioterapia">Fisioterapia</option>
+                        <option value="general">General</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Dirección</label>
+                    <input type="text" id="business-address" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Descripción</label>
+                    <textarea id="business-description" rows="3" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500"></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Foto del Negocio (opcional)</label>
+                    <input type="file" id="business-photo" accept="image/*" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+                
+                <button type="submit" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg flex items-center justify-center gap-2">
+                    <i data-lucide="plus" class="w-5 h-5"></i> Crear Negocio
+                </button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

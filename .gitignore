@@ -51,6 +51,13 @@ htmlcov/
 *.sqlite
 *.sqlite3
 
+# ==========================
+# 📁 ARCHIVOS DE USUARIO
+# ==========================
+# Carpeta de uploads (fotos de perfil, negocios, etc.)
+uploads/
+frontend/uploads/
+
 # macOS
 .DS_Store
 

@@ -7,6 +7,7 @@ import pytest
 import json
 import uuid
 from io import BytesIO
+from ..db import get_db_connection
 
 
 # ======================================================================
@@ -467,3 +468,386 @@ def test_multiples_negocios_mismo_propietario(client, propietario):
     assert len(data) >= 3  # Al menos los 3 que creamos
     propietario_ids = [n['propietario_id'] for n in data]
     assert all(pid == propietario for pid in propietario_ids)
+
+
+# ======================================================================
+# TESTS PARA CRUD DE SERVICIOS
+# ======================================================================
+
+def test_crear_servicio_exitoso(client, propietario, app, db_conn):
+    """Test crear servicio exitosamente."""
+    # Crear negocio primero
+    cursor = db_conn.cursor()
+    cursor.execute(
+        "INSERT INTO negocios (nombre, tipo_negocio, propietario_id, direccion) "
+        "VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Negocio Test', 'peluqueria', propietario, 'Calle Test 123')
+    )
+    neg_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    # Crear servicio
+    payload = {
+        'nombre': 'Corte de Pelo',
+        'precio': 25.0,
+        'duracion_minutos': 45,
+        'propietario_id': propietario
+    }
+
+    response = client.post(f'/negocios/{neg_id}/servicios',
+                          data=json.dumps(payload),
+                          content_type='application/json')
+
+    assert response.status_code == 201
+    data = response.get_json()
+    assert 'id' in data
+    assert data['message'] == 'Servicio creado exitosamente'
+
+    # Verificar que se creó en BD
+    cursor = db_conn.cursor()
+    cursor.execute("SELECT * FROM servicios WHERE id = %s", (data['id'],))
+    servicio = cursor.fetchone()
+    cursor.close()
+
+    assert servicio is not None
+    assert servicio['nombre'] == 'Corte de Pelo'
+    assert servicio['precio'] == 25.0
+    assert servicio['duracion_minutos'] == 45
+    assert servicio['negocio_id'] == neg_id
+
+
+def test_crear_servicio_sin_permiso(client, propietario, app, db_conn):
+    """Test crear servicio sin ser propietario del negocio."""
+    # Crear negocio de otro propietario
+    cursor = db_conn.cursor()
+    cursor.execute(
+        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Otro Propietario', 'otro@test.com', 'hash', 'propietario')
+    )
+    otro_prop_id = cursor.fetchone()['id']
+
+    cursor.execute(
+        "INSERT INTO negocios (nombre, tipo_negocio, propietario_id, direccion) "
+        "VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Negocio Ajeno', 'peluqueria', otro_prop_id, 'Calle Ajena 123')
+    )
+    neg_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    # Intentar crear servicio con propietario incorrecto
+    payload = {
+        'nombre': 'Servicio Ilegal',
+        'precio': 10.0,
+        'duracion_minutos': 30,
+        'propietario_id': propietario  # Este no es el propietario del negocio
+    }
+
+    response = client.post(f'/negocios/{neg_id}/servicios',
+                          data=json.dumps(payload),
+                          content_type='application/json')
+
+    assert response.status_code == 403
+    data = response.get_json()
+    assert 'No tienes permisos' in data['error']
+
+
+def test_crear_servicio_datos_incompletos(client, propietario, app, db_conn):
+    """Test crear servicio con datos incompletos."""
+    # Crear negocio
+    cursor = db_conn.cursor()
+    cursor.execute(
+        "INSERT INTO negocios (nombre, tipo_negocio, propietario_id, direccion) "
+        "VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Negocio Test', 'peluqueria', propietario, 'Calle Test 123')
+    )
+    neg_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    # Intentar crear servicio sin nombre
+    payload = {
+        'precio': 25.0,
+        'duracion_minutos': 45,
+        'propietario_id': propietario
+    }
+
+    response = client.post(f'/negocios/{neg_id}/servicios',
+                          data=json.dumps(payload),
+                          content_type='application/json')
+
+    assert response.status_code == 400
+    data = response.get_json()
+    assert 'Faltan datos obligatorios' in data['error']
+
+
+def test_actualizar_servicio_exitoso(client, negocio_con_servicios):
+    """Test actualizar servicio exitosamente."""
+    neg_id = negocio_con_servicios['negocio_id']
+    serv_id = negocio_con_servicios['servicio_id_1']
+
+    # Obtener propietario del negocio
+    conn = get_db_connection()
+    negocio = conn.execute("SELECT propietario_id FROM negocios WHERE id = %s", (neg_id,)).fetchone()
+    prop_id = negocio['propietario_id']
+    conn.close()
+
+    # Actualizar servicio
+    payload = {
+        'nombre': 'Corte Premium',
+        'precio': 35.0,
+        'duracion_minutos': 60,
+        'propietario_id': prop_id
+    }
+
+    response = client.put(f'/negocios/{neg_id}/servicios/{serv_id}',
+                         data=json.dumps(payload),
+                         content_type='application/json')
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['message'] == 'Servicio actualizado'
+
+
+def test_actualizar_servicio_parcial(client, negocio_con_servicios):
+    """Test actualizar solo algunos campos del servicio."""
+    neg_id = negocio_con_servicios['negocio_id']
+    serv_id = negocio_con_servicios['servicio_id_1']
+
+    # Obtener propietario del negocio
+    conn = get_db_connection()
+    negocio = conn.execute("SELECT propietario_id FROM negocios WHERE id = %s", (neg_id,)).fetchone()
+    prop_id = negocio['propietario_id']
+    conn.close()
+
+    # Actualizar solo precio
+    payload = {
+        'precio': 40.0,
+        'propietario_id': prop_id
+    }
+
+    response = client.put(f'/negocios/{neg_id}/servicios/{serv_id}',
+                         data=json.dumps(payload),
+                         content_type='application/json')
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['message'] == 'Servicio actualizado'
+
+
+def test_actualizar_servicio_sin_permiso(client, negocio_con_servicios, app, db_conn):
+    """Test actualizar servicio sin ser propietario."""
+    neg_id = negocio_con_servicios['negocio_id']
+    serv_id = negocio_con_servicios['servicio_id_1']
+
+    # Crear otro propietario
+    cursor = db_conn.cursor()
+    cursor.execute(
+        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Propietario Malo', 'malo@test.com', 'hash', 'propietario')
+    )
+    otro_prop_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    # Intentar actualizar con propietario incorrecto
+    payload = {
+        'nombre': 'Servicio Hackeado',
+        'propietario_id': otro_prop_id  # Este no es el propietario del negocio
+    }
+
+    response = client.put(f'/negocios/{neg_id}/servicios/{serv_id}',
+                         data=json.dumps(payload),
+                         content_type='application/json')
+
+    assert response.status_code == 403
+    data = response.get_json()
+    assert 'No tienes permisos' in data['error']
+
+
+def test_actualizar_servicio_inexistente(client, negocio_con_servicios):
+    """Test actualizar servicio que no existe."""
+    neg_id = negocio_con_servicios['negocio_id']
+
+    # Obtener propietario del negocio
+    conn = get_db_connection()
+    negocio = conn.execute("SELECT propietario_id FROM negocios WHERE id = %s", (neg_id,)).fetchone()
+    prop_id = negocio['propietario_id']
+    conn.close()
+
+    # Intentar actualizar servicio inexistente
+    payload = {
+        'nombre': 'Servicio Fantasma',
+        'propietario_id': prop_id
+    }
+
+    response = client.put(f'/negocios/{neg_id}/servicios/99999',
+                         data=json.dumps(payload),
+                         content_type='application/json')
+
+    assert response.status_code == 404
+    data = response.get_json()
+    assert 'Servicio no encontrado' in data['error']
+
+
+def test_eliminar_servicio_exitoso(client, negocio_con_servicios):
+    """Test eliminar servicio exitosamente."""
+    neg_id = negocio_con_servicios['negocio_id']
+    serv_id = negocio_con_servicios['servicio_id_1']
+
+    # Obtener propietario del negocio
+    conn = get_db_connection()
+    negocio = conn.execute("SELECT propietario_id FROM negocios WHERE id = %s", (neg_id,)).fetchone()
+    prop_id = negocio['propietario_id']
+    conn.close()
+
+    # Eliminar servicio
+    response = client.delete(f'/negocios/{neg_id}/servicios/{serv_id}?propietario_id={prop_id}')
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['message'] == 'Servicio eliminado'
+
+    # Verificar que se eliminó de BD
+    conn = get_db_connection()
+    servicio = conn.execute("SELECT id FROM servicios WHERE id = %s", (serv_id,)).fetchone()
+    conn.close()
+
+    assert servicio is None
+
+
+def test_eliminar_servicio_sin_permiso(client, negocio_con_servicios, app, db_conn):
+    """Test eliminar servicio sin ser propietario."""
+    neg_id = negocio_con_servicios['negocio_id']
+    serv_id = negocio_con_servicios['servicio_id_1']
+
+    # Crear otro propietario
+    cursor = db_conn.cursor()
+    cursor.execute(
+        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Propietario Malo 2', 'malo2@test.com', 'hash', 'propietario')
+    )
+    otro_prop_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    # Intentar eliminar con propietario incorrecto
+    response = client.delete(f'/negocios/{neg_id}/servicios/{serv_id}?propietario_id={otro_prop_id}')
+
+    assert response.status_code == 403
+    data = response.get_json()
+    assert 'No tienes permisos' in data['error']
+
+
+def test_eliminar_servicio_inexistente(client, negocio_con_servicios):
+    """Test eliminar servicio que no existe."""
+    neg_id = negocio_con_servicios['negocio_id']
+
+    # Obtener propietario del negocio
+    conn = get_db_connection()
+    negocio = conn.execute("SELECT propietario_id FROM negocios WHERE id = %s", (neg_id,)).fetchone()
+    prop_id = negocio['propietario_id']
+    conn.close()
+
+    # Intentar eliminar servicio inexistente
+    response = client.delete(f'/negocios/{neg_id}/servicios/99999?propietario_id={prop_id}')
+
+    assert response.status_code == 404
+    data = response.get_json()
+    assert 'Servicio no encontrado' in data['error']
+
+
+# ======================================================================
+# TESTS PARA ELIMINAR NEGOCIO
+# ======================================================================
+
+def test_eliminar_negocio_exitoso(client, propietario, app, db_conn):
+    """Test eliminar negocio exitosamente."""
+    # Crear negocio
+    cursor = db_conn.cursor()
+    cursor.execute(
+        "INSERT INTO negocios (nombre, tipo_negocio, propietario_id, direccion) "
+        "VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Negocio a Eliminar', 'peluqueria', propietario, 'Calle Eliminar 123')
+    )
+    neg_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    # Eliminar negocio
+    response = client.delete(f'/negocios/{neg_id}?propietario_id={propietario}')
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['message'] == 'Negocio eliminado'
+
+    # Verificar que se eliminó de BD
+    conn = get_db_connection()
+    negocio = conn.execute("SELECT id FROM negocios WHERE id = %s", (neg_id,)).fetchone()
+    conn.close()
+
+    assert negocio is None
+
+
+def test_eliminar_negocio_sin_permiso(client, propietario, app, db_conn):
+    """Test eliminar negocio sin ser propietario."""
+    # Crear negocio de otro propietario
+    cursor = db_conn.cursor()
+    cursor.execute(
+        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Otro Propietario', 'otro2@test.com', 'hash', 'propietario')
+    )
+    otro_prop_id = cursor.fetchone()['id']
+
+    cursor.execute(
+        "INSERT INTO negocios (nombre, tipo_negocio, propietario_id, direccion) "
+        "VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Negocio Ajeno 2', 'dentista', otro_prop_id, 'Calle Ajena 456')
+    )
+    neg_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    # Intentar eliminar con propietario incorrecto
+    response = client.delete(f'/negocios/{neg_id}?propietario_id={propietario}')
+
+    assert response.status_code == 403
+    data = response.get_json()
+    assert 'No tienes permisos' in data['error']
+
+
+def test_eliminar_negocio_inexistente(client, propietario):
+    """Test eliminar negocio que no existe."""
+    response = client.delete(f'/negocios/99999?propietario_id={propietario}')
+
+    assert response.status_code == 404
+    data = response.get_json()
+    assert 'Negocio no encontrado' in data['error']
+
+
+def test_eliminar_negocio_con_servicios(client, negocio_con_servicios):
+    """Test eliminar negocio que tiene servicios (debería funcionar)."""
+    neg_id = negocio_con_servicios['negocio_id']
+
+    # Obtener propietario del negocio
+    conn = get_db_connection()
+    negocio = conn.execute("SELECT propietario_id FROM negocios WHERE id = %s", (neg_id,)).fetchone()
+    prop_id = negocio['propietario_id']
+    conn.close()
+
+    # Eliminar negocio (debería eliminar también los servicios por CASCADE)
+    response = client.delete(f'/negocios/{neg_id}?propietario_id={prop_id}')
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['message'] == 'Negocio eliminado'
+
+    # Verificar que negocio y servicios se eliminaron
+    conn = get_db_connection()
+    negocio = conn.execute("SELECT id FROM negocios WHERE id = %s", (neg_id,)).fetchone()
+    servicios = conn.execute("SELECT id FROM servicios WHERE negocio_id = %s", (neg_id,)).fetchall()
+    conn.close()
+
+    assert negocio is None
+    assert len(servicios) == 0

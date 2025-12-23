@@ -66,6 +66,7 @@ function saveUserSession(userData) {
 
 // --- INIT ---
 window.onload = async () => {
+    console.log('onload start');
     lucide.createIcons();
     
     // 1. Cargar Usuario
@@ -75,9 +76,43 @@ window.onload = async () => {
     updateUI(); 
 
     // 2. Cargar Negocio
-    const storedBiz = localStorage.getItem('selected_business');
-    if (!storedBiz) { window.location.href = '/'; return; }
-    businessData = JSON.parse(storedBiz);
+    businessData = null;
+    const urlParams = new URLSearchParams(window.location.search);
+    const negocioId = urlParams.get('id');
+    if (negocioId) {
+        // Fetch the business data from API
+        try {
+            const res = await fetch(`${API_URL}/negocios/${negocioId}`);
+            if (res.ok) {
+                businessData = await res.json();
+                localStorage.setItem('selected_business', JSON.stringify(businessData));
+            } else {
+                console.error('Failed to fetch business');
+                window.location.href = '/';
+                return;
+            }
+        } catch (e) {
+            console.error(e);
+            window.location.href = '/';
+            return;
+        }
+    } else {
+        const storedBiz = localStorage.getItem('selected_business');
+        if (!storedBiz) { window.location.href = '/'; return; }
+        try {
+            businessData = JSON.parse(storedBiz);
+        } catch (e) {
+            console.error('Error parsing stored business data:', e);
+            window.location.href = '/';
+            return;
+        }
+        if (!businessData || typeof businessData !== 'object') {
+            console.error('Invalid business data:', businessData);
+            window.location.href = '/';
+            return;
+        }
+    }
+    
     renderBusinessInfo(businessData);
     
     // 3. ESPERA DE RASA
@@ -145,6 +180,12 @@ function updateUI() {
 }
 
 function renderBusinessInfo(biz) {
+    console.log('Rendering business:', biz);
+    if (!biz) {
+        console.error('No business data');
+        return;
+    }
+    if (!biz.nombre) biz.nombre = 'Negocio sin nombre';
     document.getElementById('biz-name').innerText = biz.nombre;
     document.getElementById('biz-desc').innerText = biz.descripcion || "Sin descripción.";
     document.getElementById('biz-address').innerHTML = `<i data-lucide="map-pin" class="w-4 h-4 mr-2"></i> ${biz.direccion || 'Dirección no disponible'}`;
@@ -406,7 +447,7 @@ async function loadSmartCalendar() {
     calendarContainer.innerHTML = '<div class="col-span-7 text-center py-8"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><p class="text-slate-500 mt-3">Cargando días disponibles...</p></div>';
     
     const today = new Date();
-    const daysToShow = 21; // Mostrar próximas 3 semanas
+    const daysToShow = 21; // Tres semanas
     
     // Obtener disponibilidad para los próximos días
     const disponibilidadPromises = [];
@@ -414,6 +455,8 @@ async function loadSmartCalendar() {
         const date = new Date(today);
         date.setDate(today.getDate() + i);
         const dateStr = date.toISOString().split('T')[0];
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
         disponibilidadPromises.push(
             fetch(`${API_URL}/disponibilidad`, {
                 method: 'POST',
@@ -422,11 +465,15 @@ async function loadSmartCalendar() {
                     negocio_id: businessData.id,
                     servicio_id: selectedService.id,
                     fecha: dateStr
-                })
+                }),
+                signal: controller.signal
             })
-                .then(res => res.json())
+                .then(res => {
+                    clearTimeout(timeoutId);
+                    return res.ok ? res.json() : null;
+                })
                 .then(data => {
-                    const horarios = data.disponibles || [];
+                    const horarios = data && data.disponibles ? data.disponibles : [];
                     return { date: dateStr, hasSlots: horarios.length > 0, horarios };
                 })
                 .catch(() => ({ date: dateStr, hasSlots: false, horarios: [] }))
@@ -514,14 +561,25 @@ function selectDate(dateStr, buttonElement) {
     timeSection.classList.remove('hidden');
     timeSlotsContainer.innerHTML = '';
     
-    const horarios = availableDates[dateStr] || [];
-    
+    let horarios = availableDates[dateStr] || [];
+    // Filtrar horarios pasados si la fecha es hoy
+    const now = new Date();
+    const selectedDateObj = new Date(dateStr);
+    if (
+        selectedDateObj.getFullYear() === now.getFullYear() &&
+        selectedDateObj.getMonth() === now.getMonth() &&
+        selectedDateObj.getDate() === now.getDate()
+    ) {
+        horarios = horarios.filter(hora => {
+            const horaObj = new Date(hora);
+            return horaObj > now;
+        });
+    }
     if (horarios.length === 0) {
         timeSlotsContainer.innerHTML = '<div class="col-span-full text-center py-4 text-slate-400">No hay horarios disponibles</div>';
         updateBookingButton();
         return;
     }
-    
     horarios.forEach(hora => {
         const button = document.createElement('button');
         button.type = 'button';
@@ -532,7 +590,6 @@ function selectDate(dateStr, buttonElement) {
         button.onclick = () => selectTimeSlot(hora, button);
         timeSlotsContainer.appendChild(button);
     });
-    
     updateBookingButton();
     lucide.createIcons();
 }

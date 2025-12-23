@@ -19,7 +19,7 @@ def create_app():
 
     # Configurar carpeta de uploads desde variable de entorno
     upload_folder = os.getenv('UPLOAD_FOLDER', os.path.join(
-        os.path.dirname(__file__), '..', 'frontend', 'uploads'
+        os.path.dirname(__file__), 'frontend', 'uploads'
     ))
     app.config['UPLOAD_FOLDER'] = upload_folder
     

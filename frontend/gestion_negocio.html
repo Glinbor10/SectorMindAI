@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Negocio - Sector Mind AI</title>
+    <link rel="icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z'/%3e%3cpath d='M9 13a4.5 4.5 0 0 0 3-4'/%3e%3cpath d='M6.003 5.125A3 3 0 0 0 6.401 6.5'/%3e%3cpath d='M3.477 10.896a4 4 0 0 1 .585-.396'/%3e%3cpath d='M6 18a4 4 0 0 1-1.967-.516'/%3e%3cpath d='M12 13h4'/%3e%3cpath d='M12 18h6a2 2 0 0 1 2 2v1'/%3e%3cpath d='M12 8h8'/%3e%3cpath d='M16 8V5a2 2 0 0 1 2-2'/%3e%3ccircle cx='16' cy='13' r='.5'/%3e%3ccircle cx='18' cy='3' r='.5'/%3e%3ccircle cx='20' cy='21' r='.5'/%3e%3ccircle cx='20' cy='8' r='.5'/%3e%3c/svg%3e" type="image/svg+xml">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen relative">
+    <script>const API_URL = 'http://localhost:5000';</script>
+
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center cursor-pointer group" onclick="window.location.href='/'">
+                    <div class="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center mr-2 relative overflow-hidden transition-transform group-hover:scale-105">
+                        <i data-lucide="calendar" class="text-indigo-300 w-6 h-6 absolute opacity-40" stroke-width="1.5"></i>
+                        <i data-lucide="brain-circuit" class="text-white w-5 h-5 relative z-10"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight text-indigo-600">Sector Mind AI</span>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <button onclick="window.location.href='/'" class="text-slate-600 hover:text-indigo-600 font-medium">
+                        <i data-lucide="arrow-left" class="w-4 h-4 inline mr-1"></i> Volver a tus Negocios
+                    </button>
+                    <button onclick="logout()" class="text-red-500 hover:text-red-700 font-medium text-sm border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition ml-4">Cerrar Sesión</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <div class="flex items-center gap-4 mb-2">
+                <h1 id="business-title" class="text-3xl font-bold text-slate-900">Cargando...</h1>
+                <button onclick="deleteBusiness()" class="flex items-center gap-2 text-red-600 hover:text-white hover:bg-red-600 border border-red-200 px-4 py-2 rounded-lg font-medium text-sm transition bg-white shadow-sm">
+                    <i data-lucide="trash" class="w-5 h-5"></i>
+                    Eliminar negocio
+                </button>
+            </div>
+            <p id="business-subtitle" class="text-slate-500">Gestión de tu negocio</p>
+                // Eliminar negocio
+                async function deleteBusiness() {
+                    const result = await Swal.fire({
+                        title: '¿Eliminar negocio?',
+                        text: 'Esta acción no se puede deshacer. Se eliminarán todos los servicios y citas asociadas.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ef4444',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Sí, eliminar',
+                        cancelButtonText: 'Cancelar'
+                    });
+                    if (result.isConfirmed) {
+                        try {
+                            const res = await fetch(`${API_URL}/negocios/${currentBusinessId}?propietario_id=${currentUser.id}`, {
+                                method: 'DELETE'
+                            });
+                            if (res.ok) {
+                                Swal.fire('Negocio eliminado', '', 'success');
+                                window.location.href = '/perfil.html';
+                            } else {
+                                const error = await res.json();
+                                Swal.fire('Error', error.error, 'error');
+                            }
+                        } catch (err) {
+                            Swal.fire('Error', 'Error de conexión', 'error');
+                        }
+                    }
+                }
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Servicios -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center">
+                        <i data-lucide="sparkles" class="mr-2 text-indigo-600"></i>
+                        Servicios
+                    </h2>
+                    <button onclick="openCreateServiceModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Servicio
+                    </button>
+                </div>
+                <div id="services-container" class="space-y-4">
+                    <div class="text-center py-8 bg-white rounded-2xl border border-slate-200 border-dashed">
+                        <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full inline-block"></div>
+                        <p class="text-slate-400 mt-2">Cargando servicios...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Citas -->
+            <div class="space-y-6">
+                <h2 class="text-xl font-bold text-slate-900 flex items-center">
+                    <i data-lucide="calendar-check" class="mr-2 text-indigo-600"></i>
+                    Citas Recientes
+                </h2>
+                <div id="citas-container" class="space-y-4">
+                    <div class="text-center py-8 bg-white rounded-2xl border border-slate-200 border-dashed">
+                        <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full inline-block"></div>
+                        <p class="text-slate-400 mt-2">Cargando citas...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Crear Servicio -->
+    <div id="modal-create-service" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full">
+            <div class="p-6">
+                <h3 class="text-2xl font-bold text-slate-900 mb-6">Crear Nuevo Servicio</h3>
+                <form onsubmit="handleCreateService(event)" class="space-y-4">
+                    <input type="text" id="service-name" required placeholder="Nombre del servicio" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <input type="number" id="service-price" required step="0.01" placeholder="Precio (€)" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <input type="number" id="service-duration" required placeholder="Duración (minutos)" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">Crear Servicio</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Servicio -->
+    <div id="modal-edit-service" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full">
+            <div class="p-6">
+                <h3 class="text-2xl font-bold text-slate-900 mb-6">Editar Servicio</h3>
+                <form onsubmit="handleEditService(event)" class="space-y-4">
+                    <input type="hidden" id="edit-service-id">
+                    <input type="text" id="edit-service-name" required placeholder="Nombre del servicio" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <input type="number" id="edit-service-price" required step="0.01" placeholder="Precio (€)" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <input type="number" id="edit-service-duration" required placeholder="Duración (minutos)" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <div class="flex gap-2">
+                        <button type="submit" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">Guardar</button>
+                        <button type="button" onclick="closeEditServiceModal()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-300 transition">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentBusiness = null;
+        let currentBusinessId = null;
+
+        window.onload = async () => {
+            // lucide.createIcons(); // Removido - se inicializa al final
+            
+            // Cargar usuario
+            const userStr = localStorage.getItem('sector_mind_user');
+            if (!userStr) {
+                window.location.href = '/';
+                return;
+            }
+            currentUser = JSON.parse(userStr);
+            
+            // Obtener ID del negocio de la URL
+            const urlParams = new URLSearchParams(window.location.search);
+            currentBusinessId = urlParams.get('id');
+            if (!currentBusinessId) {
+                window.location.href = '/perfil.html';
+                return;
+            }
+            
+            await loadBusinessData();
+            await loadServices();
+            await loadCitas();
+        };
+
+        async function loadBusinessData() {
+            try {
+                const res = await fetch(`${API_URL}/negocios/${currentBusinessId}`);
+                if (res.ok) {
+                    currentBusiness = await res.json();
+                    document.getElementById('business-title').textContent = currentBusiness.nombre;
+                    document.getElementById('business-subtitle').textContent = `${currentBusiness.tipo_negocio} - ${currentBusiness.direccion}`;
+                } else {
+                    window.location.href = '/perfil.html';
+                }
+            } catch (err) {
+                console.error('Error cargando negocio:', err);
+                window.location.href = '/perfil.html';
+            }
+        }
+
+        async function loadServices() {
+            const container = document.getElementById('services-container');
+            try {
+                const res = await fetch(`${API_URL}/negocios/${currentBusinessId}/servicios`);
+                const servicios = await res.json();
+                
+                container.innerHTML = '';
+                if (servicios.length === 0) {
+                    container.innerHTML = `<div class="text-center py-8 bg-white rounded-2xl border border-slate-200 border-dashed"><i data-lucide="sparkles" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i><p class="text-slate-500">No hay servicios configurados</p></div>`;
+                } else {
+                    servicios.forEach(servicio => {
+                        const card = document.createElement('div');
+                        card.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-200";
+                        card.innerHTML = `
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="font-bold text-slate-900 text-lg">${servicio.nombre}</h3>
+                                    <p class="text-slate-500 text-sm">${servicio.duracion_minutos} minutos</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-slate-900 text-xl">${servicio.precio}€</p>
+                                    <div class="flex gap-2 mt-2">
+                                        <button onclick="editService(${servicio.id}, '${servicio.nombre}', ${servicio.precio}, ${servicio.duracion_minutos})" class="text-indigo-600 hover:text-indigo-800">
+                                            <i data-lucide="edit" class="w-4 h-4"></i>
+                                        </button>
+                                        <button onclick="deleteService(${servicio.id})" class="text-red-600 hover:text-red-800">
+                                            <i data-lucide="trash" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                }
+                // lucide.createIcons(); // Removido - se inicializa al final
+            } catch (err) {
+                container.innerHTML = '<p class="text-red-500">Error al cargar servicios.</p>';
+            }
+        }
+
+        async function loadCitas() {
+            const container = document.getElementById('citas-container');
+            try {
+                const res = await fetch(`${API_URL}/citas?negocio_id=${currentBusinessId}&limit=10`);
+                const citas = await res.json();
+                
+                container.innerHTML = '';
+                if (citas.length === 0) {
+                    container.innerHTML = `<div class="text-center py-8 bg-white rounded-2xl border border-slate-200 border-dashed"><i data-lucide="calendar" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i><p class="text-slate-500">No hay citas recientes</p></div>`;
+                } else {
+                    citas.forEach(cita => {
+                        const dateObj = new Date(cita.fecha_hora_cita);
+                        const fechaStr = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+                        const horaStr = dateObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                        
+                        const card = document.createElement('div');
+                        card.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-200";
+                        card.innerHTML = `
+                            <div class="flex items-center gap-3">
+                                <div class="bg-indigo-50 p-2 rounded-lg text-indigo-600">
+                                    <i data-lucide="user" class="w-4 h-4"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-medium text-slate-900 text-sm">${cita.cliente_nombre}</p>
+                                    <p class="text-slate-500 text-xs">${cita.servicio_nombre}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-slate-900 text-sm">${fechaStr}</p>
+                                    <p class="text-slate-500 text-xs">${horaStr}</p>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                }
+                // lucide.createIcons(); // Removido - se inicializa al final
+            } catch (err) {
+                container.innerHTML = '<p class="text-red-500">Error al cargar citas.</p>';
+            }
+        }
+
+        function openCreateServiceModal() {
+            document.getElementById('modal-create-service').classList.remove('hidden');
+        }
+
+        function closeCreateServiceModal() {
+            document.getElementById('modal-create-service').classList.add('hidden');
+            document.getElementById('service-name').value = '';
+            document.getElementById('service-price').value = '';
+            document.getElementById('service-duration').value = '';
+        }
+
+        async function handleCreateService(e) {
+            e.preventDefault();
+            const data = {
+                nombre: document.getElementById('service-name').value,
+                precio: parseFloat(document.getElementById('service-price').value),
+                duracion_minutos: parseInt(document.getElementById('service-duration').value),
+                propietario_id: currentUser.id
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/negocios/${currentBusinessId}/servicios`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    closeCreateServiceModal();
+                    Swal.fire('¡Servicio creado!', '', 'success');
+                    loadServices();
+                } else {
+                    Swal.fire('Error', result.error, 'error');
+                }
+            } catch (err) {
+                Swal.fire('Error', 'Error de conexión', 'error');
+            }
+        }
+
+        function editService(id, nombre, precio, duracion) {
+            document.getElementById('edit-service-id').value = id;
+            document.getElementById('edit-service-name').value = nombre;
+            document.getElementById('edit-service-price').value = precio;
+            document.getElementById('edit-service-duration').value = duracion;
+            document.getElementById('modal-edit-service').classList.remove('hidden');
+        }
+
+        function closeEditServiceModal() {
+            document.getElementById('modal-edit-service').classList.add('hidden');
+        }
+
+        async function handleEditService(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-service-id').value;
+            const data = {
+                nombre: document.getElementById('edit-service-name').value,
+                precio: parseFloat(document.getElementById('edit-service-price').value),
+                duracion_minutos: parseInt(document.getElementById('edit-service-duration').value),
+                propietario_id: currentUser.id
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/negocios/${currentBusinessId}/servicios/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    closeEditServiceModal();
+                    Swal.fire('¡Servicio actualizado!', '', 'success');
+                    loadServices();
+                } else {
+                    Swal.fire('Error', result.error, 'error');
+                }
+            } catch (err) {
+                Swal.fire('Error', 'Error de conexión', 'error');
+            }
+        }
+
+        async function deleteService(id) {
+            const result = await Swal.fire({
+                title: '¿Eliminar servicio?',
+                text: 'Esta acción no se puede deshacer',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`${API_URL}/negocios/${currentBusinessId}/servicios/${id}?propietario_id=${currentUser.id}`, {
+                        method: 'DELETE'
+                    });
+                    if (res.ok) {
+                        Swal.fire('Servicio eliminado', '', 'success');
+                        loadServices();
+                    } else {
+                        const error = await res.json();
+                        Swal.fire('Error', error.error, 'error');
+                    }
+                } catch (err) {
+                    Swal.fire('Error', 'Error de conexión', 'error');
+                }
+            }
+        }
+
+        // Inicializar iconos después de que todo esté cargado
+        setTimeout(() => {
+            lucide.createIcons();
+        }, 100);
+
+        // También inicializar iconos cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 50);
+        });
+    </script>
+</body>
+</html>

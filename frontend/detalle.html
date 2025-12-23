@@ -49,6 +49,7 @@
                         <button onclick="openModal('modal-login')" class="text-slate-600 hover:text-indigo-600 font-medium">Iniciar Sesión</button>
                         <button onclick="openModal('modal-register')" class="bg-indigo-600 text-white px-4 py-2 rounded-full font-medium hover:bg-indigo-700">Registrarse</button>
                      </div>
+                    <button onclick="logout()" class="text-red-500 hover:text-red-700 font-medium text-sm border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition">Cerrar Sesión</button>
                 </div>
             </div>
         </div>
@@ -202,7 +203,12 @@
                 </div>
             </div>
 
-            <div class="space-y-6">
+            <button id="booking-confirm-btn" onclick="confirmBooking()" disabled class="w-full bg-slate-300 text-slate-500 py-4 rounded-xl font-bold cursor-not-allowed transition shadow-lg flex items-center justify-center gap-2 mb-6">
+                <i data-lucide="check-circle" class="w-5 h-5"></i>
+                Selecciona fecha y hora
+            </button>
+
+            <div class="space-y-6 max-h-96 overflow-y-auto">
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
                         <i data-lucide="calendar" class="w-4 h-4 text-indigo-600"></i>
@@ -222,11 +228,6 @@
                         <!-- Time slots will be populated here -->
                     </div>
                 </div>
-
-                <button id="booking-confirm-btn" onclick="confirmBooking()" disabled class="w-full bg-slate-300 text-slate-500 py-4 rounded-xl font-bold cursor-not-allowed transition shadow-lg flex items-center justify-center gap-2">
-                    <i data-lucide="check-circle" class="w-5 h-5"></i>
-                    Selecciona fecha y hora
-                </button>
             </div>
         </div>
     </div>
