@@ -8,6 +8,19 @@
 
 ## 🏷️ Evolución por Versiones
 
+### **v0.0.1 - Estructura y uso de nuevas tecnologías**
+**Fecha:** Octubre, 2025
+
+**Logros:**
+- ✅ Estructura: Backend, Frontend y Rasa.
+- ✅ Primera toma de mano con las tecnologías a utilizar: Flask, Rasa, Python, JavaScript, libreías múltiples, etc.
+
+**Retos:**
+- ⚠️ Desarrollar la IA del proyecto para evitar pagos por APIs externas
+- ⚠️ Varias horas y días entendiendo las tecnologías a alto nivel
+
+---
+
 ### **v0.1.0 - Arquitectura Base (MVP)**
 **Fecha:** Noviembre 28, 2025
 
@@ -63,7 +76,7 @@
 ---
 
 ### **v0.4.0 - Profesionalización con Docker y PostgreSQL**
-**Fecha:** Diciembre 20, 2025 ← **ESTADO ACTUAL**
+**Fecha:** Diciembre 20, 2025
 
 **Logros:**
 - ✅ Docker Compose: 4 microservicios orquestados
@@ -91,95 +104,59 @@
 
 ---
 
-## 📊 Comparativa v0.1.0 vs v0.4.0
+### **v0.5.0 - Refactorización Rasa y Flujo Propietario**
+**Fecha:** Enero 10, 2026 ← **ESTADO ACTUAL**
 
-| Aspecto | v0.1.0 | v0.4.0 | Mejora |
-|---------|--------|--------|--------|
-| **BD** | SQLite | PostgreSQL | ACID + escalable |
-| **Concurrencia** | 1 writer | Multi-cliente | Production-ready |
-| **Containerización** | Manual | Docker Compose | Reproducible |
-| **Setup Time** | 30+ min | 2 min | -93% |
-| **Testing** | ❌ Ninguno | 104 tests | Confiable |
-| **Entorno** | ≠ Producción | = Producción | Sin sorpresas |
-| **CI/CD** | ❌ No | ✅ GitHub Actions | Automatizado |
+**Logros:**
+- ✅ Flujo de trabajo completo como propietario (gestión de citas, servicios y clientes desde la plataforma)
+- ✅ Corrección de bugs detectados en producción
+- ✅ Refactorización inicial de Rasa para eliminar deuda técnica
+- ✅ Rasa ahora gestiona la reserva de citas de forma general para todos los negocios
+- ✅ Uso de metadatos para identificar negocio y usuario en cada interacción
+- ✅ Respuestas contextuales de urgencias según tipo de negocio (dentista, peluquería, fisioterapia)
+- ✅ Identificación de intenciones de reserva y consulta usando FuzzyWuzzy para tolerancia a errores ortográficos
+- ✅ Eliminación de solapamientos y repetición de código en acciones de Rasa
+- ✅ Mejor comprensión del modelo y reducción de malentendidos
+
+**Detalles Técnicos:**
+1. **Refactorización de Rasa:** Ahora el modelo utiliza metadatos para saber en qué negocio está el usuario, permitiendo respuestas personalizadas y gestión de citas centralizada.
+2. **Gestión de Urgencias Contextual:** El bot responde a urgencias con contexto específico del tipo de negocio (ej: dolor de diente en dentista, evento importante en peluquería).
+3. **FuzzyWuzzy:** Implementado para detectar servicios aunque el cliente escriba con errores ortográficos.
+4. **Eliminación de Deuda Técnica:** Unificación de lógica, reducción de duplicidad y mayor mantenibilidad.
+
+**Métricas:**
+- 104 tests: 100% passing
+- 2 minutos setup
+- Refactorización de Rasa en progreso
+- Producción estable
+
 
 ---
 
-## 💻 Flujo Actual de Desarrollo (v0.4.0)
+## 💻 Flujo Actual de Desarrollo (v0.5.0)
 
-### Inicio de Sesión
+### Flujo de trabajo como propietario
 
-**Opción A: VS Code Action Button (Recomendado)**
-```
-🚀 START → Click
-```
-Resultado: Stack completo en 2 minutos
-- Backend: http://localhost:5000
-- PostgreSQL: Conectado
-- Rasa: http://localhost:5005
-
-**Opción B: Terminal**
-```bash
-docker-compose up -d
-```
-
-### Ejecutar Tests
-
-**Opción A: VS Code**
-```
-🧪 TESTS → Click
-```
-
-**Opción B: Terminal**
-```bash
-.\run_tests.ps1                    # Todos (104)
-.\run_tests.ps1 -BackendOnly       # Solo backend (75)
-.\run_tests.ps1 -RasaOnly          # Solo Rasa (29)
-.\run_tests.ps1 -Coverage          # Con reporte HTML
-```
-
-**Output Esperado:**
-```
-[BACKEND] 75 tests passed ✅
-[RASA] 29 tests passed ✅
-[TOTAL] 104 tests passed ✅
-```
-
-### Cierre de Sesión
-
-**Opción A: VS Code**
-```
-🛑 STOP → Click
-```
-
-**Opción B: Terminal**
-```bash
-.\stop_docker.ps1
-```
-
----
-
-## 🎙️ Próximos Pasos (v0.5.0+)
-
-### **v0.5.0 - Urgencias y Habla Avanzada** (Enero)
-- Detección de urgencias por palabras clave más exactas
-- Variaciones lingüísticas (sinónimos, regiones corporales, intensidades)
-- Flujos conversacionales mejorados
-- Usar JWT y React si las jefas lo recomiendan
-
-
+1. Inicia sesión como propietario.
+2. Gestiona servicios, horarios y clientes desde la plataforma.
+3. Accede a la gestión de citas y visualiza el historial de clientes.
+4. El bot de IA responde a preguntas sobre el negocio, servicios y urgencias específicas.
+5. Las reservas y consultas se gestionan de forma centralizada usando Rasa y metadatos.
 ---
 
 ## 🚀 Roadmap General
 
 | Versión | Fecha | Foco |
 |---------|-------|------|
-| **v0.4.0** | ✅ Dec 20 | Profesionalización Docker |
-| **v0.5.0** | Jan 10 | Urgencias + Habla Avanzada |
-| **v0.5.1** | Jan 24 | Reservas por Voz |
-| **v0.5.2** | Feb 7 | Contexto Profundo |
-| **v0.6.0** | Feb 28 | Dashboard Admin |
-| **v1.0.0** | Mar 31 | SaaS Multi-Tenant |
+| **v0.0.1** | Oct, 2025 | Estructura y uso de nuevas tecnologías |
+| **v0.1.0** | Nov 28, 2025 | Arquitectura Base (MVP) |
+| **v0.2.0** | Nov 29, 2025 | Inteligencia Conversacional |
+| **v0.3.0** | Dic 6, 2025 | Testing Comprehensivo |
+| **v0.4.0** |  Dic 20, 2025 | Profesionalización Docker |
+| **v0.5.0** | 🛠️ Desde 20/12/2025 | Refactorización Rasa + Flujo Propietario (en desarrollo) |
+| **v0.5.1** | (previsto) Feb, 2026 | Contexto Profundo |
+| **v0.6.0** | (previsto) Ene, 2026 | Reservas por Voz correctamente |
+| **v1.0.0** | (previsto) Feb/Mar, 2026 | SaaS Multi-Tenant |
 
 ---
 
@@ -192,19 +169,12 @@ Cada release debe cumplir:
 
 ---
 
-**Actualizado:** 20 Diciembre 2025  
-**Versión Actual:** v0.4.0 (Production-Ready)  
-**Estado:** ✅ Profesionalización Completa
+**Actualizado:** 20 Diciembre 2025
+**Versión Actual:** v0.5.0 (Refactorización Rasa + Propietario)  
+**Estado:** ✅ Refactorización en marcha y flujo propietario completo
   - 24 intents iniciales (distribuidos entre dentista, peluquería, fisioterapia)
   - Extracción de entities (servicios, fechas, tipos de urgencia)
-- **Rasa Actions Custom:** 7 acciones personalizadas para conectar NLU con lógica de negocio
-  - `ActionSetContexto`: Detecta tipo de negocio
-  - `ActionNormalizarServicio`: Fuzzy matching de servicios
-  - `ActionMostrarDisponibilidad`: Consulta horarios
-  - `ActionReservarCita`: Creación de citas
-  - `ActionCancelarCita`: Cancelación de citas
-  - `ActionInfoNegocio`: Información del negocio
-  - `ActionResponderBotChallenge`: Respuestas contextuales
+- **Rasa Actions Custom:** 7 acciones personalizadas ("urgencias" que necesiten contexto) de cata tipo de negocio para conectar NLU con lógica de negocio
 - **Sistema de Contexto:** Detección inteligente de tipo de negocio (dentista/peluquería/fisioterapia)
 - **Validación Contextual:** El bot rechaza automáticamente servicios incompatibles
   - Ejemplo: No permite corte de cabello en clínica dental
@@ -215,14 +185,19 @@ Cada release debe cumplir:
 Transformar un sistema de formularios tradicional en una **interfaz conversacional inteligente**. Permitir a usuarios interactuar de forma natural sin conocer estructura de comandos.
 
 #### ⚠️ Complicaciones Identificadas
-1. **Comunicación Procesos Python:** Rasa y Flask corren como procesos separados
-   - Necesidad de IPC (Inter-Process Communication) vía HTTP
-   - Latencia adicional entre llamadas
-2. **Dependencias Conflictivas:**
-   - Rasa requiere TensorFlow 2.x
-   - Backend requiere Flask + psycopg2
-   - python-Levenshtein necesita compilación (gcc)
-   - → Conflictos de versiones en requirements.txt
+1. **Comunicación Procesos Python:** Rasa y Flask corren como procesos separados, necesitan 3 contenedores corriendo.
+2. **Dependencias Conflictivas(al trabajar con Docker dejaron de ser un problema):**
+  - Rasa requiere TensorFlow 2.x
+  - Backend requiere Flask + psycopg2 (para usar PostGreSQL con Python)
+  - python-Levenshtein necesita compilación (gcc)
+  - → Conflictos de versiones en requirements.txt
 3. **Training y Actualización de Modelo:** Cambios en NLU requieren reentrenamiento manual
 4. **Testing de Acciones:** Difícil mockar llamadas HTTP entre servicios
-5.**Docker y PostgreSQL:** El cambio fue más difícil de lo imaginado habiendo que tocar muchas líneas de código y archivos.
+5. **Docker y PostgreSQL:** El cambio fue más difícil de lo imaginado habiendo que tocar muchas líneas de código y archivos.
+6. **Deuda Técnica en Rasa (v0.5.0):** Se está realizando una refactorización profunda del módulo Rasa para eliminar la deuda técnica acumulada:
+  - Centralización de toda la lógica de acciones en un único archivo y clase, evitando duplicidades.
+  - Uso de metadatos para adaptar respuestas y lógica según el negocio y usuario.
+  - Eliminación de archivos de acciones por tipo de negocio, simplificando el mantenimiento.
+  - Respuestas contextuales y flujos más robustos para urgencias y reservas.
+  - Reducción de errores, solapamientos y repetición de código.
+  - El objetivo es facilitar la evolución futura y el testing, y evitar problemas de escalabilidad y mantenimiento.
