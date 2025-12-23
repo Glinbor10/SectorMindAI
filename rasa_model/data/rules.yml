@@ -22,6 +22,41 @@ rules:
       - intent: pedir_mas_opciones
       - action: utter_pedir_servicio
 
+  - rule: Consultar citas
+    steps:
+      - intent: consultar_mis_citas
+      - action: action_consultar_citas_usuario
+
+  - rule: Ver historial de citas
+    steps:
+      - intent: ver_historial_citas
+      - action: action_consultar_citas_usuario
+
+  - rule: Cancelar cita
+    steps:
+      - intent: cancelar_cita
+      - action: action_cancelar_cita
+
+  - rule: Seleccionar cita para cancelar
+    steps:
+      - intent: seleccionar_cita
+      - action: action_confirmar_cancelacion
+
+  - rule: Confirmar cancelación
+    steps:
+      - intent: affirm
+      - action: action_cancelar_cita
+
+  - rule: Denegar cancelación
+    steps:
+      - intent: deny
+      - action: action_denegar_cancelacion
+
+  - rule: Cambiar horario
+    steps:
+      - intent: cambiar_horario
+      - action: utter_pedir_nueva_fecha
+
   - rule: Fallback
     steps:
       - intent: nlu_fallback

@@ -88,37 +88,5 @@ stories:
   - action: action_urgencia_dental
   - action: utter_urgencia_confirmada
 
-# --- GESTIÓN: Consultar citas usuario ---
-- story: dentista_consultar_citas
-  steps:
-  - intent: consultar_mis_citas
-  - action: action_set_contexto
-  - slot_was_set:
-    - tipo_negocio: dentista
-  - action: action_consultar_citas_usuario
-
-# --- GESTIÓN: Cancelar cita con confirmación ---
-- story: dentista_cancelar_cita_confirmada
-  steps:
-  - intent: cancelar_cita
-  - action: action_set_contexto
-  - slot_was_set:
-    - tipo_negocio: dentista
-  - action: action_cancelar_cita
-  - action: utter_confirmar_cancelacion
-  - intent: affirm
-  - action: action_cancelar_cita_confirmada
-  - action: utter_confirmacion_eliminada
-
-# --- GESTIÓN: Cambiar horario (reprogramar) ---
-- story: dentista_cambiar_horario
-  steps:
-  - intent: cambiar_horario
-  - action: action_set_contexto
-  - slot_was_set:
-    - tipo_negocio: dentista
-  - action: utter_pedir_nueva_fecha
-  - intent: informar_fecha
-  - action: action_reservar_cita
 
 

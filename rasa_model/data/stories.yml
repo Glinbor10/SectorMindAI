@@ -35,8 +35,3 @@ stories:
   - intent: consultar_ubicacion
   - action: action_mostrar_ubicacion
 
-- story: Ver mis citas
-  steps:
-  - intent: consultar_mis_citas
-  - action: action_consultar_citas_usuario
-

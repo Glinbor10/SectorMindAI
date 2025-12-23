@@ -588,6 +588,9 @@ class ActionConsultarCitasUsuario(Action):
         cliente_id = tracker.get_slot("cliente_id")
         negocio_id = tracker.get_slot("negocio_id")
         tipo_negocio = tracker.get_slot("tipo_negocio")
+        intent_name = tracker.latest_message.get('intent', {}).get('name', '')
+
+        print(f"🔍 ActionConsultarCitasUsuario - cliente_id: {cliente_id}, negocio_id: {negocio_id}, tipo_negocio: {tipo_negocio}")
 
         if not cliente_id:
             dispatcher.utter_message(text="Debes iniciar sesión para ver tus citas.")
@@ -603,24 +606,35 @@ class ActionConsultarCitasUsuario(Action):
                 timeout=5
             )
             
+            print(f"   Respuesta API: status={response.status_code}, content={response.text[:500]}")
+            
             if response.status_code != 200:
                 dispatcher.utter_message(text="No pude consultar tus citas.")
                 return []
 
             citas = response.json()
+            print(f"   Citas obtenidas: {len(citas)} citas totales")
+            for c in citas[:3]:  # Mostrar primeras 3
+                print(f"     Cita: {c.get('servicio_nombre')} - {c.get('fecha_hora_cita')} - estado: {c.get('estado')} - tipo: {c.get('tipo_negocio')}")
             
-            # Filtrar por tipo de negocio si está especificado
-            if tipo_negocio:
-                citas = [c for c in citas if c.get('tipo_negocio') == tipo_negocio]
+            # Filtrar por negocio si está especificado
+            if negocio_id:
+                citas_filtradas = [c for c in citas if c.get('negocio_id') == negocio_id]
+                print(f"   Después de filtrar por negocio_id '{negocio_id}': {len(citas_filtradas)} citas")
+                citas = citas_filtradas
             
             # Filtrar solo citas futuras y confirmadas
             hoy = datetime.now()
+            print(f"   Fecha actual: {hoy}")
             citas_futuras = [
                 c for c in citas 
                 if datetime.strptime(c['fecha_hora_cita'], '%Y-%m-%d %H:%M:%S') > hoy
-                and c['estado'] == 'confirmado'
+                and c['estado'] == 'confirmada'
             ]
-
+            print(f"   Citas futuras confirmadas: {len(citas_futuras)}")
+            for c in citas_futuras[:3]:
+                print(f"     Cita futura: {c.get('servicio_nombre')} - {c.get('fecha_hora_cita')}")
+            
             if not citas_futuras:
                 dispatcher.utter_message(
                     text="No tienes citas pendientes en este negocio. ¿Quieres reservar una? 😊"
@@ -636,7 +650,7 @@ class ActionConsultarCitasUsuario(Action):
                 mensaje += f"   📆 {fecha_legible}\n"
                 mensaje += f"   ⏱️ {cita['duracion_minutos']} minutos\n\n"
 
-            mensaje += "Si necesitas cancelar alguna, dime '**cancela mi cita del [día]**'"
+            mensaje += "Si quieres cancelar alguna, dime el **número de la cita**."
 
             dispatcher.utter_message(text=mensaje)
             return []
@@ -703,7 +717,7 @@ class ActionCancelarCita(Action):
             citas_futuras = [
                 c for c in citas 
                 if datetime.strptime(c['fecha_hora_cita'], '%Y-%m-%d %H:%M:%S') > hoy
-                and c['estado'] == 'confirmado'
+                and c['estado'] == 'confirmada'
             ]
 
             if not citas_futuras:
@@ -793,7 +807,18 @@ class ActionConfirmarCancelacion(Action):
             return []
 
 
-class ActionResponderBotChallenge(Action):
+class ActionDenegarCancelacion(Action):
+    """Cancela la cancelación cuando el usuario dice no"""
+
+    def name(self) -> Text:
+        return "action_denegar_cancelacion"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        dispatcher.utter_message(text="Cancelación cancelada. Tu cita sigue activa.")
+        return [SlotSet("cita_a_cancelar_id", None), SlotSet("citas_disponibles", None)]
     """Responde cuando el usuario pregunta qué es el bot"""
 
     def name(self) -> Text:

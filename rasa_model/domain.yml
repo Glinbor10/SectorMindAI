@@ -15,6 +15,8 @@ intents:
   - consultar_mis_citas
   - cancelar_cita
   - cambiar_horario
+  - seleccionar_cita
+  - ver_historial_citas
   - info_general
   - inform
   - pedir_mas_opciones
@@ -173,6 +175,7 @@ actions:
   - action_cancelar_cita
   - action_confirmar_cancelacion
   - action_cancelar_cita_confirmada
+  - action_denegar_cancelacion
   - action_responder_bot_challenge
   # Actions de URGENCIAS
   - action_urgencia_dental

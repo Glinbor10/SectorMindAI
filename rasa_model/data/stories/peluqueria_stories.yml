@@ -17,11 +17,6 @@ stories:
 # --- HISTORIA 1: Corte regular (normal) ---
 - story: corte_regular_reserva
   steps:
-  - intent: greet
-  - action: action_set_contexto
-  - slot_was_set:
-    - tipo_negocio: peluqueria
-  - action: utter_greet_con_negocio
   - intent: corte_regular
   - action: action_normalizar_servicio
   - action: action_mostrar_disponibilidad
@@ -59,11 +54,6 @@ stories:
 # --- HISTORIA 4: Tinte regular ---
 - story: tinte_regular_reserva
   steps:
-  - intent: greet
-  - action: action_set_contexto
-  - slot_was_set:
-    - tipo_negocio: peluqueria
-  - action: utter_greet_con_negocio
   - intent: tinte_regular
   - action: action_normalizar_servicio
   - action: action_mostrar_disponibilidad
@@ -82,37 +72,5 @@ stories:
   - action: action_urgencia_peluqueria
   - action: utter_urgencia_confirmada
 
-# --- GESTIÓN: Consultar citas usuario ---
-- story: peluqueria_consultar_citas
-  steps:
-  - intent: consultar_mis_citas
-  - action: action_set_contexto
-  - slot_was_set:
-    - tipo_negocio: peluqueria
-  - action: action_consultar_citas_usuario
-
-# --- GESTIÓN: Cancelar cita con confirmación ---
-- story: peluqueria_cancelar_cita_confirmada
-  steps:
-  - intent: cancelar_cita
-  - action: action_set_contexto
-  - slot_was_set:
-    - tipo_negocio: peluqueria
-  - action: action_cancelar_cita
-  - action: utter_confirmar_cancelacion
-  - intent: affirm
-  - action: action_cancelar_cita_confirmada
-  - action: utter_confirmacion_eliminada
-
-# --- GESTIÓN: Cambiar horario (reprogramar) ---
-- story: peluqueria_cambiar_horario
-  steps:
-  - intent: cambiar_horario
-  - action: action_set_contexto
-  - slot_was_set:
-    - tipo_negocio: peluqueria
-  - action: utter_pedir_nueva_fecha
-  - intent: informar_fecha
-  - action: action_reservar_cita
 
 
