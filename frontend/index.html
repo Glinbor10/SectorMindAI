@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sector Mind AI - Plataforma de Reservas</title>
-    <link rel="icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z'/%3e%3cpath d='M9 13a4.5 4.5 0 0 0 3-4'/%3e%3cpath d='M6.003 5.125A3 3 0 0 0 6.401 6.5'/%3e%3cpath d='M3.477 10.896a4 4 0 0 1 .585-.396'/%3e%3cpath d='M6 18a4 4 0 0 1-1.967-.516'/%3e%3cpath d='M12 13h4'/%3e%3cpath d='M12 18h6a2 2 0 0 1 2 2v1'/%3e%3cpath d='M12 8h8'/%3e%3cpath d='M16 8V5a2 2 0 0 1 2-2'/%3e%3ccircle cx='16' cy='13' r='.5'/%3e%3ccircle cx='18' cy='3' r='.5'/%3e%3ccircle cx='20' cy='21' r='.5'/%3e%3ccircle cx='20' cy='8' r='.5'/%3e%3c/svg%3e" type="image/svg+xml">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3e%3crect width='24' height='24' rx='5' fill='%234f46e5'/%3e%3cpath d='M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M9 13a4.5 4.5 0 0 0 3-4' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M6.003 5.125A3 3 0 0 0 6.401 6.5' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M3.477 10.896a4 4 0 0 1 .585-.396' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M6 18a4 4 0 0 1-1.967-.516' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M12 13h4' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M12 18h6a2 2 0 0 1 2 2v1' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M12 8h8' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M16 8V5a2 2 0 0 1 2-2' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3ccircle cx='16' cy='13' r='.5' fill='white'/%3e%3ccircle cx='18' cy='3' r='.5' fill='white'/%3e%3ccircle cx='20' cy='21' r='.5' fill='white'/%3e%3ccircle cx='20' cy='8' r='.5' fill='white'/%3e%3c/svg%3e">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -54,19 +54,18 @@
         </div>
     </nav>
 
-    <header id="cliente-header" class="relative pt-16 pb-20 lg:pt-24 lg:pb-28 overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 mb-6">
+    <header id="cliente-header" class="relative pt-6 pb-4 lg:pt-8 lg:pb-6 overflow-hidden">
+        <div class="max-w-3xl mx-auto px-2 sm:px-4 lg:px-6 relative z-10 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 mb-2">
                 Tu tiempo, <span class="text-indigo-600">mejor invertido.</span>
             </h1>
-            <p class="mt-4 max-w-2xl mx-auto text-xl text-slate-500 mb-10">
+            <p class="mt-1 text-base text-slate-500 mb-4">
                 Reserva citas en tus negocios favoritos con nuestra IA conversacional.
             </p>
-            <div class="max-w-xl mx-auto relative group">
-                <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-200"></div>
-                <div class="relative bg-white rounded-2xl shadow-xl flex items-center p-2 border border-slate-100">
-                    <i data-lucide="search" class="ml-4 text-slate-400 w-5 h-5"></i>
-                    <input type="text" id="search-input" placeholder="Buscar..." class="w-full p-3 outline-none text-slate-700 placeholder:text-slate-400 bg-transparent text-lg">
+            <div class="max-w-md mx-auto relative group">
+                <div class="relative bg-white rounded-xl shadow flex items-center p-1 border border-slate-100">
+                    <i data-lucide="search" class="ml-2 text-slate-400 w-4 h-4"></i>
+                    <input type="text" id="search-input" placeholder="Buscar..." class="w-full p-2 outline-none text-slate-700 placeholder:text-slate-400 bg-transparent text-base">
                 </div>
             </div>
         </div>
@@ -257,7 +256,12 @@
                     negocios.forEach(negocio => {
                         const card = document.createElement('div');
                         card.className = "bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition cursor-pointer relative";
-                        card.onclick = () => window.location.href = `/gestion_negocio.html?id=${negocio.id}`;
+                        card.onclick = () => {
+                            localStorage.setItem('selected_business', JSON.stringify(negocio));
+                            localStorage.setItem('gestion_negocio_id', negocio.id);
+                            sessionStorage.setItem('gestion_negocio_id', negocio.id);
+                            window.location.href = '/gestion_negocio.html';
+                        };
                         card.innerHTML = `
                             <div class="h-48 overflow-hidden relative rounded-t-2xl">
                                 <img src="${negocio.foto_url || 'https://via.placeholder.com/400x200/6366f1/ffffff?text=' + encodeURIComponent(negocio.nombre)}" alt="${negocio.nombre}" class="w-full h-full object-cover">

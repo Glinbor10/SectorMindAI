@@ -48,8 +48,8 @@
                     <div id="auth-buttons" class="hidden flex items-center space-x-3">
                         <button onclick="openModal('modal-login')" class="text-slate-600 hover:text-indigo-600 font-medium">Iniciar Sesión</button>
                         <button onclick="openModal('modal-register')" class="bg-indigo-600 text-white px-4 py-2 rounded-full font-medium hover:bg-indigo-700">Registrarse</button>
-                     </div>
-                    <button onclick="logout()" class="text-red-500 hover:text-red-700 font-medium text-sm border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition">Cerrar Sesión</button>
+                    </div>
+                    <button id="logout-btn" onclick="logout()" class="hidden text-red-500 hover:text-red-700 font-medium text-sm border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition">Cerrar Sesión</button>
                 </div>
             </div>
         </div>
@@ -233,5 +233,52 @@
     </div>
 
     <script src="app.js"></script>
+<script>
+function logout() {
+    localStorage.removeItem('sector_mind_user');
+    window.location.href = '/';
+}
+// Redirige a la principal si el usuario es propietario (al cargar o tras login/register)
+function redirectIfPropietario() {
+    let user = null;
+    try {
+        user = JSON.parse(localStorage.getItem('sector_mind_user'));
+    } catch {}
+    if (user && user.rol && user.rol.toLowerCase() === 'propietario') {
+        window.location.href = '/index.html';
+    }
+}
+window.addEventListener('DOMContentLoaded', redirectIfPropietario);
+// Hook para login/register
+if (typeof updateUI === 'function') {
+  const oldUpdateUI = updateUI;
+  window.updateUI = function() { oldUpdateUI(); updateLogoutBtn(); redirectIfPropietario(); };
+}
+</script>
 </body>
+<script>
+
+function updateLogoutBtn() {
+    const btn = document.getElementById('logout-btn');
+    if (!btn) return;
+    let user = null;
+    try {
+        user = JSON.parse(localStorage.getItem('sector_mind_user'));
+    } catch {}
+    if (user && user.nombre) {
+        btn.classList.remove('hidden');
+    } else {
+        btn.classList.add('hidden');
+    }
+}
+
+if (typeof updateUI === 'function') {
+    const oldUpdateUI = updateUI;
+    window.updateUI = function() { oldUpdateUI(); updateLogoutBtn(); };
+    // Llama también tras login/register
+    window.addEventListener('DOMContentLoaded', updateLogoutBtn);
+} else {
+    window.addEventListener('DOMContentLoaded', updateLogoutBtn);
+}
+</script>
 </html>

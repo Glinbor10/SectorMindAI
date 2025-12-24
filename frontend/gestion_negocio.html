@@ -33,7 +33,7 @@
                     <button onclick="window.location.href='/'" class="text-slate-600 hover:text-indigo-600 font-medium">
                         <i data-lucide="arrow-left" class="w-4 h-4 inline mr-1"></i> Volver a tus Negocios
                     </button>
-                    <button onclick="logout()" class="text-red-500 hover:text-red-700 font-medium text-sm border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition ml-4">Cerrar Sesión</button>
+                    <button id="logout-btn" onclick="logout()" class="hidden text-red-500 hover:text-red-700 font-medium text-sm border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition ml-4">Cerrar Sesión</button>
                 </div>
             </div>
         </div>
@@ -48,36 +48,11 @@
                     Eliminar negocio
                 </button>
             </div>
-            <p id="business-subtitle" class="text-slate-500">Gestión de tu negocio</p>
-                // Eliminar negocio
-                async function deleteBusiness() {
-                    const result = await Swal.fire({
-                        title: '¿Eliminar negocio?',
-                        text: 'Esta acción no se puede deshacer. Se eliminarán todos los servicios y citas asociadas.',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#ef4444',
-                        cancelButtonColor: '#6b7280',
-                        confirmButtonText: 'Sí, eliminar',
-                        cancelButtonText: 'Cancelar'
-                    });
-                    if (result.isConfirmed) {
-                        try {
-                            const res = await fetch(`${API_URL}/negocios/${currentBusinessId}?propietario_id=${currentUser.id}`, {
-                                method: 'DELETE'
-                            });
-                            if (res.ok) {
-                                Swal.fire('Negocio eliminado', '', 'success');
-                                window.location.href = '/perfil.html';
-                            } else {
-                                const error = await res.json();
-                                Swal.fire('Error', error.error, 'error');
-                            }
-                        } catch (err) {
-                            Swal.fire('Error', 'Error de conexión', 'error');
-                        }
-                    }
-                }
+            <div class="flex items-center gap-3 mb-1">
+                <span id="business-type" class="font-bold uppercase text-indigo-700"></span>
+                <span id="business-subtitle" class="text-slate-500"></span>
+            </div>
+
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -155,9 +130,21 @@
         let currentBusiness = null;
         let currentBusinessId = null;
 
+        function updateLogoutBtn() {
+            const logoutBtn = document.getElementById('logout-btn');
+            if (!logoutBtn) return;
+            const userStr = localStorage.getItem('sector_mind_user');
+            if (userStr) {
+                logoutBtn.classList.remove('hidden');
+            } else {
+                logoutBtn.classList.add('hidden');
+            }
+        }
+
+        // Permite abrir la gestión de negocio sin mostrar el id en la URL
+        // Para navegar: guardar el id en sessionStorage/localStorage y redirigir a gestion_negocio.html
         window.onload = async () => {
-            // lucide.createIcons(); // Removido - se inicializa al final
-            
+                        updateLogoutBtn();
             // Cargar usuario
             const userStr = localStorage.getItem('sector_mind_user');
             if (!userStr) {
@@ -165,15 +152,28 @@
                 return;
             }
             currentUser = JSON.parse(userStr);
-            
-            // Obtener ID del negocio de la URL
-            const urlParams = new URLSearchParams(window.location.search);
-            currentBusinessId = urlParams.get('id');
+
+            // Obtener id de negocio desde sessionStorage/localStorage/selected_business
+            currentBusinessId = sessionStorage.getItem('gestion_negocio_id') || localStorage.getItem('gestion_negocio_id');
             if (!currentBusinessId) {
+                const selectedBiz = localStorage.getItem('selected_business');
+                if (selectedBiz) {
+                    try {
+                        const bizObj = JSON.parse(selectedBiz);
+                        if (bizObj && bizObj.id) {
+                            currentBusinessId = bizObj.id;
+                            localStorage.setItem('gestion_negocio_id', currentBusinessId);
+                            sessionStorage.setItem('gestion_negocio_id', currentBusinessId);
+                        }
+                    } catch (e) {}
+                }
+            }
+            if (!currentBusinessId) {
+                // Si no hay id, volver a perfil
                 window.location.href = '/perfil.html';
                 return;
             }
-            
+
             await loadBusinessData();
             await loadServices();
             await loadCitas();
@@ -185,7 +185,8 @@
                 if (res.ok) {
                     currentBusiness = await res.json();
                     document.getElementById('business-title').textContent = currentBusiness.nombre;
-                    document.getElementById('business-subtitle').textContent = `${currentBusiness.tipo_negocio} - ${currentBusiness.direccion}`;
+                    document.getElementById('business-type').textContent = currentBusiness.tipo_negocio ? currentBusiness.tipo_negocio.toUpperCase() : '';
+                    document.getElementById('business-subtitle').textContent = currentBusiness.direccion || '';
                 } else {
                     window.location.href = '/perfil.html';
                 }
