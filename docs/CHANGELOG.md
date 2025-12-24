@@ -7,7 +7,17 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 ## [v0.5.0] - Desde el 20/12/2025 hasta la actualidad (Refactorización Rasa y Flujo Propietario)
 
+
 ### ✨ Añadido (Added)
+
+**Refactorización Backend y DevOps:**
+- Eliminación completa de `db_utils.py` y de la función `adapt_query` en todo el backend. Todas las rutas y lógica ahora usan queries PostgreSQL directas con `%s`.
+- Refactorización de `logic.py`, `routes/auth.py`, `routes/citas.py` y `routes/negocios.py` para eliminar dependencias de SQLite y adaptar queries a PostgreSQL.
+- Centralización de todos los scripts PowerShell (`start_docker.ps1`, `stop_docker.ps1`, `run_tests.ps1`, `manage_db.ps1`) en la carpeta `scripts/` y actualización de todas las referencias en VS Code (Action Buttons y tasks.json).
+- Mejora de los scripts para que funcionen correctamente desde la raíz del proyecto, eliminando rutas relativas innecesarias.
+- Eliminación de scripts y archivos obsoletos relacionados con SQLite y migraciones antiguas.
+- Añadido botón de Action Button y tarea de VS Code para ejecutar `manage_db.py` vía Docker.
+- Mejora del script de tests (`run_tests.ps1`) para mostrar de forma clara los tests pasados y fallidos tanto de backend como de Rasa.
 
 **Flujo Propietario y Refactorización Rasa:**
 - Flujo de trabajo completo como propietario: gestión de negocios, servicios y clientes desde la plataforma.
