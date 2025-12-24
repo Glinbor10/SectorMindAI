@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
 from ..db import get_db_connection
-from ..db_utils import adapt_query
+
 import os
 import uuid 
 
@@ -136,7 +136,7 @@ def crear_negocio():
     try:
         # PostgreSQL EXCLUSIVAMENTE
         cursor = conn.execute(
-            adapt_query('INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_url, propietario_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id'),
+            'INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_url, propietario_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
             (nombre, tipo_negocio, direccion, descripcion, foto_url, propietario_id)
         )
         new_id = cursor.fetchone()['id']
@@ -256,7 +256,7 @@ def crear_servicio(negocio_id):
             return jsonify({'error': 'No tienes permisos para este negocio'}), 403
 
         cursor = conn.execute(
-            adapt_query('INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES (%s, %s, %s, %s) RETURNING id'),
+            'INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES (%s, %s, %s, %s) RETURNING id',
             (negocio_id, nombre, precio, duracion_minutos)
         )
         new_id = cursor.fetchone()['id']

@@ -188,7 +188,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 **Backend:**
 - **Eliminación Total de SQLite:** Cero imports de sqlite3 en codebase
   - `db.py` - Usa psycopg2 exclusivamente
-  - `db_utils.py` - Adaptación de queries de '?' a '%s'
+  - `db_utils.py` - Adaptación de queries de '?' a '%s (archivo ya eliminado)'
   - Todas las rutas - Usan PostgreSQL con RETURNING id
 
 **Tests:**

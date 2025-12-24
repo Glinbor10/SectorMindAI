@@ -1,6 +1,6 @@
 # backend/logic.py
 from datetime import datetime, timedelta
-from .db_utils import adapt_query
+
 
 # ======================================================================
 # 📅 CONFIGURACIÓN
@@ -19,7 +19,7 @@ def verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita_str, conn):
     
     # 1. Obtener duración
     servicio_info = conn.execute(
-        adapt_query('SELECT duracion_minutos FROM servicios WHERE id = %s'), (servicio_id,)
+        'SELECT duracion_minutos FROM servicios WHERE id = %s', (servicio_id,)
     ).fetchone()
     if not servicio_info:
         return False, "Servicio no válido."
@@ -37,7 +37,7 @@ def verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita_str, conn):
 
     # 2. Verificar horarios de apertura (Múltiples tramos: mañana/tarde)
     horarios = conn.execute(
-        adapt_query('SELECT hora_apertura, hora_cierre FROM horarios_negocio WHERE negocio_id = %s AND dia_semana = %s'),
+        'SELECT hora_apertura, hora_cierre FROM horarios_negocio WHERE negocio_id = %s AND dia_semana = %s',
         (negocio_id, dia_semana)
     ).fetchall()
     
@@ -68,7 +68,7 @@ def verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita_str, conn):
 
     # 3. Verificar solapamiento con otras citas
     citas_existentes = conn.execute(
-        adapt_query('SELECT c.fecha_hora_cita, s.duracion_minutos FROM citas c JOIN servicios s ON c.servicio_id = s.id WHERE c.negocio_id = %s AND date(c.fecha_hora_cita) = %s AND c.estado IN (%s, %s)'),
+        'SELECT c.fecha_hora_cita, s.duracion_minutos FROM citas c JOIN servicios s ON c.servicio_id = s.id WHERE c.negocio_id = %s AND date(c.fecha_hora_cita) = %s AND c.estado IN (%s, %s)',
         (negocio_id, fecha_dia, 'confirmada', 'confirmado')
     ).fetchall()
 
@@ -94,7 +94,7 @@ def obtener_tramos_disponibles(negocio_id, servicio_id, fecha_solicitada, conn):
     Ej: Si paso=15min, prueba 9:00, 9:15, 9:30 para ver si cabe el servicio.
     """
     
-    servicio_info = conn.execute(adapt_query('SELECT duracion_minutos FROM servicios WHERE id = %s'), (servicio_id,)).fetchone()
+    servicio_info = conn.execute('SELECT duracion_minutos FROM servicios WHERE id = %s', (servicio_id,)).fetchone()
     if not servicio_info: return {'error': 'Servicio no encontrado'}
     duracion_servicio = servicio_info['duracion_minutos']
 
@@ -106,7 +106,7 @@ def obtener_tramos_disponibles(negocio_id, servicio_id, fecha_solicitada, conn):
 
     # 1. Obtener Horarios (Mañana y Tarde)
     horarios = conn.execute(
-        adapt_query('SELECT hora_apertura, hora_cierre FROM horarios_negocio WHERE negocio_id = %s AND dia_semana = %s ORDER BY hora_apertura'),
+        'SELECT hora_apertura, hora_cierre FROM horarios_negocio WHERE negocio_id = %s AND dia_semana = %s ORDER BY hora_apertura',
         (negocio_id, dia_semana)
     ).fetchall()
 
@@ -115,7 +115,7 @@ def obtener_tramos_disponibles(negocio_id, servicio_id, fecha_solicitada, conn):
 
     # 2. Obtener citas existentes
     citas_existentes = conn.execute(
-        adapt_query('SELECT c.fecha_hora_cita, s.duracion_minutos FROM citas c JOIN servicios s ON c.servicio_id = s.id WHERE c.negocio_id = %s AND date(c.fecha_hora_cita) = %s AND c.estado IN (%s, %s)'),
+        'SELECT c.fecha_hora_cita, s.duracion_minutos FROM citas c JOIN servicios s ON c.servicio_id = s.id WHERE c.negocio_id = %s AND date(c.fecha_hora_cita) = %s AND c.estado IN (%s, %s)',
         (negocio_id, fecha_solicitada, 'confirmada', 'confirmado')
     ).fetchall()
 

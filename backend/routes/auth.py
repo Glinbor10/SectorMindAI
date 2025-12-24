@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, request, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from ..db import get_db_connection
-from ..db_utils import adapt_query
+
 
 load_dotenv()
 
@@ -53,11 +53,11 @@ def register():
         
         # 🔧 PostgreSQL EXCLUSIVAMENTE
         cursor.execute(
-            adapt_query('''
+            '''
                 INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_url) 
                 VALUES (%s, %s, %s, %s, %s) 
                 RETURNING id
-            '''),
+            ''',
             (nombre, email, hashed_password, rol, foto_url)
         )
         new_user_id = cursor.fetchone()['id']

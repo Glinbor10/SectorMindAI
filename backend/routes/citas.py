@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request
 from datetime import datetime, date, time
 from ..db import get_db_connection
 from ..logic import obtener_tramos_disponibles, verificar_solapamiento
-from ..db_utils import adapt_query
+
 
 citas_bp = Blueprint('citas', __name__)
 
@@ -102,11 +102,11 @@ def crear_cita():
         # Crear cita
         cursor = conn.cursor()
         cursor.execute(
-            adapt_query('''
+            '''
                 INSERT INTO citas (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion_minutos, estado) 
                 VALUES (%s, %s, %s, %s, %s, %s) 
                 RETURNING id
-            '''),
+            ''',
             (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion, 'confirmada')
         )
         conn.commit()
@@ -189,11 +189,11 @@ def modificar_cita(cita_id):
         # Actualizar cita
         cursor = conn.cursor()
         cursor.execute(
-            adapt_query('''
+            '''
                 UPDATE citas 
                 SET servicio_id = %s, fecha_hora_cita = %s, duracion_minutos = %s 
                 WHERE id = %s
-            '''),
+            ''',
             (servicio_id, fecha_hora_cita, servicio['duracion_minutos'], cita_id)
         )
         conn.commit()
@@ -224,7 +224,7 @@ def cancelar_cita(cita_id):
         # Cambiar estado a cancelada
         cursor = conn.cursor()
         cursor.execute(
-            adapt_query('UPDATE citas SET estado = %s WHERE id = %s'),
+            'UPDATE citas SET estado = %s WHERE id = %s',
             ('cancelada', cita_id)
         )
         conn.commit()

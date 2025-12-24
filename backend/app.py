@@ -33,7 +33,7 @@ def create_app():
     app.register_blueprint(negocios_bp)
     app.register_blueprint(citas_bp)
     app.register_blueprint(auth_bp)
-    app.register_blueprint(usuarios_bp)   # <--- 2. AÑADE ESTA LÍNEA
+    app.register_blueprint(usuarios_bp) 
 
     # Configuración de carpetas
     base_dir = os.path.dirname(os.path.abspath(__file__))
