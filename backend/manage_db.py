@@ -55,7 +55,7 @@ PROPIETARIO_DATA = {
     "email": "propietario@sectormind.com",
     "password": "p",
     "rol": "propietario",
-    "foto_perfil_url": "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80",
+    # "foto_perfil_url" eliminado, solo se usa foto_perfil_base64
     "foto_perfil_base64": load_sample_photo_base64('propietario.jpg')
 }
 
@@ -65,7 +65,7 @@ CLIENTE_DATA = {
     "email": "cliente@sectormind.com",
     "password": "c",
     "rol": "cliente",
-    "foto_perfil_url": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80",
+    # "foto_perfil_url" eliminado, solo se usa foto_perfil_base64
     "foto_perfil_base64": load_sample_photo_base64('cliente.png')
 }
 
@@ -170,8 +170,8 @@ def populate_db():
         print(f"    👤 Insertando Propietario...")
         hashed_prop_password = generate_password_hash(PROPIETARIO_DATA['password'])
         cursor.execute(
-            "INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_url, foto_perfil_base64) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-            (PROPIETARIO_DATA['nombre'], PROPIETARIO_DATA['email'], hashed_prop_password, PROPIETARIO_DATA['rol'], PROPIETARIO_DATA['foto_perfil_url'], PROPIETARIO_DATA['foto_perfil_base64'])
+            "INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_base64) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (PROPIETARIO_DATA['nombre'], PROPIETARIO_DATA['email'], hashed_prop_password, PROPIETARIO_DATA['rol'], PROPIETARIO_DATA['foto_perfil_base64'])
         )
         prop_id = cursor.fetchone()['id']
         print(f"       ✅ {PROPIETARIO_DATA['nombre']} (ID: {prop_id})")
@@ -180,8 +180,8 @@ def populate_db():
         print(f"    👤 Insertando Cliente...")
         hashed_client_password = generate_password_hash(CLIENTE_DATA['password'])
         cursor.execute(
-            "INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_url, foto_perfil_base64) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-            (CLIENTE_DATA['nombre'], CLIENTE_DATA['email'], hashed_client_password, CLIENTE_DATA['rol'], CLIENTE_DATA['foto_perfil_url'], CLIENTE_DATA['foto_perfil_base64'])
+            "INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_base64) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (CLIENTE_DATA['nombre'], CLIENTE_DATA['email'], hashed_client_password, CLIENTE_DATA['rol'], CLIENTE_DATA['foto_perfil_base64'])
         )
         client_id = cursor.fetchone()['id']
         print(f"       ✅ {CLIENTE_DATA['nombre']} (ID: {client_id})")

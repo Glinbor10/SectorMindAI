@@ -159,7 +159,7 @@ function updateUI() {
         document.getElementById('user-menu').classList.add('flex');
         document.getElementById('auth-buttons').classList.add('hidden');
         document.getElementById('user-name-display').innerText = currentUser.nombre;
-        const avatar = currentUser.foto_perfil_base64 || currentUser.foto_perfil_url || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
+        const avatar = currentUser.foto_perfil_base64 || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
         document.getElementById('user-avatar-display').src = avatar;
     } else {
         document.getElementById('user-menu').classList.add('hidden');

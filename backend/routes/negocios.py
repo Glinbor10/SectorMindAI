@@ -206,6 +206,17 @@ def crear_servicio(negocio_id):
     if not (nombre and precio is not None and duracion_minutos):
         return jsonify({'error': 'Faltan datos obligatorios'}), 400
 
+    # Validación explícita de precio y duración
+    try:
+        precio = float(precio)
+        duracion_minutos = int(duracion_minutos)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Precio y duración deben ser numéricos'}), 400
+    if precio <= 0:
+        return jsonify({'error': 'El precio debe ser mayor que cero'}), 400
+    if duracion_minutos <= 0:
+        return jsonify({'error': 'La duración debe ser mayor que cero'}), 400
+
     try:
         propietario_id = int(propietario_id)
     except (ValueError, TypeError):
@@ -241,6 +252,22 @@ def actualizar_servicio(negocio_id, servicio_id):
 
     if not any([nombre, precio is not None, duracion_minutos]):
         return jsonify({'error': 'No hay datos para actualizar'}), 400
+
+    # Validación explícita de precio y duración si se envían
+    if precio is not None:
+        try:
+            precio = float(precio)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'El precio debe ser numérico'}), 400
+        if precio <= 0:
+            return jsonify({'error': 'El precio debe ser mayor que cero'}), 400
+    if duracion_minutos is not None:
+        try:
+            duracion_minutos = int(duracion_minutos)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'La duración debe ser numérica'}), 400
+        if duracion_minutos <= 0:
+            return jsonify({'error': 'La duración debe ser mayor que cero'}), 400
 
     try:
         propietario_id = int(propietario_id)

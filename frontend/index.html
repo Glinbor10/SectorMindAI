@@ -202,7 +202,7 @@
                 document.getElementById('user-menu').classList.add('flex');
                 if (logoutBtn) logoutBtn.classList.remove('hidden');
                 document.getElementById('user-name-display').innerText = currentUser.nombre;
-                document.getElementById('user-avatar-display').src = currentUser.foto_perfil_base64 || currentUser.foto_perfil_url || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
+                document.getElementById('user-avatar-display').src = currentUser.foto_perfil_base64 || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
 
                 // Mostrar vista apropiada según rol
                 if (currentUser.rol === 'propietario') {
