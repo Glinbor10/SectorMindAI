@@ -66,34 +66,49 @@ def crear_negocio():
     print(f"DEBUG: Form keys: {list(request.form.keys()) if request.form else 'None'}")
     print(f"DEBUG: Files keys: {list(request.files.keys()) if request.files else 'None'}")
 
-    # Determinar si es FormData o JSON
 
-    # Solo JSON
-    data = request.get_json()
-    nombre = data.get('nombre')
-    tipo_negocio = data.get('tipo_negocio', 'general')
-    direccion = data.get('direccion')
-    descripcion = data.get('descripcion')
-    propietario_id = data.get('propietario_id')
+    # Permitir tanto JSON como FormData
+    foto_base64 = None
+    if request.content_type and request.content_type.startswith('multipart/form-data'):
+        nombre = request.form.get('nombre')
+        tipo_negocio = request.form.get('tipo_negocio', 'general')
+        direccion = request.form.get('direccion')
+        descripcion = request.form.get('descripcion')
+        propietario_id = request.form.get('propietario_id')
+        # Procesar archivo de foto si existe
+        if 'foto' in request.files:
+            foto_file = request.files['foto']
+            if foto_file:
+                import base64
+                foto_base64 = 'data:' + foto_file.mimetype + ';base64,' + base64.b64encode(foto_file.read()).decode('utf-8')
+    else:
+        data = request.get_json() or {}
+        nombre = data.get('nombre')
+        tipo_negocio = data.get('tipo_negocio', 'general')
+        direccion = data.get('direccion')
+        descripcion = data.get('descripcion')
+        propietario_id = data.get('propietario_id')
 
     if not (nombre and direccion and propietario_id):
         return jsonify({'error': 'Faltan datos obligatorios'}), 400
 
-    # Convertir propietario_id a int
     try:
         propietario_id = int(propietario_id)
     except (ValueError, TypeError):
         return jsonify({'error': 'propietario_id inválido'}), 400
 
-
-
     conn = get_db_connection()
     try:
-        # PostgreSQL EXCLUSIVAMENTE
-        cursor = conn.execute(
-            'INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, propietario_id) VALUES (%s, %s, %s, %s, %s) RETURNING id',
-            (nombre, tipo_negocio, direccion, descripcion, propietario_id)
-        )
+        if foto_base64:
+            cursor = conn.execute(
+                'INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, propietario_id, foto_base64) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
+                (nombre, tipo_negocio, direccion, descripcion, propietario_id, foto_base64)
+            )
+        else:
+            cursor = conn.execute(
+                'INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, propietario_id) VALUES (%s, %s, %s, %s, %s) RETURNING id',
+                (nombre, tipo_negocio, direccion, descripcion, propietario_id)
+            )
         new_id = cursor.fetchone()['id']
         conn.commit()
         return jsonify({'id': new_id, 'message': 'Negocio creado exitosamente'}), 201

@@ -219,7 +219,7 @@ def test_actualizar_negocio_descripcion(client, negocio_con_servicios):
 
 
 def test_actualizar_negocio_foto(client, negocio_con_servicios):
-    """Test PUT /negocios/<id> actualiza foto_url."""
+    # Test PUT /negocios/<id> actualiza foto_base64 (foto_url ya no existe)
     neg_id = negocio_con_servicios['negocio_id']
     
     # Ahora se usa foto_base64

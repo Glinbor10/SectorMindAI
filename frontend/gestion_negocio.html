@@ -134,6 +134,38 @@
     </div>
 
     <script>
+                async function deleteBusiness() {
+                    const result = await Swal.fire({
+                        title: '¿Eliminar negocio?',
+                        text: 'Esta acción no se puede deshacer. Se eliminarán todos los servicios y citas asociadas.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ef4444',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Sí, eliminar',
+                        cancelButtonText: 'Cancelar'
+                    });
+                    if (result.isConfirmed) {
+                        try {
+                            const res = await fetch(`${API_URL}/negocios/${currentBusinessId}?propietario_id=${currentUser.id}`, {
+                                method: 'DELETE'
+                            });
+                            if (res.ok) {
+                                Swal.fire('Negocio eliminado', '', 'success');
+                                // Limpiar ids y volver a perfil
+                                localStorage.removeItem('gestion_negocio_id');
+                                sessionStorage.removeItem('gestion_negocio_id');
+                                localStorage.removeItem('selected_business');
+                                setTimeout(() => { window.location.href = '/perfil.html'; }, 1200);
+                            } else {
+                                const error = await res.json();
+                                Swal.fire('Error', error.error, 'error');
+                            }
+                        } catch (err) {
+                            Swal.fire('Error', 'Error de conexión', 'error');
+                        }
+                    }
+                }
         let currentUser = null;
         let currentBusiness = null;
         let currentBusinessId = null;
