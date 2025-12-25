@@ -1,4 +1,44 @@
-﻿# **Sector Mind AI (v0.4.0)**
+﻿
+# **Sector Mind AI (v0.4.0)**
+## 🐳 **¿Cómo funciona Docker en SectorMindAI?**
+
+SectorMindAI utiliza Docker y Docker Compose para orquestar todos los servicios necesarios (backend, base de datos, IA conversacional y acciones personalizadas) de forma profesional, reproducible y persistente.
+
+### 1. Orquestación con Docker Compose
+
+- El archivo `docker-compose.yml` define los 4 servicios principales:
+  - **backend**: API Flask (servidor principal)
+  - **db**: PostgreSQL 15-Alpine (base de datos relacional)
+  - **rasa**: Motor de NLU y diálogo (IA)
+  - **rasa-actions**: Acciones personalizadas de IA
+
+- Cada servicio se ejecuta en su propio contenedor, pero todos comparten una red interna (`sector_mind_net`) para comunicarse de forma segura.
+
+- Los volúmenes declarados (por ejemplo, `./database` para PostgreSQL) garantizan que los datos persisten aunque los contenedores se detengan o reinicien.
+
+### 2. Scripts PowerShell para gestión sencilla
+
+- **start_docker.ps1**: Levanta toda la infraestructura con un solo comando o botón en VS Code. Ejecuta `docker compose up -d --build`, asegurando que todo esté actualizado y corriendo.
+- **stop_docker.ps1**: Detiene y elimina los contenedores de forma segura (`docker compose down`).
+- **run_tests.ps1**: Ejecuta todos los tests (backend y Rasa) dentro de los contenedores, usando la misma base de datos y entorno que en producción.
+- **manage_db.ps1**: Permite inicializar o resetear la base de datos manualmente, solo cuando es necesario (por ejemplo, tras cambios en el esquema).
+
+### 3. Entrypoints y persistencia
+
+- El backend tiene un `Dockerfile` y un `docker-entrypoint.sh` personalizado, que ahora solo arranca el servidor Flask (ya no borra ni repuebla la base de datos automáticamente, para evitar pérdida de datos).
+- La base de datos PostgreSQL utiliza un volumen persistente, por lo que los datos no se pierden aunque se reinicie Docker o el sistema operativo.
+- Los servicios de Rasa y Rasa Actions se levantan automáticamente y se comunican con el backend y la base de datos según la configuración de red y variables de entorno.
+
+### 4. Flujo típico de trabajo
+
+1. **Iniciar todo**: Ejecuta `start_docker.ps1` o el botón 🚀 START en VS Code.
+2. **Desarrollar y testear**: Haz cambios en el código, ejecuta tests con `run_tests.ps1`.
+3. **Detener todo**: Usa `stop_docker.ps1` o el botón 🛑 STOP.
+4. **Persistencia**: Los datos de la base de datos y los modelos de IA se mantienen gracias a los volúmenes Docker declarados.
+
+**Resumen:**
+Docker Compose y los scripts PowerShell permiten levantar, detener, testear y mantener toda la infraestructura de SectorMindAI de forma profesional, con persistencia real de datos y máxima reproducibilidad. Solo es necesario inicializar la base de datos manualmente en casos excepcionales (nuevas migraciones o reseteo total).
+
 
 **Plataforma de gestión de reservas inteligente con asistencia conversacional multimodal, orquestación en Docker y persistencia profesional en PostgreSQL.**
 
@@ -8,24 +48,6 @@
 
 El proyecto ha alcanzado la versión **v0.4.0 (Profesionalización con Docker + PostgreSQL)**.
 Sistema de reservas con IA contextual desplegable en contenedores, 104 tests automatizados con cobertura completa y base de datos relacional de nivel empresarial.
-
-### ✅ Últimas Funcionalidades (v0.4.0)
-- **Stack Dockerizado Profesional:** Orquestación de 4 microservicios (backend, postgres, rasa, rasa-actions) con composición declarativa
-  - PostgreSQL 15-Alpine con persistencia garantizada
-  - Aislamiento de red interno con comunicación segura entre servicios
-  - Automatización de infraestructura mediante Docker Compose
-- **Suite de Testing Integrada:** 104 tests pasando (75 backend + 29 Rasa)
-  - Backend: 100% cobertura en rutas críticas
-  - Rasa: Validación completa de acciones personalizadas
-  - Ejecutable desde VS Code con botón 🧪 TESTS
-- **Developer Experience (DX) Premium:** 
-  - Action Buttons en VS Code: 🚀 START, 🛑 STOP, 🧪 TESTS
-  - Scripts PowerShell automatizados
-  - Gestión unificada de datos con manage_db.py
-- **PostgreSQL como Estándar:** Migración completa de SQLite a PostgreSQL
-  - Transacciones ACID garantizadas
-  - RealDictCursor para resultados dict-like
-  - Escalabilidad para producción
 
 ### 🎯 Funcionalidades Principales (Sistema Completo)
 - **IA Contextual por Tipo de Negocio:** Respuestas especializadas según contexto (dentista/peluquería/fisioterapia)
@@ -307,22 +329,6 @@ Login Cliente:     cliente@sectormind.com / u
 - Pulsa **"Chatear"** para escribir. 
 - Pulsa **"Hablar"** para usar tu micrófono (Solo Chrome). 
 - *Nota: Si el bot no entiende algo complejo, recuerda que está en fase de entrenamiento.* 
-
----
-
-## 📊 **Métricas de Calidad (v0.4.0)**
-
-| Métrica | Valor |
-|---------|-------|
-| **Tests Totales** | 104 (75 backend + 29 rasa) |
-| **Tests Pasando** | 104/104 (100%) ✅ |
-| **Coverage Backend** | 100% en rutas críticas |
-| **Coverage Rasa** | 100% en acciones |
-| **Tasa de Éxito** | 100% (104/104) |
-| **Base de Datos** | PostgreSQL 15-Alpine |
-| **Servicios Containerizados** | 4 (backend, postgres, rasa, rasa-actions) |
-| **Tiempo de Deploy** | ~30 segundos con Docker Compose |
-
 
 
 ## 🧪 **Tests y Calidad del Código**

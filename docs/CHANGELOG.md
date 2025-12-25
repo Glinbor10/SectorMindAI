@@ -11,6 +11,9 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 ### ✨ Añadido (Added)
 
 **Refactorización Backend y DevOps:**
+- Ahora existen dos bases de datos independientes: una principal (`sectormind_db`) y otra exclusiva para tests (`sectormind_test_db`). Esto permite ejecutar tests sin afectar los datos reales.
+- La base de datos de producción en Docker ahora persiste los datos correctamente entre reinicios de contenedores, gracias al volumen `sector_mind_postgres_data`.
+- Eliminado el borrado y repoblamiento automático de la base de datos al arrancar el backend: ahora los datos solo se restauran manualmente si se ejecuta el script correspondiente.
 - Eliminación completa de `db_utils.py` y de la función `adapt_query` en todo el backend. Todas las rutas y lógica ahora usan queries PostgreSQL directas con `%s`.
 - Refactorización de `logic.py`, `routes/auth.py`, `routes/citas.py` y `routes/negocios.py` para eliminar dependencias de SQLite y adaptar queries a PostgreSQL.
 - Centralización de todos los scripts PowerShell (`start_docker.ps1`, `stop_docker.ps1`, `run_tests.ps1`, `manage_db.ps1`) en la carpeta `scripts/` y actualización de todas las referencias en VS Code (Action Buttons y tasks.json).
