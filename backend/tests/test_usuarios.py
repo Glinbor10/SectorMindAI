@@ -30,3 +30,5 @@ def test_obtener_usuario_existente(client):
     assert data['nombre'] == user_nombre
     assert data['email'] == user_email
     assert data['rol'] == 'cliente'
+    # Puede tener foto_perfil_base64 o no
+    assert 'foto_perfil_base64' in data

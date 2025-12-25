@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     password_hash VARCHAR(255) NOT NULL,
     rol VARCHAR(50) NOT NULL CHECK (rol IN ('cliente', 'propietario')),
     foto_perfil_url TEXT,
+    foto_perfil_base64 TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -19,7 +20,7 @@ CREATE TABLE IF NOT EXISTS negocios (
     tipo_negocio VARCHAR(100) NOT NULL,
     direccion TEXT,
     descripcion TEXT,
-    foto_url TEXT,
+    foto_base64 TEXT,
     propietario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

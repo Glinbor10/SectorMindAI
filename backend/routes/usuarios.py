@@ -16,7 +16,7 @@ def allowed_file(filename):
 @usuarios_bp.route('/<int:user_id>', methods=['GET'])
 def obtener_usuario(user_id):
     conn = get_db_connection()
-    user = conn.execute('SELECT id, nombre, email, rol, foto_perfil_url FROM usuarios WHERE id = %s', (user_id,)).fetchone()
+    user = conn.execute('SELECT id, nombre, email, rol, foto_perfil_base64 FROM usuarios WHERE id = %s', (user_id,)).fetchone()
     conn.close()
     if user is None:
         return jsonify({'error': 'Usuario no encontrado'}), 404
@@ -30,6 +30,7 @@ def actualizar_usuario(user_id):
     
     nombre = request.form.get('nombre')
     archivo = request.files.get('foto_perfil') # El nombre del campo en el HTML
+    import base64
 
     conn = get_db_connection()
     try:
@@ -44,34 +45,13 @@ def actualizar_usuario(user_id):
         # 2. Procesar Archivo si viene
         if archivo and archivo.filename != '':
             if allowed_file(archivo.filename):
-                # Generar nombre único para evitar colisiones y problemas de caché
                 ext = archivo.filename.rsplit('.', 1)[1].lower()
-                filename = f"user_{user_id}_{uuid.uuid4().hex[:8]}.{ext}"
-                
-                # Usar carpeta temporal en tests o frontend/uploads en producción
-                if current_app.config.get('UPLOAD_FOLDER'):
-                    upload_folder = current_app.config['UPLOAD_FOLDER']
-                else:
-                    # Definir ruta de guardado (frontend/uploads)
-                    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                    upload_folder = os.path.join(base_dir, 'frontend', 'uploads')
-                
-                # Crear carpeta si no existe por seguridad
-                if not os.path.exists(upload_folder):
-                    os.makedirs(upload_folder)
-
-                # Guardar el archivo físicamente
-                filepath = os.path.join(upload_folder, filename)
-                archivo.save(filepath)
-
-                # Guardar la URL RELATIVA en la BD
-                # Como tu app.py sirve archivos estáticos desde frontend, la url es /uploads/filename
-                foto_url = f"/uploads/{filename}"
-                
-                updates.append('foto_perfil_url = %s')
-                params.append(foto_url)
+                file_bytes = archivo.read()
+                foto_base64 = f"data:image/{ext};base64," + base64.b64encode(file_bytes).decode('utf-8')
+                updates.append('foto_perfil_base64 = %s')
+                params.append(foto_base64)
             else:
-                return jsonify({'error': 'Tipo de archivo no permitido (solo jpg, png)'}), 400
+                return jsonify({'error': 'Tipo de archivo no permitido (solo jpg, png, gif)'}), 400
 
         if not updates:
             return jsonify({'error': 'No hay datos para actualizar'}), 400
@@ -87,7 +67,7 @@ def actualizar_usuario(user_id):
             return jsonify({'error': 'Usuario no encontrado'}), 404
 
         # Devolver usuario actualizado
-        updated_user = conn.execute('SELECT id, nombre, email, rol, foto_perfil_url FROM usuarios WHERE id = %s', (user_id,)).fetchone()
+        updated_user = conn.execute('SELECT id, nombre, email, rol, foto_perfil_base64 FROM usuarios WHERE id = %s', (user_id,)).fetchone()
         return jsonify(dict(updated_user)), 200
 
     except Exception as e:

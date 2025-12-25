@@ -202,7 +202,7 @@
                 document.getElementById('user-menu').classList.add('flex');
                 if (logoutBtn) logoutBtn.classList.remove('hidden');
                 document.getElementById('user-name-display').innerText = currentUser.nombre;
-                document.getElementById('user-avatar-display').src = currentUser.foto_perfil_url || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
+                document.getElementById('user-avatar-display').src = currentUser.foto_perfil_base64 || currentUser.foto_perfil_url || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
 
                 // Mostrar vista apropiada según rol
                 if (currentUser.rol === 'propietario') {
@@ -262,9 +262,10 @@
                             sessionStorage.setItem('gestion_negocio_id', negocio.id);
                             window.location.href = '/gestion_negocio.html';
                         };
+                        const fotoSrc = negocio.foto_base64 || 'https://via.placeholder.com/400x200/6366f1/ffffff?text=' + encodeURIComponent(negocio.nombre);
                         card.innerHTML = `
                             <div class="h-48 overflow-hidden relative rounded-t-2xl">
-                                <img src="${negocio.foto_url || 'https://via.placeholder.com/400x200/6366f1/ffffff?text=' + encodeURIComponent(negocio.nombre)}" alt="${negocio.nombre}" class="w-full h-full object-cover">
+                                <img src="${fotoSrc}" alt="${negocio.nombre}" class="w-full h-full object-cover">
                                 <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-indigo-600 shadow-sm capitalize">${negocio.tipo_negocio}</div>
                                 <button onclick="event.stopPropagation(); deleteBusiness(${negocio.id})" class="absolute top-4 left-4 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-sm transition" title="Eliminar negocio">
                                     <i data-lucide="trash" class="w-4 h-4"></i>
@@ -419,7 +420,7 @@
                 return;
             }
             negociosData.forEach(negocio => {
-                const fotoBg = negocio.foto_url ? negocio.foto_url : 'https://images.unsplash.com/photo-1521590832896-017c4f98aa51?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+                const fotoBg = negocio.foto_base64 ? negocio.foto_base64 : 'https://images.unsplash.com/photo-1521590832896-017c4f98aa51?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
                 
                 const cardLink = document.createElement('a');
                 cardLink.className = "group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 cursor-pointer flex flex-col h-full fade-in block text-left";

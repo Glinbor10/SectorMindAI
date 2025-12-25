@@ -159,7 +159,7 @@ function updateUI() {
         document.getElementById('user-menu').classList.add('flex');
         document.getElementById('auth-buttons').classList.add('hidden');
         document.getElementById('user-name-display').innerText = currentUser.nombre;
-        const avatar = currentUser.foto_perfil_url || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
+        const avatar = currentUser.foto_perfil_base64 || currentUser.foto_perfil_url || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
         document.getElementById('user-avatar-display').src = avatar;
     } else {
         document.getElementById('user-menu').classList.add('hidden');
@@ -191,7 +191,7 @@ function renderBusinessInfo(biz) {
     document.getElementById('biz-address').innerHTML = `<i data-lucide="map-pin" class="w-4 h-4 mr-2"></i> ${biz.direccion || 'Dirección no disponible'}`;
     document.getElementById('biz-type').innerText = biz.tipo_negocio;
     document.getElementById('ai-agent-title').innerText = `Agente IA de ${biz.nombre}`;
-    const imgUrl = biz.foto_url || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=80';
+    const imgUrl = biz.foto_base64 || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=80';
     document.getElementById('biz-img').src = imgUrl;
 
     if (biz.servicios) renderServices(biz.servicios);

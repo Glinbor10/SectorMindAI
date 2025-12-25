@@ -30,11 +30,9 @@ services:
       - FLASK_ENV=production
       - DATABASE_URL=${DATABASE_URL}
       - API_URL=${API_URL}
-      - UPLOAD_FOLDER=/app/frontend/uploads
     volumes:
       - ./backend:/app/backend
       - ./frontend:/app/frontend
-      - ./uploads:/app/uploads
       - ./rasa_model:/app/rasa_model
     depends_on:
       db:

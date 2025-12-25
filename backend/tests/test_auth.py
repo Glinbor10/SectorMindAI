@@ -33,7 +33,9 @@ def test_register_sin_foto_exitoso(client, app):
     assert '@test.com' in json_data['email']  # Email dinámico con UUID
     assert json_data['rol'] == 'cliente'
     assert 'id' in json_data
-    assert json_data['foto_perfil_url'] is None
+    # Puede no tener foto_perfil_url ni foto_perfil_base64
+    assert ('foto_perfil_url' not in json_data or json_data['foto_perfil_url'] is None)
+    assert ('foto_perfil_base64' not in json_data or json_data['foto_perfil_base64'] is None)
 
 
 def test_register_con_foto_exitoso(client, app):
@@ -54,9 +56,8 @@ def test_register_con_foto_exitoso(client, app):
     assert json_data['nombre'] == 'María Test'
     assert '@test.com' in json_data['email']  # Email dinámico con UUID
     assert json_data['rol'] == 'propietario'
-    assert json_data['foto_perfil_url'] is not None
-    assert json_data['foto_perfil_url'].startswith('/uploads/user_')
-    assert json_data['foto_perfil_url'].endswith('.jpg')
+    # Ahora puede devolver foto_perfil_base64 o foto_perfil_url
+    assert ('foto_perfil_base64' in json_data and json_data['foto_perfil_base64']) or ('foto_perfil_url' in json_data and json_data['foto_perfil_url'])
 
 
 def test_register_sin_nombre(client, app):
