@@ -1,8 +1,13 @@
 # backend/manage_db.py
 # filepath: backend/manage_db.py
 """
-Script maestro para gestión de base de datos PostgreSQL en Docker.
-Solo actúa sobre PostgreSQL. SQLite ha sido eliminado.
+Script maestro para gestión de bases de datos PostgreSQL en Docker.
+
+Ahora existen dos bases de datos independientes:
+    - sectormind_db: base de datos principal (desarrollo/producción)
+    - sectormind_test_db: base de datos exclusiva para tests
+
+Ambas comparten exactamente la misma estructura y esquema, pero sus datos pueden ser distintos. Esto permite ejecutar tests sin afectar los datos reales.
 """
 import psycopg2
 import psycopg2.extras
@@ -18,10 +23,14 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOADS_PATH = os.path.join(BASE_DIR, '..', 'frontend', 'uploads')
 
-# PostgreSQL EXCLUSIVAMENTE
+
+# Permite sobreescribir la base de datos por variable de entorno o argumento
+import sys
 DATABASE_URL = os.getenv('DATABASE_URL')
+if len(sys.argv) > 1 and sys.argv[1].startswith('postgresql'):
+    DATABASE_URL = sys.argv[1]
 if not DATABASE_URL:
-    raise ValueError("❌ ERROR: DATABASE_URL no definida. Revisa .env")
+    raise ValueError("❌ ERROR: No se ha definido ninguna DATABASE_URL.\n\nPuedes usar:\n  - La variable de entorno DATABASE_URL para la base de datos principal (sectormind_db)\n  - O pasar la URL de la base de datos de tests (sectormind_test_db) como argumento al script.\n\nAmbas bases de datos tienen la misma estructura, pero datos independientes.")
 
 API_URL = os.getenv('API_URL_INTERNAL', 'http://127.0.0.1:5000')
 

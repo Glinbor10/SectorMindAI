@@ -8,7 +8,8 @@ param(
 
 Write-Host "[TEST] Iniciando tests..." -ForegroundColor Cyan
 
-$TEST_DB_URL = "postgresql://sectormind:password@db:5432/sectormind_db"
+$TEST_DB_URL = "postgresql://sectormind:password@db:5432/sectormind_test_db"
+
 
 # Validar si el contenedor está corriendo
 $containerStatus = docker compose ps --format json | ConvertFrom-Json | Where-Object { $_.Service -eq "backend" }
@@ -16,6 +17,11 @@ if ($null -eq $containerStatus -or $containerStatus.State -ne "running") {
 	Write-Host "[ERROR] El contenedor 'backend' no está activo." -ForegroundColor Red
 	exit
 }
+
+# Restaurar la base de datos de tests antes de correr los tests del backend
+Write-Host "[DB] Restaurando la base de datos de tests..." -ForegroundColor Yellow
+docker compose exec backend python backend/manage_db.py $TEST_DB_URL
+Write-Host "[DB] Base de datos de tests restaurada." -ForegroundColor Green
 
 # Función para procesar y mostrar solo PASSED/FAILED y extraer totales
 function Execute-FilteredTests {
