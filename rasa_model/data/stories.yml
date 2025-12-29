@@ -1,37 +1,43 @@
 version: "3.1"
 
 stories:
+- story: Reservar servicio completo
+  steps:
+    - intent: reservar_servicio
+    - action: action_normalizar_servicio
+    - action: action_mostrar_disponibilidad
+    - intent: informar_fecha
+    - action: action_reservar_cita
 
 - story: Saludo inicial
   steps:
-  - intent: greet
-  - action: action_set_contexto
-  - slot_was_set:
-    - tipo_negocio
-  - action: utter_greet_con_negocio
+    - intent: greet
+    - action: action_set_contexto
+    - slot_was_set:
+        - tipo_negocio
+    - action: utter_greet_con_negocio
 
 - story: Despedida
   steps:
-  - intent: goodbye
-  - action: utter_goodbye
+    - intent: goodbye
+    - action: utter_goodbye
 
 - story: Consultar información del negocio
   steps:
-  - intent: info_general
-  - action: action_info_negocio
+    - intent: info_general
+    - action: action_info_negocio
 
 - story: Consultar horarios
   steps:
-  - intent: consultar_horarios
-  - action: action_mostrar_horarios
+    - intent: consultar_horarios
+    - action: action_mostrar_horarios
 
 - story: Consultar servicios y precios
   steps:
-  - intent: consultar_servicios
-  - action: action_listar_servicios
+    - intent: consultar_servicios
+    - action: action_listar_servicios
 
 - story: Consultar ubicación
   steps:
-  - intent: consultar_ubicacion
-  - action: action_mostrar_ubicacion
-
+    - intent: consultar_ubicacion
+    - action: action_mostrar_ubicacion

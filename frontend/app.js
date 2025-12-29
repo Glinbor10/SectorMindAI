@@ -287,6 +287,15 @@ async function sendToRasa(msg, hidden = false, typingElementId = null) {
         if (!hidden) {
             if (data.length === 0) handleBotResponse('Ups, no he entendido eso. ¿Puedes repetirlo?');
             else data.forEach(rta => handleBotResponse(rta.text));
+        } else {
+            // Si hidden, solo procesar mensajes de slots
+            if (Array.isArray(data)) {
+                data.forEach(rta => {
+                    if (typeof rta.text === 'string' && rta.text.startsWith('[SLOTS]')) {
+                        handleBotResponse(rta.text);
+                    }
+                });
+            }
         }
     } catch (err) {
         if (typingElementId) document.getElementById(typingElementId).remove();
@@ -295,6 +304,17 @@ async function sendToRasa(msg, hidden = false, typingElementId = null) {
 }
 
 function handleBotResponse(text) {
+    // Si el mensaje contiene los slots, mostrar solo en consola
+    if (typeof text === 'string' && text.startsWith('[SLOTS]')) {
+        try {
+            const slotsStr = text.replace('[SLOTS]', '').trim();
+            const slots = JSON.parse(slotsStr.replace(/'/g, '"'));
+            console.log('🎯 SLOTS RASA:', slots);
+        } catch (e) {
+            console.warn('No se pudo parsear los slots:', text);
+        }
+        return;
+    }
     addMsg('bot', text);
     if (isVoiceMode) {
         const voiceResBox = document.getElementById('voice-response-box');

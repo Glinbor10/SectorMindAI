@@ -59,6 +59,14 @@ services:
     depends_on:
       - rasa-actions
       - backend
+      - duckling
+    restart: unless-stopped
+
+  duckling:
+    image: rasa/duckling:latest
+    container_name: sector_mind_duckling
+    ports:
+      - "8000:8000"
     restart: unless-stopped
 
   rasa-actions:

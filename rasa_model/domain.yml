@@ -93,10 +93,8 @@ slots:
     type: text
     influence_conversation: true
     mappings:
-      - type: from_text
-        intent: informar_fecha
       - type: from_entity
-        entity: fecha
+        entity: time
 
   horarios_disponibles:
     type: any

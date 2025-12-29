@@ -52,10 +52,17 @@ rules:
       - intent: deny
       - action: action_denegar_cancelacion
 
-  - rule: Cambiar horario
+
+  - rule: Iniciar reserva de servicio
     steps:
-      - intent: cambiar_horario
-      - action: utter_pedir_nueva_fecha
+      - intent: reservar_servicio
+      - action: action_normalizar_servicio
+      - action: action_mostrar_disponibilidad
+
+  - rule: Informar fecha para reserva
+    steps:
+      - intent: informar_fecha
+      - action: action_reservar_cita
 
   - rule: Fallback
     steps:

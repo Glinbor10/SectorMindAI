@@ -13,20 +13,6 @@ load_dotenv()
 # --- CONFIGURACIÓN API ---
 # Usar hostname Docker por defecto
 API_URL = os.getenv("API_URL", "http://backend:5000")
-print(f"🔗 Rasa Actions conectando a API: {API_URL}")
-
-# Importar actions específicas de contexto (urgencias solamente)
-from .dentista_actions import (
-    ActionUrgenciaDental,
-    ActionBuscarUrgenciaProxima
-)
-from .peluqueria_actions import (
-    ActionUrgenciaPeluqueria
-)
-from .fisioterapia_actions import (
-    ActionUrgenciaFisioterapia
-)
-from .base_actions import ActionUrgenciaBase
 
 
 class ActionSetContexto(Action):
@@ -39,23 +25,31 @@ class ActionSetContexto(Action):
 
         metadata = tracker.latest_message.get('metadata', {})
 
-        # Prioridad: metadata > slot actual
-        cliente_id = metadata.get('cliente_id') or tracker.get_slot("cliente_id")
-        negocio_id = metadata.get('negocio_id') or tracker.get_slot("negocio_id")
-        tipo_negocio = metadata.get('tipo_negocio') or tracker.get_slot("tipo_negocio")
-        negocio_nombre = metadata.get('negocio_nombre') or tracker.get_slot("negocio")
+        # Prioridad: metadata SIEMPRE que venga, incluso si cambia de negocio
+        cliente_id = metadata.get('cliente_id') if 'cliente_id' in metadata else tracker.get_slot("cliente_id")
+        negocio_id = metadata.get('negocio_id') if 'negocio_id' in metadata else tracker.get_slot("negocio_id")
+        tipo_negocio = metadata.get('tipo_negocio') if 'tipo_negocio' in metadata else tracker.get_slot("tipo_negocio")
+        negocio_nombre = metadata.get('negocio_nombre') if 'negocio_nombre' in metadata else tracker.get_slot("negocio")
 
-        # Si no hay tipo_negocio pero sí negocio_id, intenta consultarlo (opcional)
-        if not tipo_negocio and negocio_id:
+        if negocio_id:
             try:
                 response = requests.get(f"{API_URL}/negocios/{negocio_id}", timeout=5)
                 if response.status_code == 200:
                     negocio_info = response.json()
                     tipo_negocio = negocio_info.get('tipo_negocio')
-            except Exception as e:
-                print(f"Error consultando tipo de negocio: {e}")
+                    negocio_nombre = negocio_info.get('nombre')
+            except Exception:
+                pass
 
-        # No resetea slots si ya tienen valor
+
+        # Enviar los slots actuales al frontend como mensaje JSON
+        slots_actuales = {
+            "cliente_id": cliente_id,
+            "negocio_id": negocio_id,
+            "tipo_negocio": tipo_negocio,
+            "negocio_nombre": negocio_nombre
+        }
+        dispatcher.utter_message(text=f"[SLOTS] {slots_actuales}")
         return [
             SlotSet("cliente_id", cliente_id),
             SlotSet("negocio_id", negocio_id),
@@ -144,7 +138,9 @@ class ActionNormalizarServicio(Action):
                 dispatcher.utter_message(
                     text=f"No entendí qué servicio quieres. Tenemos: {opciones}"
                 )
-                return [SlotSet("servicio", None)]
+                # Limpiar slots y revertir para detener el flujo
+                from rasa_sdk.events import UserUtteranceReverted
+                return [SlotSet("servicio", None), SlotSet("servicio_id", None), UserUtteranceReverted()]
 
         except Exception as e:
             dispatcher.utter_message(text=f"Error al conectar con el servidor: {str(e)}")
@@ -336,7 +332,7 @@ class ActionReservarCita(Action):
             return []
 
     def _interpretar_fecha(self, texto_fecha: str, horarios_disponibles: dict) -> str:
-        """Convierte 'mañana', 'hoy', etc. en una fecha-hora específica"""
+        """Convierte 'mañana', 'hoy', etc. en una fecha-hora específica y busca coincidencia exacta de hora si se especifica."""
         if not texto_fecha or not horarios_disponibles:
             return None
 
@@ -361,7 +357,6 @@ class ActionReservarCita(Action):
                 if dia_nombre in texto_lower:
                     dia_encontrado = dia_num
                     break
-            
             if dia_encontrado is not None:
                 dias_hasta = (dia_encontrado - hoy.weekday()) % 7
                 if dias_hasta == 0:
@@ -373,11 +368,22 @@ class ActionReservarCita(Action):
 
         fecha_str = fecha_objetivo.strftime('%Y-%m-%d')
 
-        # Buscar el primer horario disponible de ese día
+        # Buscar coincidencia exacta de hora si se especifica
+        import re
+        hora_match = re.search(r'(\d{1,2}):(\d{2})', texto_lower)
+        hora_usuario = None
+        if hora_match:
+            hora_usuario = f"{int(hora_match.group(1)):02d}:{hora_match.group(2)}"
+
         if fecha_str in horarios_disponibles:
             horarios = horarios_disponibles[fecha_str]
+            if hora_usuario:
+                # Buscar coincidencia exacta de hora
+                for slot in horarios:
+                    if hora_usuario in slot:
+                        return slot
             if horarios:
-                return horarios[0]  # Devolver el primer slot disponible
+                return horarios[0]  # Si no se especificó hora, devolver el primer slot disponible
 
         return None
 
