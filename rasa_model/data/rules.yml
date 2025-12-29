@@ -7,6 +7,7 @@ rules:
         - intent: reservar_servicio
         - action: reserva_form
         - active_loop: reserva_form
+        
     - rule: Capturar contexto inicial
       steps:
         - intent: greet
@@ -57,13 +58,6 @@ rules:
       steps:
         - intent: deny
         - action: action_denegar_cancelacion
-
-
-    - rule: Iniciar reserva de servicio
-      steps:
-        - intent: reservar_servicio
-        - action: action_normalizar_servicio
-        - action: action_mostrar_disponibilidad
 
     - rule: Informar fecha para reserva
       steps:

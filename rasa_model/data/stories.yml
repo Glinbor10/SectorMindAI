@@ -1,13 +1,6 @@
 version: "3.1"
 
 stories:
-- story: Reservar servicio completo
-  steps:
-    - intent: reservar_servicio
-    - action: action_normalizar_servicio
-    - action: action_mostrar_disponibilidad
-    - intent: informar_fecha
-    - action: action_reservar_cita
 
 - story: Saludo inicial
   steps:
