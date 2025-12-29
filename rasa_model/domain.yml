@@ -1,3 +1,10 @@
+forms:
+  reserva_form:
+    required_slots:
+      - servicio
+      - servicio_id
+      - fecha
+
 version: "3.1"
 
 intents:
@@ -127,59 +134,61 @@ slots:
       - type: custom
 
 responses:
-  utter_greet_con_negocio:
-    - text: "¡Hola! Bienvenido a {negocio}. ¿Qué servicio necesitas?"
+    utter_ask_servicio:
+      - text: "¿Qué servicio quieres reservar?"
 
-  utter_greet:
-    - text: "¡Hola! ¿En qué puedo ayudarte hoy?"
+    utter_ask_fecha:
+      - text: "¿Para qué día y hora quieres la cita?"
 
-  utter_pedir_servicio:
-    - text: "Puedo ayudarte con: 📅 Reservar citas, 💰 Consultar precios y servicios, 🕒 Ver horarios de apertura, 📍 Información de ubicación, 📋 Ver tus citas pendientes. ¿Qué te gustaría hacer?"
+    utter_greet_con_negocio:
+      - text: "¡Hola! Bienvenido a {negocio}. ¿Qué servicio necesitas?"
 
-  utter_goodbye:
-    - text: "¡Hasta luego! Si necesitas algo más, aquí estaré."
+    utter_greet:
+      - text: "¡Hola! ¿En qué puedo ayudarte hoy?"
 
-  utter_default:
-    - text: "No he entendido bien. ¿Puedes repetirlo?"
-  
-  utter_pedir_negocio:
-    - text: "¿Para qué negocio necesitas ayuda? (dentista, fisioterapia, peluqueria)"
+    utter_pedir_servicio:
+      - text: "Puedo ayudarte con: 📅 Reservar citas, 💰 Consultar precios y servicios, 🕒 Ver horarios de apertura, 📍 Información de ubicación, 📋 Ver tus citas pendientes. ¿Qué te gustaría hacer?"
 
-  utter_confirmacion:
-    - text: "✅ ¡Perfecto! Tu cita ha sido reservada correctamente."
+    utter_goodbye:
+      - text: "¡Hasta luego! Si necesitas algo más, aquí estaré."
 
-  utter_urgencia_confirmada:
-    - text: "¡Urgencia confirmada! Te atenderemos lo antes posible."
+    utter_default:
+      - text: "No he entendido bien. ¿Puedes repetirlo?"
+    
+    utter_pedir_negocio:
+      - text: "¿Para qué negocio necesitas ayuda? (dentista, fisioterapia, peluqueria)"
 
-  utter_confirmar_cancelacion:
-    - text: "¿Seguro que quieres cancelar esta cita? Responde 'sí' para confirmar o 'no' para mantenerla."
+    utter_confirmacion:
+      - text: "✅ ¡Perfecto! Tu cita ha sido reservada correctamente."
 
-  utter_confirmacion_eliminada:
-    - text: "✅ Cita cancelada correctamente. Si quieres, puedo ayudarte a reservar una nueva."
+    utter_urgencia_confirmada:
+      - text: "¡Urgencia confirmada! Te atenderemos lo antes posible."
 
-  utter_pedir_nueva_fecha:
-    - text: "¿Qué fecha y hora prefieres para reprogramar? (Ej.: 'mañana a las 10', 'el viernes por la tarde')"
+    utter_confirmar_cancelacion:
+      - text: "¿Seguro que quieres cancelar esta cita? Responde 'sí' para confirmar o 'no' para mantenerla."
+
+    utter_confirmacion_eliminada:
+      - text: "✅ Cita cancelada correctamente. Si quieres, puedo ayudarte a reservar una nueva."
+
+    utter_pedir_nueva_fecha:
+      - text: "¿Qué fecha y hora prefieres para reprogramar? (Ej.: 'mañana a las 10', 'el viernes por la tarde')"
 
 actions:
-  - action_set_contexto
-  - action_normalizar_servicio
-  - action_mostrar_disponibilidad
-  - action_reservar_cita
-  - action_info_negocio
-  - action_mostrar_horarios
-  - action_listar_servicios
-  - action_mostrar_ubicacion
-  - action_consultar_citas_usuario
-  - action_cancelar_cita
-  - action_confirmar_cancelacion
-  - action_cancelar_cita_confirmada
-  - action_denegar_cancelacion
-  - action_responder_bot_challenge
-  # Actions de URGENCIAS
-  - action_urgencia_dental
-  - action_urgencia_peluqueria
-  - action_urgencia_fisioterapia
-  - action_buscar_urgencia_proxima
+    - action_submit_reserva_form
+    - action_set_contexto
+    - action_normalizar_servicio
+    - action_mostrar_disponibilidad
+    - action_reservar_cita
+    - action_info_negocio
+    - action_mostrar_horarios
+    - action_listar_servicios
+    - action_mostrar_ubicacion
+    - action_consultar_citas_usuario
+    - action_cancelar_cita
+    - action_confirmar_cancelacion
+    - action_cancelar_cita_confirmada
+    - action_denegar_cancelacion
+    - action_responder_bot_challenge
 
 session_config:
   session_expiration_time: 60

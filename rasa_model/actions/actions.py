@@ -1,3 +1,37 @@
+# Acción submit del form de reserva
+class ActionSubmitReservaForm(Action):
+    def name(self) -> Text:
+        return "action_submit_reserva_form"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        cliente_id = tracker.get_slot("cliente_id")
+        negocio_id = tracker.get_slot("negocio_id")
+        servicio_id = tracker.get_slot("servicio_id")
+        servicio = tracker.get_slot("servicio")
+        fecha = tracker.get_slot("fecha")
+
+        if not (cliente_id and negocio_id and servicio_id and fecha):
+            dispatcher.utter_message(text="Faltan datos para completar la reserva. Por favor, indícame el servicio y la fecha/hora que deseas.")
+            return []
+
+        try:
+            # Llamada a la API para reservar la cita
+            response = requests.post(f"{API_URL}/citas", json={
+                "cliente_id": cliente_id,
+                "negocio_id": negocio_id,
+                "servicio_id": servicio_id,
+                "fecha_hora_cita": fecha,
+                "estado": "confirmada"
+            }, timeout=10)
+            if response.status_code == 200:
+                dispatcher.utter_message(text=f"✅ ¡Perfecto! Tu cita para '{servicio}' ha sido reservada para {fecha}.")
+            else:
+                dispatcher.utter_message(text="No se pudo completar la reserva. Intenta de nuevo o revisa los datos.")
+        except Exception as e:
+            dispatcher.utter_message(text=f"Error al reservar la cita: {str(e)}")
+        return []
 from typing import Any, Text, Dict, List
 import os
 from rasa_sdk import Action, Tracker
@@ -72,9 +106,10 @@ class ActionNormalizarServicio(Action):
         negocio_nombre = tracker.get_slot("negocio")
         negocio_id = tracker.get_slot("negocio_id")
         tipo_negocio = tracker.get_slot("tipo_negocio")
+        intent = tracker.latest_message.get('intent', {}).get('name', '')
 
         print(f"🔍 ActionNormalizarServicio - Mensaje: '{mensaje_usuario}'")
-        print(f"   Negocio ID: {negocio_id}, Tipo: {tipo_negocio}")
+        print(f"   Negocio ID: {negocio_id}, Tipo: {tipo_negocio}, Intent: {intent}")
 
         if not negocio_id:
             dispatcher.utter_message(text="No sé en qué negocio estás. Por favor, selecciona uno desde la web.")
@@ -94,51 +129,44 @@ class ActionNormalizarServicio(Action):
         try:
             # Consultar servicios reales del negocio desde la API
             response = requests.get(f"{API_URL}/negocios/{negocio_id}/servicios", timeout=5)
-            
             if response.status_code != 200:
                 dispatcher.utter_message(text="No pude cargar los servicios. Intenta de nuevo.")
                 return []
 
             servicios_disponibles = response.json()
-            
             if not servicios_disponibles:
                 dispatcher.utter_message(text="Este negocio no tiene servicios configurados.")
                 return []
 
-            # Buscar coincidencia fuzzy
+            # Buscar coincidencia fuzzy SIEMPRE, aunque el intent no sea de reserva
             servicio_detectado = None
             servicio_id = None
-            
             print(f"   Buscando en {len(servicios_disponibles)} servicios...")
-            
             for servicio in servicios_disponibles:
                 nombre_servicio = servicio['nombre'].lower()
-                # Búsqueda flexible: si alguna palabra clave coincide
                 palabras = nombre_servicio.split()
                 palabras_filtradas = [p for p in palabras if len(p) > 3]
-                
                 print(f"     Servicio '{servicio['nombre']}' -> palabras clave: {palabras_filtradas}")
-                
                 if any(palabra in mensaje_usuario for palabra in palabras_filtradas):
                     servicio_detectado = servicio['nombre']
                     servicio_id = servicio['id']
                     print(f"     ✅ COINCIDENCIA ENCONTRADA: {servicio_detectado}")
                     break
-            
+
             if servicio_detectado:
                 print(f"   Resultado final: Servicio detectado = {servicio_detectado}")
+                # Preguntar por fecha/hora, no reservar automáticamente
+                dispatcher.utter_message(text=f"He detectado que quieres reservar el servicio '{servicio_detectado}'. ¿Para qué día y hora te gustaría reservar? Puedes decirme una fecha y hora concreta, o pedir ver los horarios disponibles.")
                 return [
                     SlotSet("servicio", servicio_detectado),
                     SlotSet("servicio_id", servicio_id)
                 ]
             else:
                 print("   Resultado final: No se detectó ningún servicio")
-                # No se encontró, ofrecer opciones
                 opciones = ", ".join([s['nombre'] for s in servicios_disponibles])
                 dispatcher.utter_message(
                     text=f"No entendí qué servicio quieres. Tenemos: {opciones}"
                 )
-                # Limpiar slots y revertir para detener el flujo
                 from rasa_sdk.events import UserUtteranceReverted
                 return [SlotSet("servicio", None), SlotSet("servicio_id", None), UserUtteranceReverted()]
 

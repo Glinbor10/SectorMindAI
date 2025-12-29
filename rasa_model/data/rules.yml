@@ -1,70 +1,76 @@
 version: "3.1"
 
 rules:
-  - rule: Capturar contexto inicial
-    steps:
-      - intent: greet
-      - action: action_set_contexto
-      - action: utter_greet_con_negocio
 
-  - rule: Despedida
-    steps:
-      - intent: goodbye
-      - action: utter_goodbye
+    - rule: Activar form de reserva
+      steps:
+        - intent: reservar_servicio
+        - action: reserva_form
+        - active_loop: reserva_form
+    - rule: Capturar contexto inicial
+      steps:
+        - intent: greet
+        - action: action_set_contexto
+        - action: utter_greet_con_negocio
 
-  - rule: Challenge
-    steps:
-      - intent: bot_challenge
-      - action: action_responder_bot_challenge
+    - rule: Despedida
+      steps:
+        - intent: goodbye
+        - action: utter_goodbye
 
-  - rule: Responder a más opciones
-    steps:
-      - intent: pedir_mas_opciones
-      - action: utter_pedir_servicio
+    - rule: Challenge
+      steps:
+        - intent: bot_challenge
+        - action: action_responder_bot_challenge
 
-  - rule: Consultar citas
-    steps:
-      - intent: consultar_mis_citas
-      - action: action_consultar_citas_usuario
+    - rule: Responder a más opciones
+      steps:
+        - intent: pedir_mas_opciones
+        - action: utter_pedir_servicio
 
-  - rule: Ver historial de citas
-    steps:
-      - intent: ver_historial_citas
-      - action: action_consultar_citas_usuario
+    - rule: Consultar citas
+      steps:
+        - intent: consultar_mis_citas
+        - action: action_consultar_citas_usuario
 
-  - rule: Cancelar cita
-    steps:
-      - intent: cancelar_cita
-      - action: action_cancelar_cita
+    - rule: Ver historial de citas
+      steps:
+        - intent: ver_historial_citas
+        - action: action_consultar_citas_usuario
 
-  - rule: Seleccionar cita para cancelar
-    steps:
-      - intent: seleccionar_cita
-      - action: action_confirmar_cancelacion
+    - rule: Cancelar cita
+      steps:
+        - intent: cancelar_cita
+        - action: action_cancelar_cita
 
-  - rule: Confirmar cancelación
-    steps:
-      - intent: affirm
-      - action: action_cancelar_cita
+    - rule: Seleccionar cita para cancelar
+      steps:
+        - intent: seleccionar_cita
+        - action: action_confirmar_cancelacion
 
-  - rule: Denegar cancelación
-    steps:
-      - intent: deny
-      - action: action_denegar_cancelacion
+    - rule: Confirmar cancelación
+      steps:
+        - intent: affirm
+        - action: action_cancelar_cita
+
+    - rule: Denegar cancelación
+      steps:
+        - intent: deny
+        - action: action_denegar_cancelacion
 
 
-  - rule: Iniciar reserva de servicio
-    steps:
-      - intent: reservar_servicio
-      - action: action_normalizar_servicio
-      - action: action_mostrar_disponibilidad
+    - rule: Iniciar reserva de servicio
+      steps:
+        - intent: reservar_servicio
+        - action: action_normalizar_servicio
+        - action: action_mostrar_disponibilidad
 
-  - rule: Informar fecha para reserva
-    steps:
-      - intent: informar_fecha
-      - action: action_reservar_cita
+    - rule: Informar fecha para reserva
+      steps:
+        - intent: informar_fecha
+        - action: action_reservar_cita
 
-  - rule: Fallback
-    steps:
-      - intent: nlu_fallback
-      - action: utter_default
+    - rule: Fallback
+      steps:
+        - intent: nlu_fallback
+        - action: utter_default
