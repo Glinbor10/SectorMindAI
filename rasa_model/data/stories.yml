@@ -2,14 +2,6 @@ version: "3.1"
 
 stories:
 
-- story: Saludo inicial
-  steps:
-    - intent: greet
-    - action: action_set_contexto
-    - slot_was_set:
-        - tipo_negocio
-    - action: utter_greet_con_negocio
-
 - story: Despedida
   steps:
     - intent: goodbye
@@ -40,20 +32,5 @@ stories:
     - intent: reservar_servicio
     - action: action_normalizar_servicio
     - slot_was_set:
-        - esperando_fecha: true
+        - flujo_activo: reserva_fecha
 
-- story: Cancelar cita - una sola
-  steps:
-    - intent: cancelar_cita
-    - action: action_cancelar_cita
-    - intent: affirm
-    - action: action_cancelar_cita
-
-- story: Cancelar cita - selección múltiple
-  steps:
-    - intent: cancelar_cita
-    - action: action_cancelar_cita
-    - intent: seleccionar_cita
-    - action: action_confirmar_cancelacion
-    - intent: affirm
-    - action: action_cancelar_cita

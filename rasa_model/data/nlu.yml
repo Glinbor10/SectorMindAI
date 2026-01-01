@@ -19,9 +19,6 @@ nlu:
       
   - intent: bot_challenge
     examples: |
-      - qué eres
-      - que eres
-      - que ere
       - eres un bot
       - eres una ia
       - eres humano
@@ -29,13 +26,11 @@ nlu:
       - quién eres
       - quien eres
       - quienes sois
-      - quienes osois
-      - quienees osis
-      - que sois
-      - quien sos
-      - que sos
-      - qué es esto
-      - que es esto
+      - eres un robot
+      - eres una persona
+      - hablas solo o hay alguien
+      - estoy hablando con una máquina
+      - eres real
 
   - intent: consultar_mis_citas
     examples: |
@@ -44,6 +39,11 @@ nlu:
       - ver mis turnos
       - mis reservas
       - consultar mis citas
+      - mis citas pendientes
+      - cuales son mis citas
+      - qué reservas tengo
+      - tengo citas
+      - mostrar mis citas
 
   - intent: cancelar_cita
     examples: |
@@ -52,14 +52,36 @@ nlu:
       - borrar reserva
       - anular turno
       - eliminar mi cita
+      - cancelar cita
+      - anular cita
+      - quiero cancelar
+      - quiero cancelar mi cita
+      - cancela mi cita
+      - anula mi cita
+      - quitar mi cita
+      - quiero anular mi reserva
+      - cancelar mi reserva
+      - borrar mi cita
+      - eliminar reserva
 
   - intent: seleccionar_cita
     examples: |
       - 1
       - 2
+      - 3
       - la 1
+      - la 2
       - cita 1
+      - cita 2
       - número 1
+      - número 2
+      - quiero la primera
+      - la primera
+      - la segunda
+      - primera
+      - segunda
+      - elijo la 1
+      - elijo la 2
 
   - intent: consultar_horarios
     examples: |
@@ -92,11 +114,62 @@ nlu:
       - quiero hacer una reserva
       - necesito una cita
       - quiero agendar
-      - quiero reservar para el lunes a las 10
-      - reservar para mañana a las 9:30
-      - quiero reservar para el viernes a las 11:00
-      - reservar para el martes a las 15:00
-      - reservar para el miércoles a las 12:15
+      - quiero un corte
+      - quiero un corte de pelo
+      - necesito un corte
+      - quiero cortarme el pelo
+      - hacerme un corte
+      - quiero un tinte
+      - necesito un tinte
+      - quiero teñirme
+      - hacerme un tinte
+      - quiero un mechas
+      - necesito mechas
+      - quiero unas mechas
+      - quiero un peinado
+      - hacerme un peinado
+      - quiero una limpieza
+      - necesito una limpieza
+      - quiero limpieza dental
+      - quiero una revisión
+      - necesito una revisión
+      - quiero un masaje
+      - necesito un masaje
+      - quiero fisioterapia
+      - necesito fisioterapia
+      - quiero rehabilitación
+      - quiero un tratamiento
+      - necesito un tratamiento
+      - quiero un servicio
+      - quisiera un corte
+      - quisiera teñirme
+      - quisiera un masaje
+      - me gustaría un corte
+      - me gustaría un tinte
+      - me gustaría un masaje
+      - vengo por un corte
+      - vengo a cortarme el pelo
+      - vengo por un tinte
+      - vengo a teñirme
+      - reservar cita
+      - agendar cita
+      - pedir cita
+
+  - intent: inform
+    examples: |
+      - mañana a las 10
+      - hoy a las 15:00
+      - el lunes a las 9
+      - para el martes a las 11
+      - el viernes por la tarde
+      - pasado mañana
+      - mañana a las 10:45
+      - hoy las 11
+      - a las 10
+      - las 11
+      - a las 9:30
+      - 10:00
+      - 15:30
 
   - intent: consultar_servicios
     examples: |
@@ -121,6 +194,16 @@ nlu:
       - cambiar fecha
       - cambiar turno
       - quiero cambiar la cita
+      - cambiar cita
+      - modificar mi cita
+      - quiero modificar mi cita
+      - cambiar la fecha de mi cita
+      - quiero cambiar el horario
+      - reprogramar mi cita
+      - mover mi cita
+      - necesito cambiar la cita
+      - cambiar la hora
+      - cambiar mi turno
 
   - intent: info_general
     examples: |

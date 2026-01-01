@@ -2,34 +2,11 @@ version: "3.1"
 
 rules:
 
-    - rule: Reservar servicio
-      steps:
-        - intent: reservar_servicio
-        - action: action_normalizar_servicio
-
-    - rule: Fallback - prioritario
-      steps:
-        - intent: nlu_fallback
-        - action: action_fallback_inteligente
+    # ============================================
+    # REGLAS DE INTENTS ESPECÍFICOS
+    # ============================================
     
-    - rule: Seleccionar cita para cambiar (PRIORIDAD)
-      condition:
-        - slot_was_set:
-            - esperando_seleccion_cambio: true
-      steps:
-        - intent: seleccionar_cita
-        - action: action_seleccionar_cita_cambio
-        
-    - rule: Cualquier mensaje cuando esperando fecha (NO en cambio)
-      condition:
-        - slot_was_set:
-            - esperando_fecha: true
-        - slot_was_set:
-            - esperando_seleccion_cambio: false
-      steps:
-        - action: action_reservar_cita
-        
-    - rule: Capturar contexto inicial
+    - rule: Saludo inicial
       steps:
         - intent: greet
         - action: action_set_contexto
@@ -40,22 +17,37 @@ rules:
         - intent: goodbye
         - action: utter_goodbye
 
-    - rule: Challenge
+    - rule: Bot challenge
       steps:
         - intent: bot_challenge
         - action: action_responder_bot_challenge
 
-    - rule: Responder a más opciones
+    - rule: Reservar servicio
       steps:
-        - intent: pedir_mas_opciones
-        - action: utter_pedir_servicio
+        - intent: reservar_servicio
+        - action: action_normalizar_servicio
 
-    - rule: Consultar citas
+    - rule: Consultar servicios
+      steps:
+        - intent: consultar_servicios
+        - action: action_listar_servicios
+
+    - rule: Consultar horarios
+      steps:
+        - intent: consultar_horarios
+        - action: action_mostrar_horarios
+
+    - rule: Consultar ubicacion
+      steps:
+        - intent: consultar_ubicacion
+        - action: action_mostrar_ubicacion
+
+    - rule: Consultar mis citas
       steps:
         - intent: consultar_mis_citas
         - action: action_consultar_citas_usuario
 
-    - rule: Ver historial de citas
+    - rule: Ver historial citas
       steps:
         - intent: ver_historial_citas
         - action: action_consultar_citas_usuario
@@ -65,17 +57,60 @@ rules:
         - intent: cancelar_cita
         - action: action_cancelar_cita
 
-    - rule: Confirmar cancelación
-      steps:
-        - intent: affirm
-        - action: action_cancelar_cita
-
-    - rule: Denegar cancelación
-      steps:
-        - intent: deny
-        - action: action_denegar_cancelacion
-
-    - rule: Cambiar horario de cita
+    - rule: Cambiar horario
       steps:
         - intent: cambiar_horario
         - action: action_cambiar_horario
+
+    - rule: Info general
+      steps:
+        - intent: info_general
+        - action: action_info_negocio
+
+    - rule: Pedir mas opciones
+      steps:
+        - intent: pedir_mas_opciones
+        - action: action_mostrar_disponibilidad
+
+    # ============================================
+    # FALLBACK - Captura TODO lo que no tenga intent claro
+    # El action_fallback_inteligente redirige según flujo_activo
+    # ============================================
+    
+    - rule: Fallback universal
+      steps:
+        - intent: nlu_fallback
+        - action: action_fallback_inteligente
+
+    # ============================================
+    # SELECCIONAR CITA - También va al fallback inteligente
+    # Porque necesita routing según flujo_activo
+    # ============================================
+    
+    - rule: Seleccionar cita routing
+      steps:
+        - intent: seleccionar_cita
+        - action: action_fallback_inteligente
+
+    # ============================================
+    # AFFIRM/DENY - Van al fallback para confirmaciones
+    # ============================================
+    
+    - rule: Affirm routing
+      steps:
+        - intent: affirm
+        - action: action_fallback_inteligente
+    
+    - rule: Deny routing
+      steps:
+        - intent: deny
+        - action: action_fallback_inteligente
+
+    # ============================================
+    # INFORM - Fechas/horas van al fallback
+    # ============================================
+    
+    - rule: Inform routing
+      steps:
+        - intent: inform
+        - action: action_fallback_inteligente

@@ -58,7 +58,7 @@ slots:
 
   servicio:
     type: text
-    influence_conversation: true
+    influence_conversation: false
     mappings:
       - type: custom
 
@@ -86,21 +86,16 @@ slots:
     mappings:
       - type: custom
 
-  confirmando_cancelacion:
-    type: bool
-    influence_conversation: false
-    mappings:
-      - type: custom
-
-  esperando_fecha:
-    type: bool
-    influence_conversation: true
-    mappings:
-      - type: custom
-
-  esperando_seleccion_cambio:
-    type: bool
-    initial_value: false
+  # SLOT ÚNICO DE CONTROL DE FLUJO
+  # Valores posibles: null, "reserva_fecha", "cancelar_seleccion", "cancelar_confirmacion", "cambiar_seleccion", "cambiar_fecha"
+  flujo_activo:
+    type: categorical
+    values:
+      - reserva_fecha
+      - cancelar_seleccion
+      - cancelar_confirmacion
+      - cambiar_seleccion
+      - cambiar_fecha
     influence_conversation: true
     mappings:
       - type: custom
@@ -123,9 +118,6 @@ responses:
 
     utter_goodbye:
       - text: "¡Hasta luego! Si necesitas algo más, aquí estaré."
-
-    utter_default:
-      - text: "No he entendido bien. ¿Puedes repetirlo?"
     
     utter_pedir_negocio:
       - text: "¿Para qué negocio necesitas ayuda? (dentista, fisioterapia, peluqueria)"
@@ -154,11 +146,11 @@ actions:
     - action_mostrar_ubicacion
     - action_consultar_citas_usuario
     - action_cancelar_cita
-    - action_confirmar_cancelacion
     - action_cambiar_horario
     - action_seleccionar_cita_cambio
+    - action_seleccionar_cita_cancelar
+    - action_procesar_confirmacion_cancelar
     - action_confirmar_cambio_horario
-    - action_denegar_cancelacion
     - action_fallback_inteligente
     - action_responder_bot_challenge
 
