@@ -1,20 +1,11 @@
-forms:
-  reserva_form:
-    required_slots:
-      - servicio
-      - servicio_id
-      - fecha
-
 version: "3.1"
 
 intents:
   - greet
   - goodbye
   - affirm
-  - afirmar
   - deny
   - reservar_servicio
-  - informar_fecha
   - bot_challenge
   - consultar_horarios
   - consultar_servicios
@@ -28,29 +19,13 @@ intents:
   - inform
   - pedir_mas_opciones
   - nlu_fallback
-  # Intents de URGENCIAS (contextuales por tipo de negocio)
-  - urgencia_dentista
-  - urgencia_fisioterapia
-  - urgencia_peluqueria
-  - urgencia_dental_dolor
-  - urgencia_dental_bracket
-  - urgencia_dental_diente
-  - perdida_empaste
-  - corte_urgente_evento
-  - corte_regular
-  - desastre_tinte
-  - dolor_agudo_espalda
-  - lesion_deportiva
-  - contractura_muscular
-  - urgencia_fisio_aguda
-  - limpieza_dental
-  - masaje_descarga
-  - tinte_regular
 
 entities:
   - negocio
   - servicio
   - fecha
+  - time
+  - number
 
 slots:
   cliente_id:
@@ -85,23 +60,13 @@ slots:
     type: text
     influence_conversation: true
     mappings:
-      - type: from_entity
-        entity: servicio
-      - type: from_text
-        intent: reservar_servicio
+      - type: custom
 
   servicio_id:
     type: text
     influence_conversation: false
     mappings:
       - type: custom
-
-  fecha:
-    type: text
-    influence_conversation: true
-    mappings:
-      - type: from_entity
-        entity: time
 
   horarios_disponibles:
     type: any
@@ -127,9 +92,15 @@ slots:
     mappings:
       - type: custom
 
-  es_urgencia:
+  esperando_fecha:
     type: bool
-    influence_conversation: false
+    influence_conversation: true
+    mappings:
+      - type: custom
+
+  esperando_seleccion_cambio:
+    type: bool
+    influence_conversation: true
     mappings:
       - type: custom
 
@@ -161,8 +132,6 @@ responses:
     utter_confirmacion:
       - text: "✅ ¡Perfecto! Tu cita ha sido reservada correctamente."
 
-    utter_urgencia_confirmada:
-      - text: "¡Urgencia confirmada! Te atenderemos lo antes posible."
 
     utter_confirmar_cancelacion:
       - text: "¿Seguro que quieres cancelar esta cita? Responde 'sí' para confirmar o 'no' para mantenerla."
@@ -174,7 +143,6 @@ responses:
       - text: "¿Qué fecha y hora prefieres para reprogramar? (Ej.: 'mañana a las 10', 'el viernes por la tarde')"
 
 actions:
-    - action_submit_reserva_form
     - action_set_contexto
     - action_normalizar_servicio
     - action_mostrar_disponibilidad
@@ -186,8 +154,11 @@ actions:
     - action_consultar_citas_usuario
     - action_cancelar_cita
     - action_confirmar_cancelacion
-    - action_cancelar_cita_confirmada
+    - action_cambiar_horario
+    - action_seleccionar_cita_cambio
+    - action_confirmar_cambio_horario
     - action_denegar_cancelacion
+    - action_fallback_inteligente
     - action_responder_bot_challenge
 
 session_config:

@@ -2,11 +2,22 @@ version: "3.1"
 
 rules:
 
-    - rule: Activar form de reserva
+    - rule: Reservar servicio
       steps:
         - intent: reservar_servicio
-        - action: reserva_form
-        - active_loop: reserva_form
+        - action: action_normalizar_servicio
+
+    - rule: Fallback - prioritario
+      steps:
+        - intent: nlu_fallback
+        - action: action_fallback_inteligente
+        
+    - rule: Cualquier mensaje cuando esperando fecha
+      condition:
+        - slot_was_set:
+            - esperando_fecha: true
+      steps:
+        - action: action_reservar_cita
         
     - rule: Capturar contexto inicial
       steps:
@@ -44,11 +55,6 @@ rules:
         - intent: cancelar_cita
         - action: action_cancelar_cita
 
-    - rule: Seleccionar cita para cancelar
-      steps:
-        - intent: seleccionar_cita
-        - action: action_confirmar_cancelacion
-
     - rule: Confirmar cancelación
       steps:
         - intent: affirm
@@ -59,12 +65,15 @@ rules:
         - intent: deny
         - action: action_denegar_cancelacion
 
-    - rule: Informar fecha para reserva
+    - rule: Cambiar horario de cita
       steps:
-        - intent: informar_fecha
-        - action: action_reservar_cita
+        - intent: cambiar_horario
+        - action: action_cambiar_horario
 
-    - rule: Fallback
+    - rule: Seleccionar cita para cambiar
+      condition:
+        - slot_was_set:
+            - esperando_seleccion_cambio: true
       steps:
-        - intent: nlu_fallback
-        - action: utter_default
+        - intent: seleccionar_cita
+        - action: action_seleccionar_cita_cambio

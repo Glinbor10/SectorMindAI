@@ -20,10 +20,22 @@ nlu:
   - intent: bot_challenge
     examples: |
       - qué eres
+      - que eres
+      - que ere
       - eres un bot
       - eres una ia
       - eres humano
       - eres artificial
+      - quién eres
+      - quien eres
+      - quienes sois
+      - quienes osois
+      - quienees osis
+      - que sois
+      - quien sos
+      - que sos
+      - qué es esto
+      - que es esto
 
   - intent: consultar_mis_citas
     examples: |
@@ -85,14 +97,6 @@ nlu:
       - quiero reservar para el viernes a las 11:00
       - reservar para el martes a las 15:00
       - reservar para el miércoles a las 12:15
-
-  - intent: informar_fecha
-    examples: |
-      - mañana
-      - hoy
-      - pasado mañana
-      - el lunes
-      - el martes
 
   - intent: consultar_servicios
     examples: |

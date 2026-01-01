@@ -34,3 +34,26 @@ stories:
   steps:
     - intent: consultar_ubicacion
     - action: action_mostrar_ubicacion
+
+- story: Reservar servicio directo
+  steps:
+    - intent: reservar_servicio
+    - action: action_normalizar_servicio
+    - slot_was_set:
+        - esperando_fecha: true
+
+- story: Cancelar cita - una sola
+  steps:
+    - intent: cancelar_cita
+    - action: action_cancelar_cita
+    - intent: affirm
+    - action: action_cancelar_cita
+
+- story: Cancelar cita - selección múltiple
+  steps:
+    - intent: cancelar_cita
+    - action: action_cancelar_cita
+    - intent: seleccionar_cita
+    - action: action_confirmar_cancelacion
+    - intent: affirm
+    - action: action_cancelar_cita
