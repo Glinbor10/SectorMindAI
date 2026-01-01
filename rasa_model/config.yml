@@ -12,17 +12,6 @@ pipeline:
   analyzer: char_wb
   min_ngram: 1
   max_ngram: 4
-- name: DucklingEntityExtractor
-  url: http://duckling:8000
-  dimensions:
-    - time
-    - number
-    - duration
-    - amount-of-money
-    - distance
-  locale: es_ES
-  timezone: Europe/Madrid
-  timeout: 3
 - name: DIETClassifier
   epochs: 100
   constrain_similarities: true

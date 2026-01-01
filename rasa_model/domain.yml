@@ -100,6 +100,7 @@ slots:
 
   esperando_seleccion_cambio:
     type: bool
+    initial_value: false
     influence_conversation: true
     mappings:
       - type: custom

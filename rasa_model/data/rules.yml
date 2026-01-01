@@ -11,11 +11,21 @@ rules:
       steps:
         - intent: nlu_fallback
         - action: action_fallback_inteligente
+    
+    - rule: Seleccionar cita para cambiar (PRIORIDAD)
+      condition:
+        - slot_was_set:
+            - esperando_seleccion_cambio: true
+      steps:
+        - intent: seleccionar_cita
+        - action: action_seleccionar_cita_cambio
         
-    - rule: Cualquier mensaje cuando esperando fecha
+    - rule: Cualquier mensaje cuando esperando fecha (NO en cambio)
       condition:
         - slot_was_set:
             - esperando_fecha: true
+        - slot_was_set:
+            - esperando_seleccion_cambio: false
       steps:
         - action: action_reservar_cita
         
@@ -69,11 +79,3 @@ rules:
       steps:
         - intent: cambiar_horario
         - action: action_cambiar_horario
-
-    - rule: Seleccionar cita para cambiar
-      condition:
-        - slot_was_set:
-            - esperando_seleccion_cambio: true
-      steps:
-        - intent: seleccionar_cita
-        - action: action_seleccionar_cita_cambio

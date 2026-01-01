@@ -334,9 +334,16 @@ class ActionReservarCita(Action):
         negocio_id = tracker.get_slot("negocio_id")
         servicio_id = tracker.get_slot("servicio_id")
         servicio = tracker.get_slot("servicio")
-        fecha_texto = tracker.get_slot("fecha")
         horarios_disponibles = tracker.get_slot("horarios_disponibles")
         esperando_fecha = tracker.get_slot("esperando_fecha")
+        cita_a_cancelar_id = tracker.get_slot("cita_a_cancelar_id")
+        fecha_texto = None
+
+        # Si hay cita_a_cancelar_id, redirigir a confirmar cambio de horario
+        if cita_a_cancelar_id and esperando_fecha:
+            print("🔀 ActionReservarCita: Detectado cita_a_cancelar_id, redirigiendo a action_confirmar_cambio_horario")
+            from rasa_sdk.events import FollowupAction
+            return [FollowupAction("action_confirmar_cambio_horario")]
 
         # Si estamos esperando fecha y no hay fecha en el slot, usar el último mensaje
         if esperando_fecha and not fecha_texto:
@@ -495,9 +502,11 @@ class ActionReservarCita(Action):
             return None
             
         if hora_especificada:
-            # Buscar coincidencia exacta de hora
+            # Buscar coincidencia exacta de hora (formato completo o solo hora:minuto)
             for slot in horarios:
-                if hora_especificada in slot:
+                # Extraer hora del slot (formato: '2026-01-07 09:30:00')
+                slot_hora = slot.split()[1][:5]  # Extrae '09:30'
+                if hora_especificada == slot_hora or hora_especificada in slot:
                     print(f"   ✅ Encontrado slot exacto: {slot}")
                     return slot
             # Si no hay coincidencia exacta, buscar la hora más cercana
@@ -1264,7 +1273,10 @@ class ActionCambiarHorario(Action):
                 mensaje += "\n📝 **Responde con el número de la cita que quieres cambiar.**"
                 
                 dispatcher.utter_message(text=mensaje)
-                return [SlotSet("citas_disponibles", citas_futuras)]
+                return [
+                    SlotSet("citas_disponibles", citas_futuras),
+                    SlotSet("esperando_seleccion_cambio", True)
+                ]
 
         except Exception as e:
             dispatcher.utter_message(text=f"Error al procesar cambio: {str(e)}")
@@ -1362,7 +1374,9 @@ class ActionSeleccionarCitaCambio(Action):
                     SlotSet("servicio_id", cita_seleccionada['servicio_id']),
                     SlotSet("servicio", cita_seleccionada['servicio_nombre']),
                     SlotSet("citas_disponibles", None),
-                    SlotSet("horarios_disponibles", horarios_por_dia if 'horarios_por_dia' in locals() else None)
+                    SlotSet("horarios_disponibles", horarios_por_dia if 'horarios_por_dia' in locals() else None),
+                    SlotSet("esperando_seleccion_cambio", False),
+                    SlotSet("esperando_fecha", True)
                 ]
             else:
                 dispatcher.utter_message(text="Número inválido. Por favor, elige un número de la lista.")
@@ -1388,6 +1402,8 @@ class ActionConfirmarCambioHorario(Action):
 
         cita_id = tracker.get_slot("cita_a_cancelar_id")
         esperando_fecha = tracker.get_slot("esperando_fecha")
+        
+        print(f"🔄 ActionConfirmarCambioHorario - cita_id: {cita_id}, esperando_fecha: {esperando_fecha}")
         
         # Si estamos esperando fecha para reserva (no cambio), redirigir
         if esperando_fecha and not cita_id:
@@ -1438,7 +1454,9 @@ class ActionConfirmarCambioHorario(Action):
 
         try:
             # Interpretar la nueva fecha
+            print(f"🕒 Interpretando nueva fecha: '{fecha_texto}'")
             nueva_fecha = self._interpretar_fecha(fecha_texto, horarios_disponibles)
+            print(f"   Resultado: {nueva_fecha}")
 
             if not nueva_fecha:
                 dispatcher.utter_message(
@@ -1448,7 +1466,9 @@ class ActionConfirmarCambioHorario(Action):
 
             # Actualizar la cita en el backend usando DELETE + POST
             # Primero eliminar la cita antigua
+            print(f"🗑️ Eliminando cita {cita_id}...")
             response_delete = requests.delete(f"{API_URL}/citas/{cita_id}", timeout=5)
+            print(f"   Respuesta DELETE: {response_delete.status_code}")
             
             if response_delete.status_code not in (200, 204):
                 dispatcher.utter_message(text="No pude cancelar la cita anterior. Intenta más tarde.")
@@ -1456,6 +1476,7 @@ class ActionConfirmarCambioHorario(Action):
 
             # Luego crear la nueva cita
             cliente_id = tracker.get_slot("cliente_id")
+            print(f"📝 Creando nueva cita: cliente={cliente_id}, negocio={negocio_id}, servicio={servicio_id}, fecha={nueva_fecha}")
             response_create = requests.post(
                 f"{API_URL}/citas",
                 json={
@@ -1467,6 +1488,7 @@ class ActionConfirmarCambioHorario(Action):
                 },
                 timeout=5
             )
+            print(f"   Respuesta POST: {response_create.status_code}")
 
             if response_create.status_code in (200, 201):
                 tipo_negocio = tracker.get_slot("tipo_negocio")
@@ -1491,15 +1513,22 @@ class ActionConfirmarCambioHorario(Action):
                     SlotSet("servicio", None),
                     SlotSet("servicio_id", None),
                     SlotSet("fecha", None),
-                    SlotSet("horarios_disponibles", None)
+                    SlotSet("horarios_disponibles", None),
+                    SlotSet("esperando_fecha", False)
                 ]
             else:
                 dispatcher.utter_message(text="No pude crear la nueva cita. Por favor, contacta con el negocio.")
-                return []
+                return [
+                    SlotSet("esperando_fecha", False),
+                    SlotSet("cita_a_cancelar_id", None)
+                ]
 
         except Exception as e:
             dispatcher.utter_message(text=f"Error al cambiar horario: {str(e)}")
-            return []
+            return [
+                SlotSet("esperando_fecha", False),
+                SlotSet("cita_a_cancelar_id", None)
+            ]
 
     def _interpretar_fecha(self, texto_fecha: str, horarios_disponibles: dict) -> str:
         """Convierte 'mañana', 'hoy', etc. en una fecha-hora específica"""
@@ -1548,7 +1577,9 @@ class ActionConfirmarCambioHorario(Action):
             horarios = horarios_disponibles[fecha_str]
             if hora_usuario:
                 for slot in horarios:
-                    if hora_usuario in slot:
+                    # Extraer hora del slot (formato: '2026-01-07 09:30:00')
+                    slot_hora = slot.split()[1][:5]  # Extrae '09:30'
+                    if hora_usuario == slot_hora or hora_usuario in slot:
                         return slot
             if horarios:
                 return horarios[0]
