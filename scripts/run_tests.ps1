@@ -63,6 +63,7 @@ $rasaRes = $null
 
 if ($runBackend) {
 	$pytestCmd = "python -m pytest backend/tests/ -v"
+	if ($Coverage) { $pytestCmd += " --cov=backend --cov-report=html --cov-report=term" }
 	if ($TestFile) { $pytestCmd += " $TestFile" }
 	$backendRes = Execute-FilteredTests -title "BACKEND" -command $pytestCmd -envVar "DATABASE_URL=$TEST_DB_URL"
 }
@@ -111,3 +112,10 @@ if ($null -ne $rasaRes) {
 # }
 
 Write-Host "`n----------------------------------------" -ForegroundColor Yellow
+
+if ($Coverage) {
+	Write-Host "`n[COVERAGE] REPORTE DE COBERTURA:" -ForegroundColor Yellow
+	Write-Host "   HTML Report generado en: htmlcov/index.html" -ForegroundColor Cyan
+	Write-Host "   Abre el archivo en tu navegador para ver detalles." -ForegroundColor Gray
+}
+

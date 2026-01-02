@@ -28,12 +28,12 @@ COPY frontend /app/frontend
 COPY database /app/database
 COPY docs /app/docs
 
-# Copy entrypoint script
-COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh
+# Copy entrypoint script (optional, not used in this version)
+# COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+# RUN chmod +x /app/docker-entrypoint.sh
 
 # Expose Flask port
 EXPOSE 5000
 
-# Use entrypoint that runs migrations before Flask
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+# Run Flask directly
+CMD ["python", "-m", "backend.app"]
