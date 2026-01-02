@@ -56,22 +56,49 @@ Rasa es el cerebro conversacional y el orquestador de la lógica de negocio. Su 
 4. Usuario elige fecha → `action_reservar_cita` o `action_urgencia` según contexto
 5. Confirmación y cierre
 
-### C. Acciones Personalizadas - Únicas y Centralizadas
-- Todas las acciones personalizadas están ahora en un único archivo (`actions/actions.py`).
-- No existen ya archivos separados por tipo de negocio.
-- La lógica de urgencias, reservas, información y cancelaciones se adapta dinámicamente según el slot `tipo_negocio` y los metadatos.
-- Ejemplo: Si el usuario reporta una urgencia, el bot responde con el protocolo adecuado según el tipo de negocio (dentista, peluquería, fisioterapia) usando una única acción.
-- Se eliminan duplicidades y se reduce la deuda técnica.
+### C. Acciones Personalizadas - Arquitectura Modular (9 Módulos)
 
-#### Acciones principales:
-- `ActionSetContexto`: Inicializa contexto y slots con metadatos
-- `ActionNormalizarServicio`: Fuzzy matching de servicios
-- `ActionMostrarDisponibilidad`: Consulta horarios
-- `ActionReservarCita`: Reserva cita
-- `ActionCancelarCita`: Cancela cita
-- `ActionInfoNegocio`: Da información del negocio
-- `ActionResponderBotChallenge`: Respuestas contextuales
-- `ActionUrgencia`: Protocolo de urgencias adaptado al tipo de negocio
+**Refactorización v0.5.0:** `actions.py` de 2356 líneas dividido en 9 módulos especializados:
+
+#### Módulos Auxiliares:
+- **`utils.py` (106 líneas):** Funciones comunes
+  - `limpiar_flujo()`: Limpia slots del flujo activo
+  - `obtener_horarios_disponibles()`: Consulta API de disponibilidad
+  - `formatear_horarios_display()`: Formatea horarios (3 días, 3 slots por día)
+- **`extractores.py` (150 líneas):** Clase `ExtractorFechaHora`
+  - `extraer_solo_fecha()`: Parsea "mañana", "viernes 15", "30/01"
+  - `extraer_solo_hora()`: Parsea "10:30", "10 45", "diez y media"
+  - Soporte de texto natural y validación estricta
+
+#### Módulos de Flujos:
+- **`contexto.py` (131 líneas):** Inicialización
+  - `ActionSetContexto`: Establece cliente_id y negocio_id
+  - `ActionNormalizarServicio`: Fuzzy matching de servicios
+- **`reservas.py` (132 líneas):** Flujo reserva (fecha → hora)
+  - `ActionReservarCita`: Extrae fecha, muestra horarios
+  - `ActionConfirmarHoraReserva`: Extrae hora, crea cita
+- **`cambios.py` (204 líneas):** Flujo cambio (seleccionar → fecha → hora)
+  - `ActionCambiarHorario`, `ActionSeleccionarCitaCambio`
+  - `ActionConfirmarFechaCambio`, `ActionConfirmarHoraCambio`
+- **`cancelaciones.py` (143 líneas):** Flujo cancelación
+  - `ActionCancelarCita`, `ActionSeleccionarCitaCancelar`
+  - `ActionProcesarConfirmacionCancelar`
+- **`consultas.py` (209 líneas):** Acciones sin flujos
+  - `ActionConsultarCitasUsuario`, `ActionListarServicios`
+  - `ActionMostrarHorarios`, `ActionMostrarUbicacion`
+
+#### Cerebro Central:
+- **`actions.py` (421 líneas):** Reducido 82%
+  - `ActionFallbackInteligente`: Router según flujo_activo
+  - `ActionResponderBotChallenge`: Respuestas contextuales
+  - Métodos privados para cada flujo (`_ejecutar_reservar_cita`, etc.)
+
+**Ventajas:**
+- ✅ 82% reducción en archivo principal (2356 → 421 líneas)
+- ✅ Responsabilidades únicas por módulo (130-200 líneas c/u)
+- ✅ Testing unitario más sencillo
+- ✅ Trabajo colaborativo sin conflictos
+- ✅ Debugging más claro con nombres de módulos
 
 ---
 
@@ -90,33 +117,48 @@ Rasa es el cerebro conversacional y el orquestador de la lógica de negocio. Su 
 ```
 rasa_model/
 ├── config.yml                    # Pipeline ML (DIETClassifier, TEDPolicy, etc.)
-├── domain.yml                    # Intents, slots, actions, responses
+├── domain.yml                    # Intents (+ thanks), slots, actions, responses
 ├── credentials.yml               # Conexión con frontend (socketio/rest)
 ├── endpoints.yml                 # URL del action server
 │
 ├── data/
-│   ├── nlu/                     # Datos de entrenamiento (unificados y enriquecidos)
-│   ├── stories/                 # Flujos conversacionales centralizados
-│   └── rules.yml                # Reglas globales
+│   ├── nlu.yml                  # Intents unificados (incluye thanks)
+│   ├── stories.yml              # Flujos conversacionales centralizados
+│   └── rules.yml                # Reglas globales (incluye agradecimiento)
 │
 ├── actions/
-│   ├── __init__.py
-│   └── actions.py               # Todas las acciones personalizadas (único archivo)
+│   ├── __init__.py              # Exports de todos los módulos
+│   ├── actions.py               # Cerebro central (421 líneas)
+│   ├── utils.py                 # Funciones comunes (106 líneas)
+│   ├── extractores.py           # Parsing fechas/horas (150 líneas)
+│   ├── contexto.py              # Inicialización (131 líneas)
+│   ├── reservas.py              # Flujo reserva (132 líneas)
+│   ├── cambios.py               # Flujo cambio (204 líneas)
+│   ├── cancelaciones.py         # Flujo cancelación (143 líneas)
+│   └── consultas.py             # Consultas sin flujos (209 líneas)
 │
 ├── tests/
-│   └── test_actions.py          # Tests unitarios (100% passing)
+│   ├── test_acciones.py         # 12 tests unitarios (100% passing)
+│   └── test_stories.yml         # Tests de stories (deshabilitados)
 │
 └── models/
-    └── ...                      # Modelos entrenados
+    └── sectormind-model.tar.gz  # Modelo entrenado
 ```
 
 ### Archivos Clave:
 
-| Archivo | Descripción |
-| :--- | :--- |
-| `domain.yml` | Intents, slots, acciones, respuestas |
-| `data/nlu/` | Datos de entrenamiento unificados |
-| `data/stories/` | Flujos conversacionales centralizados |
-| `actions/actions.py` | Todas las acciones personalizadas |
-| `tests/test_actions.py` | Tests unitarios |
-| `config.yml` | Pipeline ML |
+| Archivo | Descripción | Líneas |
+| :--- | :--- | :--- |
+| `domain.yml` | Intents (thanks), slots, acciones, respuestas | - |
+| `data/nlu.yml` | 19 intents con ejemplos (incluye thanks) | - |
+| `data/rules.yml` | Reglas para cada intent (incluye agradecimiento) | - |
+| `actions/actions.py` | Cerebro central + ActionFallbackInteligente | 421 |
+| `actions/utils.py` | Funciones comunes reutilizables | 106 |
+| `actions/extractores.py` | Clase ExtractorFechaHora | 150 |
+| `actions/contexto.py` | Inicialización y fuzzy matching | 131 |
+| `actions/reservas.py` | Flujo reserva (fecha → hora) | 132 |
+| `actions/cambios.py` | Flujo cambio (3 pasos) | 204 |
+| `actions/cancelaciones.py` | Flujo cancelación | 143 |
+| `actions/consultas.py` | Consultas sin flujos | 209 |
+| `tests/test_acciones.py` | 12 tests unitarios | - |
+| `config.yml` | Pipeline ML | - |

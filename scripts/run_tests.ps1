@@ -68,8 +68,16 @@ if ($runBackend) {
 }
 
 if ($runRasa) {
-	$rasaCmd = "python -m pytest rasa_model/tests/test_actions.py -v --tb=short"
-	$rasaRes = Execute-FilteredTests -title "RASA" -command $rasaCmd
+	# Tests unitarios de acciones
+	$rasaCmd = "python -m pytest rasa_model/tests/test_acciones.py -v --tb=short"
+	$rasaRes = Execute-FilteredTests -title "RASA ACCIONES" -command $rasaCmd
+	
+	# Tests de stories deshabilitados (no son útiles para validar funcionalidad real)
+	# # Tests de stories (conversaciones)
+	# Write-Host "`n[RASA STORIES] Ejecutando tests de conversación..." -ForegroundColor Cyan
+	# $storiesOutput = docker compose exec rasa rasa test --stories tests/test_stories.yml --out results/ 2>&1 | Out-String
+	# ...
+	# $rasaStoriesRes = @{ passed = $storiesPassed; failed = $storiesFailed; errors = 0 }
 }
 
 # ====== RESUMEN FINAL ======
@@ -87,10 +95,19 @@ if ($null -ne $backendRes) {
 
 if ($null -ne $rasaRes) {
 	$rStatus = if ($rasaRes.failed -eq 0 -and $rasaRes.errors -eq 0) { "OK" } else { "FAIL" }
-	Write-Host "`nRASA [$rStatus]:" -ForegroundColor Cyan
+	Write-Host "`nRASA ACCIONES [$rStatus]:" -ForegroundColor Cyan
 	Write-Host "  - Pasados: $($rasaRes.passed)" -ForegroundColor Green
 	Write-Host "  - Fallados: $($rasaRes.failed)" -ForegroundColor Red
 	if ($rasaRes.errors -gt 0) { Write-Host "  - Errores: $($rasaRes.errors)" -ForegroundColor Magenta }
 }
+
+# Tests de stories deshabilitados
+# if ($null -ne $rasaStoriesRes) {
+# 	$sStatus = if ($rasaStoriesRes.failed -eq 0 -and $rasaStoriesRes.errors -eq 0) { "OK" } else { "FAIL" }
+# 	Write-Host "`nRASA STORIES [$sStatus]:" -ForegroundColor Cyan
+# 	Write-Host "  - Pasados: $($rasaStoriesRes.passed)" -ForegroundColor Green
+# 	Write-Host "  - Fallados: $($rasaStoriesRes.failed)" -ForegroundColor Red
+# 	if ($rasaStoriesRes.errors -gt 0) { Write-Host "  - Errores: $($rasaStoriesRes.errors)" -ForegroundColor Magenta }
+# }
 
 Write-Host "`n----------------------------------------" -ForegroundColor Yellow

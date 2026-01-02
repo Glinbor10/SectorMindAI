@@ -3,6 +3,7 @@ version: "3.1"
 intents:
   - greet
   - goodbye
+  - thanks
   - affirm
   - deny
   - reservar_servicio
@@ -152,6 +153,11 @@ responses:
 
     utter_goodbye:
       - text: "¡Hasta luego! Si necesitas algo más, aquí estaré."
+
+    utter_thanks:
+      - text: "¡De nada! 😊 ¿Hay algo más en lo que pueda ayudarte?"
+      - text: "¡Un placer ayudarte! ¿Necesitas algo más?"
+      - text: "¡Para eso estoy! Si necesitas otra cosa, dime."
     
     utter_pedir_negocio:
       - text: "¿Para qué negocio necesitas ayuda? (dentista, fisioterapia, peluqueria)"

@@ -16,6 +16,22 @@ nlu:
       - chao
       - bye
       - nos vemos
+
+  - intent: thanks
+    examples: |
+      - gracias
+      - muchas gracias
+      - te lo agradezco
+      - mil gracias
+      - ok gracias
+      - vale gracias
+      - perfecto gracias
+      - genial gracias
+      - muy bien gracias
+      - de acuerdo gracias
+      - entendido gracias
+      - thank you
+      - thanks
       
   - intent: bot_challenge
     examples: |

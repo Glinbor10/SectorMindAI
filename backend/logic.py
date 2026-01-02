@@ -135,6 +135,10 @@ def obtener_tramos_disponibles(negocio_id, servicio_id, fecha_solicitada, conn):
     duracion_delta = timedelta(minutes=duracion_servicio)
     # Paso de búsqueda (cada cuánto ofrecemos una cita: 15 mins)
     paso_delta = timedelta(minutes=PASO_BUSQUEDA)
+    
+    # Obtener hora actual para filtrar horarios pasados
+    ahora = datetime.now()
+    es_hoy = dt_solicitada.date() == ahora.date()
 
     # 3. Iterar sobre cada turno (Mañana / Tarde)
     for turno in horarios:
@@ -151,6 +155,20 @@ def obtener_tramos_disponibles(negocio_id, servicio_id, fecha_solicitada, conn):
 
         # Empezamos a buscar desde que abre el turno
         hora_candidata = hora_inicio_turno
+        
+        # Si es hoy, empezar desde la hora actual (redondeada al siguiente paso)
+        if es_hoy and hora_candidata < ahora:
+            # Redondear hora actual al siguiente múltiplo de PASO_BUSQUEDA
+            minutos_desde_medianoche = ahora.hour * 60 + ahora.minute
+            minutos_redondeados = ((minutos_desde_medianoche // PASO_BUSQUEDA) + 1) * PASO_BUSQUEDA
+            hora_candidata = ahora.replace(hour=minutos_redondeados // 60, 
+                                          minute=minutos_redondeados % 60, 
+                                          second=0, 
+                                          microsecond=0)
+            
+            # Si la hora candidata está fuera del turno actual, pasar al siguiente turno
+            if hora_candidata > hora_fin_turno:
+                continue
 
         # Mientras el servicio quepa antes de cerrar el turno...
         while hora_candidata + duracion_delta <= hora_fin_turno:

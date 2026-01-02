@@ -1,5 +1,5 @@
 """
-Acciones principales de Rasa - Fallback inteligente y respuesta bot challenge
+Acciones principales de Rasa
 """
 from typing import Any, Text, Dict, List
 from rasa_sdk import Action, Tracker

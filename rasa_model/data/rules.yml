@@ -17,6 +17,11 @@ rules:
         - intent: goodbye
         - action: utter_goodbye
 
+    - rule: Agradecimiento
+      steps:
+        - intent: thanks
+        - action: utter_thanks
+
     - rule: Bot challenge
       steps:
         - intent: bot_challenge

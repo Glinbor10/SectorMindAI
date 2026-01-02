@@ -105,30 +105,38 @@
 ---
 
 ### **v0.5.0 - Refactorización Rasa y Flujo Propietario**
-**Fecha:** Enero 10, 2026 ← **ESTADO ACTUAL**
+**Fecha:** Enero 2, 2026 ← **ESTADO ACTUAL**
 
 **Logros:**
-- ✅ Flujo de trabajo completo como propietario (gestión de citas, servicios y clientes desde la plataforma)
+- ✅ **Refactorización arquitectónica de Rasa:** Modularización completa de actions.py
+  - Dividido de 2356 líneas en 9 módulos especializados (reducción del 82%)
+  - Módulos: `utils.py`, `extractores.py`, `contexto.py`, `reservas.py`, `cambios.py`, `cancelaciones.py`, `consultas.py`, `actions.py`
+  - Eliminación de 1935 líneas de código duplicado
+  - Mejor separación de responsabilidades y testing
+- ✅ Flujo de trabajo completo como propietario (gestión de citas, servicios y clientes)
+- ✅ Frontend con calendario interactivo para crear/editar citas visualmente
+- ✅ Intent `thanks` para detección de agradecimientos (13 ejemplos, 3 respuestas)
 - ✅ Corrección de bugs detectados en producción
-- ✅ Refactorización inicial de Rasa para eliminar deuda técnica
-- ✅ Rasa ahora gestiona la reserva de citas de forma general para todos los negocios
 - ✅ Uso de metadatos para identificar negocio y usuario en cada interacción
-- ✅ Respuestas contextuales de urgencias según tipo de negocio (dentista, peluquería, fisioterapia)
-- ✅ Identificación de intenciones de reserva y consulta usando FuzzyWuzzy para tolerancia a errores ortográficos
-- ✅ Eliminación de solapamientos y repetición de código en acciones de Rasa
-- ✅ Mejor comprensión del modelo y reducción de malentendidos
+- ✅ Respuestas contextuales de urgencias según tipo de negocio
+- ✅ FuzzyWuzzy para tolerancia a errores ortográficos en servicios
+- ✅ Sistema de tests robusto: 101 tests (89 backend + 12 Rasa acciones)
 
 **Detalles Técnicos:**
-1. **Refactorización de Rasa:** Ahora el modelo utiliza metadatos para saber en qué negocio está el usuario, permitiendo respuestas personalizadas y gestión de citas centralizada.
-2. **Gestión de Urgencias Contextual:** El bot responde a urgencias con contexto específico del tipo de negocio (ej: dolor de diente en dentista, evento importante en peluquería).
-3. **FuzzyWuzzy:** Implementado para detectar servicios aunque el cliente escriba con errores ortográficos.
-4. **Eliminación de Deuda Técnica:** Unificación de lógica, reducción de duplicidad y mayor mantenibilidad.
+1. **Arquitectura Modular Rasa:** 9 archivos especializados con responsabilidades claras
+   - `extractores.py`: Parsing de fechas/horas naturales con soporte de espacios
+   - `reservas.py`, `cambios.py`, `cancelaciones.py`: Flujos multi-paso
+   - `actions.py`: Cerebro central con ActionFallbackInteligente (421 líneas)
+2. **Gestión de Urgencias Contextual:** Respuestas adaptadas por tipo de negocio
+3. **FuzzyWuzzy:** Detección de servicios con errores ("tinti" → "Tinte")
+4. **Frontend Avanzado:** Calendario mensual interactivo con validación en tiempo real
+5. **Tests Actualizados:** Tests de stories deshabilitados, solo unitarios (más confiables)
 
 **Métricas:**
-- 104 tests: 100% passing
-- 2 minutos setup
-- Refactorización de Rasa en progreso
-- Producción estable
+- 101 tests: 100% passing (89 backend + 12 Rasa)
+- Reducción 82% en actions.py (2356 → 421 líneas)
+- 9 módulos Rasa especializados
+- Producción estable ✅
 
 
 ---
@@ -153,7 +161,7 @@
 | **v0.2.0** | Nov 29, 2025 | Inteligencia Conversacional |
 | **v0.3.0** | Dic 6, 2025 | Testing Comprehensivo |
 | **v0.4.0** |  Dic 20, 2025 | Profesionalización Docker |
-| **v0.5.0** | 🛠️ Desde 20/12/2025 | Refactorización Rasa + Flujo Propietario (en desarrollo) |
+| **v0.5.0** | Dic/Ene, 2026 | Refactorización Rasa + Flujo Propietario |
 | **v0.5.1** | (previsto) Feb, 2026 | Contexto Profundo |
 | **v0.6.0** | (previsto) Ene, 2026 | Reservas por Voz correctamente |
 | **v1.0.0** | (previsto) Feb/Mar, 2026 | SaaS Multi-Tenant |

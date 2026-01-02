@@ -1,5 +1,5 @@
 ﻿
-# **Sector Mind AI (v0.4.0)**
+# **Sector Mind AI (v0.5.0)**
 ## 🐳 **¿Cómo funciona Docker en SectorMindAI?**
 
 SectorMindAI utiliza Docker y Docker Compose para orquestar todos los servicios necesarios (backend, base de datos, IA conversacional y acciones personalizadas) de forma profesional, reproducible y persistente.
@@ -44,10 +44,12 @@ Docker Compose y los scripts PowerShell permiten levantar, detener, testear y ma
 
 ---
 
+
 ## 📋 **Estado del Proyecto**
 
-El proyecto ha alcanzado la versión **v0.4.0 (Profesionalización con Docker + PostgreSQL)**.
-Sistema de reservas con IA contextual desplegable en contenedores, 104 tests automatizados con cobertura completa y base de datos relacional de nivel empresarial.
+El proyecto ha alcanzado la versión **v0.5.0 (Arquitectura modular + IA contextual + Frontend avanzado)**.
+Sistema de reservas con IA contextual desplegable en contenedores, 101 tests automatizados (89 backend + 12 Rasa), base de datos relacional de nivel empresarial y frontend con calendario interactivo.
+
 
 ### 🎯 Funcionalidades Principales (Sistema Completo)
 - **IA Contextual por Tipo de Negocio:** Respuestas especializadas según contexto (dentista/peluquería/fisioterapia)
@@ -59,6 +61,8 @@ Sistema de reservas con IA contextual desplegable en contenedores, 104 tests aut
 - **Gestión de Archivos:** Sistema de subida de fotos de perfil con validaciones
 - **Detección Inteligente:** Matching fuzzy de servicios y consultas en tiempo real
 - **Interpretación NLU:** Procesamiento de fechas en lenguaje natural ("mañana", "el lunes")
+- **Intento de agradecimiento (`thanks`):** El bot reconoce y responde a agradecimientos en español (13 ejemplos, 3 respuestas)
+- **Frontend avanzado:** Calendario interactivo para crear y editar citas visualmente
 
 ---
 
@@ -120,34 +124,39 @@ SectorMindAI/
 │
 ├── backend/              # API Flask (lógica principal)
 │   ├── routes/           # Endpoints (auth, citas, negocios, usuarios)
-│   ├── tests/            # Suite de testing (75 tests, 100% passing)
+│   ├── tests/            # Suite de testing (89 tests, 100% passing)
 │   ├── app.py            # Punto de entrada del servidor
 │   ├── logic.py          # Algoritmos de disponibilidad de horarios
 │   ├── db.py             # Gestión de conexiones PostgreSQL
-│   ├── db_utils.py       # Utilities para adaptación de queries
 │   └── manage_db.py      # Script maestro para gestión de BD
 │
 ├── frontend/             # Cliente Web
 │   ├── index.html        # Home (Buscador y Login)
 │   ├── detalle.html      # Página de detalle de negocio
 │   ├── perfil.html       # Gestión de perfil de usuario
+│   ├── gestion_negocio.html # Gestión de negocio con calendario
 │   ├── app.js            # Lógica JavaScript del cliente
 │   └── uploads/          # Fotos de perfil (generadas en runtime)
 │
 ├── database/             # Base de datos y esquema
-│   └── schema.sql        # Plano de la BD (7 tablas relacionales)
+│   └── schema_postgres.sql # Plano de la BD (7 tablas relacionales)
 │
-├── rasa_model/           # Inteligencia Artificial (Rasa 3.6.13)
-│   ├── actions/          # 11 Custom actions (Python)
-│   │   ├── actions.py    # 6 core actions
-│   │   ├── dentista_actions.py
-│   │   ├── peluqueria_actions.py
-│   │   └── fisioterapia_actions.py
-│   ├── tests/            # 29 tests (100% passing)
+├── rasa_model/           # Inteligencia Artificial (Rasa 3.6.2)
+│   ├── actions/          # Acciones personalizadas (9 módulos)
+│   │   ├── actions.py        # Cerebro central (421 líneas)
+│   │   ├── utils.py         # Funciones comunes (106 líneas)
+│   │   ├── extractores.py   # Parsing fechas/horas (150 líneas)
+│   │   ├── contexto.py      # Inicialización (131 líneas)
+│   │   ├── reservas.py      # Flujo reserva (132 líneas)
+│   │   ├── cambios.py       # Flujo cambio (204 líneas)
+│   │   ├── cancelaciones.py # Flujo cancelación (143 líneas)
+│   │   ├── consultas.py     # Consultas sin flujos (209 líneas)
+│   │   └── __init__.py      # Exports de módulos
+│   ├── tests/            # 12 tests unitarios (100% passing)
 │   ├── data/             # Ejemplos de entrenamiento por contexto
-│   │   ├── nlu/          # 3 archivos NLU especializados
-│   │   ├── stories/      # 3 archivos de historias por tipo
-│   │   └── rules.yml
+│   │   ├── nlu.yml           # Intents unificados (incluye thanks)
+│   │   ├── stories.yml       # Flujos conversacionales
+│   │   └── rules.yml         # Reglas globales
 │   └── [config files]    # domain.yml, config.yml, etc.
 │
 ├── docs/                 # Documentación técnica
@@ -212,6 +221,7 @@ O desde PowerShell:
 
 ---
 
+
 ### **Credenciales de Prueba**
 
 ```
@@ -221,7 +231,7 @@ Propietario (Admin):
 
 Cliente (User):
   Email:    cliente@sectormind.com
-  Password: c
+  Password: u
 ```
 
 ---
@@ -331,15 +341,16 @@ Login Cliente:     cliente@sectormind.com / u
 - *Nota: Si el bot no entiende algo complejo, recuerda que está en fase de entrenamiento.* 
 
 
+
 ## 🧪 **Tests y Calidad del Código**
 
-El proyecto cuenta con **104 tests automatizados** que validan toda la funcionalidad dentro de Docker:
+El proyecto cuenta con **101 tests automatizados** que validan toda la funcionalidad dentro de Docker:
 
 ### **Ejecutar TODOS los tests (Recomendado):**
 ```bash
 .\run_tests.ps1
 ```
-Resultado: `[OK] Total: 104 tests passed`
+Resultado: `[OK] Total: 101 tests passed`
 
 ### **Con reporte de cobertura:**
 ```bash
@@ -348,8 +359,8 @@ Resultado: `[OK] Total: 104 tests passed`
 
 ### **Ejecuciones Selectivas:**
 ```bash
-.\run_tests.ps1 -BackendOnly   # 75 tests del API
-.\run_tests.ps1 -RasaOnly      # 29 tests de IA
+.\run_tests.ps1 -BackendOnly   # 89 tests del API
+.\run_tests.ps1 -RasaOnly      # 12 tests de IA
 .\run_tests.ps1 -Verbose       # Con output detallado
 ```
 
@@ -357,11 +368,11 @@ Resultado: `[OK] Total: 104 tests passed`
 
 | Módulo | Tests | Estado |
 |--------|-------|--------|
-| **Backend API** | 75 | ✅ 100% Passing |
-| **Rasa Actions** | 29 | ✅ 100% Passing |
-| **Total** | 104 | ✅ 100% Passing |
+| **Backend API** | 89 | ✅ 100% Passing |
+| **Rasa Actions** | 12 | ✅ 100% Passing |
+| **Total** | 101 | ✅ 100% Passing |
 
-**Nota:** Los tests se ejecutan dentro del contenedor backend con BD PostgreSQL dedicada. Cada test es independiente y limpia su estado automáticamente.
+**Nota:** Los tests de stories están deshabilitados (solo unitarios). Los tests se ejecutan dentro del contenedor backend con BD PostgreSQL dedicada. Cada test es independiente y limpia su estado automáticamente.
 
 ---
 
@@ -488,6 +499,7 @@ git push origin main --tags
 
 ---
 
+
 ### **Stack Técnico Profesional**
 
 | Capa | Tecnología | Versión |
@@ -495,7 +507,7 @@ git push origin main --tags
 | **Frontend** | HTML5 + Vanilla JS + Tailwind | Latest |
 | **Backend API** | Flask | 3.0.0 |
 | **Base de Datos** | PostgreSQL | 15-Alpine |
-| **Motor IA** | Rasa | 3.6.13 |
+| **Motor IA** | Rasa | 3.6.2 |
 | **Orquestación** | Docker Compose | 2.x |
 | **Testing** | pytest + unittest.mock | 7.4.3 |
 | **CI/CD Ready** | Dockerfile multi-stage | ✅ |
@@ -503,3 +515,11 @@ git push origin main --tags
 ---
 
 *Proyecto desarrollado con enfoque profesional siguiendo mejores prácticas de DevOps, testing y arquitectura cloud-native.*
+
+---
+
+**Cambios v0.5.0:**
+- Refactorización arquitectónica de Rasa: 9 módulos especializados, 82% reducción en actions.py
+- Intento de agradecimiento (`thanks`) con 13 ejemplos y 3 respuestas
+- Frontend con calendario interactivo para gestión de citas
+- Tests de stories deshabilitados, solo unitarios (101 tests)
