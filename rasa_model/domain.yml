@@ -3,42 +3,57 @@ version: "3.1"
 intents:
   - greet
   - goodbye
+  - thanks
   - affirm
   - deny
   - reservar_servicio
-  - informar_fecha
   - bot_challenge
   - consultar_horarios
   - consultar_servicios
   - consultar_ubicacion
   - consultar_mis_citas
   - cancelar_cita
+  - cambiar_horario
+  - seleccionar_cita
+  - ver_historial_citas
   - info_general
   - inform
   - pedir_mas_opciones
+  - nlu_fallback
 
 entities:
   - negocio
   - servicio
   - fecha
+  - time
+  - number
 
 slots:
-  negocio:
+  cliente_id:
     type: text
-    influence_conversation: false
-    mappings:
-      - type: from_entity
-        entity: negocio
-
-  negocio_id:
-    type: text
-    influence_conversation: false
+    influence_conversation: true
     mappings:
       - type: custom
 
-  cliente_id:
+  negocio_id:
     type: text
-    influence_conversation: false
+    influence_conversation: true
+    mappings:
+      - type: custom
+
+  tipo_negocio:
+    type: categorical
+    values:
+      - dentista
+      - peluqueria
+      - fisioterapia
+    influence_conversation: true
+    mappings:
+      - type: custom
+
+  negocio:
+    type: text
+    influence_conversation: true
     mappings:
       - type: custom
 
@@ -46,10 +61,7 @@ slots:
     type: text
     influence_conversation: false
     mappings:
-      - type: from_entity
-        entity: servicio
-      - type: from_text
-        intent: reservar_servicio
+      - type: custom
 
   servicio_id:
     type: text
@@ -57,12 +69,11 @@ slots:
     mappings:
       - type: custom
 
-  fecha:
+  servicio_nombre:
     type: text
     influence_conversation: false
     mappings:
-      - type: from_text
-        intent: informar_fecha
+      - type: custom
 
   horarios_disponibles:
     type: any
@@ -76,38 +87,114 @@ slots:
     mappings:
       - type: custom
 
+  cita_id_cancelar:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  cita_id_cambio:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
   citas_disponibles:
     type: any
     influence_conversation: false
     mappings:
       - type: custom
 
+  # SLOT ÚNICO DE CONTROL DE FLUJO
+  # Valores posibles: null, "reserva_fecha", "reserva_hora", "cancelar_seleccion", "cancelar_confirmacion", "cambiar_seleccion", "cambiar_fecha", "cambiar_hora"
+  flujo_activo:
+    type: categorical
+    values:
+      - reserva_fecha
+      - reserva_hora
+      - cancelar_seleccion
+      - cancelar_confirmacion
+      - cambiar_seleccion
+      - cambiar_fecha
+      - cambiar_hora
+    influence_conversation: true
+    mappings:
+      - type: custom
+
+  # Nuevos slots para el flujo de dos pasos (fecha + hora)
+  fecha_reserva:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  horarios_dia:
+    type: any
+    influence_conversation: false
+    mappings:
+      - type: custom
+      - type: custom
+
 responses:
-  utter_greet_con_negocio:
-    - text: "¡Hola! Bienvenido a {negocio}. ¿Qué servicio necesitas?"
+    utter_ask_servicio:
+      - text: "¿Qué servicio quieres reservar?"
 
-  utter_pedir_servicio:
-    - text: "¿Qué servicio te gustaría reservar?"
+    utter_ask_fecha:
+      - text: "¿Para qué día y hora quieres la cita?"
 
-  utter_goodbye:
-    - text: "¡Hasta luego! Si necesitas algo más, aquí estaré."
+    utter_greet_con_negocio:
+      - text: "¡Hola! Bienvenido a {negocio}. ¿Qué servicio necesitas?"
 
-  utter_default:
-    - text: "No he entendido bien. ¿Puedes repetirlo?"
+    utter_greet:
+      - text: "¡Hola! ¿En qué puedo ayudarte hoy?"
+
+    utter_pedir_servicio:
+      - text: "Puedo ayudarte con: 📅 Reservar citas, 💰 Consultar precios y servicios, 🕒 Ver horarios de apertura, 📍 Información de ubicación, 📋 Ver tus citas pendientes. ¿Qué te gustaría hacer?"
+
+    utter_goodbye:
+      - text: "¡Hasta luego! Si necesitas algo más, aquí estaré."
+
+    utter_thanks:
+      - text: "¡De nada! 😊 ¿Hay algo más en lo que pueda ayudarte?"
+      - text: "¡Un placer ayudarte! ¿Necesitas algo más?"
+      - text: "¡Para eso estoy! Si necesitas otra cosa, dime."
+    
+    utter_pedir_negocio:
+      - text: "¿Para qué negocio necesitas ayuda? (dentista, fisioterapia, peluqueria)"
+
+    utter_confirmacion:
+      - text: "✅ ¡Perfecto! Tu cita ha sido reservada correctamente."
+
+
+    utter_confirmar_cancelacion:
+      - text: "¿Seguro que quieres cancelar esta cita? Responde 'sí' para confirmar o 'no' para mantenerla."
+
+    utter_confirmacion_eliminada:
+      - text: "✅ Cita cancelada correctamente. Si quieres, puedo ayudarte a reservar una nueva."
+
+    utter_pedir_nueva_fecha:
+      - text: "¿Qué fecha y hora prefieres para reprogramar? (Ej.: 'mañana a las 10', 'el viernes por la tarde')"
 
 actions:
-  - action_set_contexto
-  - action_normalizar_servicio
-  - action_mostrar_disponibilidad
-  - action_reservar_cita
-  - action_info_negocio
-  - action_mostrar_horarios
-  - action_listar_servicios
-  - action_mostrar_ubicacion
-  - action_consultar_citas_usuario
-  - action_cancelar_cita
-  - action_confirmar_cancelacion
-  - action_responder_bot_challenge
+    - action_set_contexto
+    - action_normalizar_servicio
+    - action_mostrar_disponibilidad
+    - action_reservar_cita
+    - action_confirmar_hora_reserva
+    - action_info_negocio
+    - action_mostrar_horarios
+    - action_listar_servicios
+    - action_mostrar_ubicacion
+    - action_consultar_citas_usuario
+    - action_cancelar_cita
+    - action_cambiar_horario
+    - action_seleccionar_cita_cambio
+    - action_confirmar_fecha_cambio
+    - action_confirmar_hora_cambio
+    - action_seleccionar_cita_cancelar
+    - action_procesar_confirmacion_cancelar
+    - action_fallback_inteligente
+    - action_responder_bot_challenge
 
 session_config:
   session_expiration_time: 60

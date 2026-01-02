@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sector Mind AI - Plataforma de Reservas</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3e%3crect width='24' height='24' rx='5' fill='%234f46e5'/%3e%3cpath d='M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M9 13a4.5 4.5 0 0 0 3-4' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M6.003 5.125A3 3 0 0 0 6.401 6.5' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M3.477 10.896a4 4 0 0 1 .585-.396' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M6 18a4 4 0 0 1-1.967-.516' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M12 13h4' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M12 18h6a2 2 0 0 1 2 2v1' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M12 8h8' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3cpath d='M16 8V5a2 2 0 0 1 2-2' stroke='white' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3e%3ccircle cx='16' cy='13' r='.5' fill='white'/%3e%3ccircle cx='18' cy='3' r='.5' fill='white'/%3e%3ccircle cx='20' cy='21' r='.5' fill='white'/%3e%3ccircle cx='20' cy='8' r='.5' fill='white'/%3e%3c/svg%3e">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -34,7 +35,7 @@
                         <i data-lucide="calendar" class="text-indigo-300 w-6 h-6 absolute opacity-40" stroke-width="1.5"></i>
                         <i data-lucide="brain-circuit" class="text-white w-5 h-5 relative z-10"></i>
                     </div>
-                    <span class="font-bold text-xl tracking-tight text-slate-900">Sector Mind AI</span>
+                    <span class="font-bold text-xl tracking-tight text-indigo-600">Sector Mind AI</span>
                 </div>
 
                 <div class="flex items-center space-x-4">
@@ -47,36 +48,58 @@
                         <span id="user-name-display" class="font-medium text-slate-700">Usuario</span>
                         <img id="user-avatar-display" src="" class="w-10 h-10 rounded-full border-2 border-indigo-100 object-cover bg-slate-200">
                     </div>
+                    <button id="logout-btn" onclick="logout()" class="hidden text-red-500 hover:text-red-700 font-medium text-sm border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition">Cerrar Sesión</button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <header class="relative pt-16 pb-20 lg:pt-24 lg:pb-28 overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 mb-6">
+    <header id="cliente-header" class="relative pt-6 pb-4 lg:pt-8 lg:pb-6 overflow-hidden">
+        <div class="max-w-3xl mx-auto px-2 sm:px-4 lg:px-6 relative z-10 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 mb-2">
                 Tu tiempo, <span class="text-indigo-600">mejor invertido.</span>
             </h1>
-            <p class="mt-4 max-w-2xl mx-auto text-xl text-slate-500 mb-10">
+            <p class="mt-1 text-base text-slate-500 mb-4">
                 Reserva citas en tus negocios favoritos con nuestra IA conversacional.
             </p>
-            <div class="max-w-xl mx-auto relative group">
-                <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-200"></div>
-                <div class="relative bg-white rounded-2xl shadow-xl flex items-center p-2 border border-slate-100">
-                    <i data-lucide="search" class="ml-4 text-slate-400 w-5 h-5"></i>
-                    <input type="text" id="search-input" placeholder="Buscar..." class="w-full p-3 outline-none text-slate-700 placeholder:text-slate-400 bg-transparent text-lg">
+            <div class="max-w-md mx-auto relative group">
+                <div class="relative bg-white rounded-xl shadow flex items-center p-1 border border-slate-100">
+                    <i data-lucide="search" class="ml-2 text-slate-400 w-4 h-4"></i>
+                    <input type="text" id="search-input" placeholder="Buscar..." class="w-full p-2 outline-none text-slate-700 placeholder:text-slate-400 bg-transparent text-base">
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full flex-grow">
-        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-            <h2 class="text-2xl font-bold text-slate-900">Negocios Destacados</h2>
-            <div id="filters-container" class="flex flex-wrap gap-2"></div>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
+        <!-- Vista para Clientes (búsqueda general) -->
+        <div id="cliente-view">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <h2 class="text-2xl font-bold text-slate-900">Negocios Destacados</h2>
+                <div id="filters-container" class="flex flex-wrap gap-2"></div>
+            </div>
+            <div id="business-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="col-span-full text-center py-20"><p class="text-slate-500">Cargando...</p></div>
+            </div>
         </div>
-        <div id="business-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="col-span-full text-center py-20"><p class="text-slate-500">Cargando...</p></div>
+
+        <!-- Vista para Propietarios (mis negocios) -->
+        <div id="propietario-view" class="hidden">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2 flex items-center justify-center">
+                    <i data-lucide="building" class="mr-2 text-indigo-600"></i>
+                    <span class="text-slate-900">Tus Negocios</span>
+                </h2>
+                <p class="text-lg text-slate-600">Gestiona tus servicios y citas</p>
+            </div>
+            <div class="flex items-center justify-end gap-3 flex-wrap mb-8">
+                <button onclick="openCreateBusinessModal()" class="bg-indigo-600 text-white px-6 py-2 rounded-full font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Crear Nuevo Negocio
+                </button>
+            </div>
+            <div id="negocios-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="col-span-full text-center py-20"><p class="text-slate-500">Cargando tus negocios...</p></div>
+            </div>
         </div>
     </main>
 
@@ -91,8 +114,8 @@
             <button onclick="closeModal('modal-login')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
             <h2 class="text-2xl font-bold mb-6 text-slate-800">Bienvenido</h2>
             <form onsubmit="handleLogin(event)" class="space-y-4">
-                <input type="email" id="login-email" required placeholder="Email" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                <input type="password" id="login-password" required placeholder="Contraseña" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="email" id="login-email" required placeholder="Email *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="password" id="login-password" required placeholder="Contraseña *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
                 <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700">Entrar</button>
             </form>
         </div>
@@ -102,15 +125,18 @@
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative mx-4">
             <button onclick="closeModal('modal-register')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
             <h2 class="text-2xl font-bold mb-6 text-slate-800">Crear cuenta</h2>
+            <p class="text-xs text-slate-500 mb-4"><span class="text-red-500">*</span> Campos obligatorios</p>
             <form onsubmit="handleRegister(event)" class="space-y-4">
-                <input type="text" id="reg-name" required placeholder="Nombre Completo" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                <input type="email" id="reg-email" required placeholder="Email" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                <input type="password" id="reg-password" required placeholder="Contraseña" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="text" id="reg-name" required placeholder="Nombre Completo *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="email" id="reg-email" required placeholder="Email *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="password" id="reg-password" required placeholder="Contraseña *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1 ml-1">Foto de perfil (Opcional)</label>
                     <input type="file" id="reg-photo-file" accept="image/*" class="w-full p-2 border border-slate-300 rounded-xl text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                 </div>
-                <select id="reg-rol" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1 ml-1">Rol <span class="text-red-500">*</span></label>
+                    <select id="reg-rol" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
                     <option value="cliente">Cliente (Quiero reservar)</option>
                     <option value="propietario">Dueño de Negocio</option>
                 </select>
@@ -159,7 +185,14 @@
                     saveUserSession(data);
                     closeModal('modal-register');
                     Swal.fire({ title: 'Sector Mind AI', text: `¡Cuenta creada! Bienvenido, ${data.nombre}`, icon: 'success', confirmButtonColor: '#4f46e5' });
-                } else { Swal.fire('Error', data.error, 'error'); }
+                } else { 
+                    Swal.fire({
+                        title: 'Error al Registrar',
+                        text: data.error,
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
             } catch (err) { Swal.fire('Error', 'Error al registrarse', 'error'); }
         }
 
@@ -171,17 +204,38 @@
 
         function updateUI() {
             const userStr = localStorage.getItem('sector_mind_user');
+            const logoutBtn = document.getElementById('logout-btn');
             if (userStr) {
                 currentUser = JSON.parse(userStr);
                 document.getElementById('auth-buttons').classList.add('hidden');
                 document.getElementById('user-menu').classList.remove('hidden');
                 document.getElementById('user-menu').classList.add('flex');
+                if (logoutBtn) logoutBtn.classList.remove('hidden');
                 document.getElementById('user-name-display').innerText = currentUser.nombre;
-                document.getElementById('user-avatar-display').src = currentUser.foto_perfil_url || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
+                document.getElementById('user-avatar-display').src = currentUser.foto_perfil_base64 || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
+
+                // Mostrar vista apropiada según rol
+                if (currentUser.rol === 'propietario') {
+                    document.getElementById('cliente-header').classList.add('hidden');
+                    document.getElementById('cliente-view').classList.add('hidden');
+                    document.getElementById('propietario-view').classList.remove('hidden');
+                    loadMyBusinesses();
+                } else {
+                    document.getElementById('cliente-header').classList.remove('hidden');
+                    document.getElementById('cliente-view').classList.remove('hidden');
+                    document.getElementById('propietario-view').classList.add('hidden');
+                    loadBusinesses();
+                }
             } else {
                 document.getElementById('auth-buttons').classList.remove('hidden');
                 document.getElementById('user-menu').classList.add('hidden');
                 document.getElementById('user-menu').classList.remove('flex');
+                if (logoutBtn) logoutBtn.classList.add('hidden');
+                // Vista por defecto para usuarios no logueados (cliente)
+                document.getElementById('cliente-header').classList.remove('hidden');
+                document.getElementById('cliente-view').classList.remove('hidden');
+                document.getElementById('propietario-view').classList.add('hidden');
+                loadBusinesses();
             }
         }
 
@@ -197,6 +251,193 @@
                 generateFilters(allNegocios);
                 renderBusinessGrid(allNegocios);
             } catch (err) { grid.innerHTML = '<p class="text-red-500 col-span-full">Error al conectar.</p>'; }
+        }
+
+        async function loadMyBusinesses() {
+            const container = document.getElementById('negocios-container');
+            try {
+                const res = await fetch(`${API_URL}/negocios?propietario_id=${currentUser.id}`);
+                const negocios = await res.json();
+                
+                container.innerHTML = '';
+                if (negocios.length === 0) {
+                    container.innerHTML = `<div class="text-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed col-span-full"><i data-lucide="building" class="w-12 h-12 text-slate-300 mx-auto mb-4"></i><p class="text-slate-500 mb-4">No tienes negocios registrados.</p><button onclick="openCreateBusinessModal()" class="text-indigo-600 font-bold hover:underline">Crear tu primer negocio</button></div>`;
+                } else {
+                    negocios.forEach(negocio => {
+                        const card = document.createElement('div');
+                        card.className = "bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition cursor-pointer relative";
+                        card.onclick = () => {
+                            localStorage.setItem('selected_business', JSON.stringify(negocio));
+                            localStorage.setItem('gestion_negocio_id', negocio.id);
+                            sessionStorage.setItem('gestion_negocio_id', negocio.id);
+                            window.location.href = '/gestion_negocio.html';
+                        };
+                        const fotoSrc = negocio.foto_base64 || 'https://via.placeholder.com/400x200/6366f1/ffffff?text=' + encodeURIComponent(negocio.nombre);
+                        card.innerHTML = `
+                            <div class="h-48 overflow-hidden relative rounded-t-2xl">
+                                <img src="${fotoSrc}" alt="${negocio.nombre}" class="w-full h-full object-cover">
+                                <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-indigo-600 shadow-sm capitalize">${negocio.tipo_negocio}</div>
+                                <button onclick="event.stopPropagation(); deleteBusiness(${negocio.id})" class="absolute top-4 left-4 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-sm transition" title="Eliminar negocio">
+                                    <i data-lucide="trash" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <div class="p-6">
+                                <h3 class="font-bold text-slate-900 text-lg mb-2">${negocio.nombre}</h3>
+                                <p class="text-slate-600 text-sm mb-4 line-clamp-2">${negocio.descripcion || 'Sin descripción'}</p>
+                                <div class="flex items-center text-slate-500 text-sm">
+                                    <i data-lucide="map-pin" class="w-4 h-4 mr-1"></i>
+                                    <span>${negocio.direccion}</span>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                }
+                lucide.createIcons();
+            } catch (err) { container.innerHTML = '<p class="text-red-500">Error al cargar negocios.</p>'; }
+        }
+
+        function openCreateBusinessModal() {
+            document.getElementById('modal-create-business').classList.remove('hidden');
+        }
+
+        function closeCreateBusinessModal() {
+            document.getElementById('modal-create-business').classList.add('hidden');
+            document.getElementById('business-name').value = '';
+            document.getElementById('business-type').value = 'general';
+            document.getElementById('business-address').value = '';
+            document.getElementById('business-description').value = '';
+            document.getElementById('business-opening-morning').value = '';
+            document.getElementById('business-closing-morning').value = '';
+            document.getElementById('business-opening-afternoon').value = '';
+            document.getElementById('business-closing-afternoon').value = '';
+            document.getElementById('business-photo').value = '';
+            // Resetear checkboxes de días
+            for (let i = 0; i < 7; i++) {
+                const checkbox = document.getElementById(`day-${i}`);
+                if (checkbox) {
+                    checkbox.checked = (i < 5); // Lun-Vie por defecto
+                }
+            }
+        }
+
+        async function handleCreateBusiness(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('nombre', document.getElementById('business-name').value);
+            formData.append('tipo_negocio', document.getElementById('business-type').value);
+            formData.append('direccion', document.getElementById('business-address').value);
+            formData.append('descripcion', document.getElementById('business-description').value);
+            formData.append('propietario_id', currentUser.id);
+            
+            // Agregar horarios
+            const openingMorning = document.getElementById('business-opening-morning').value;
+            const closingMorning = document.getElementById('business-closing-morning').value;
+            const openingAfternoon = document.getElementById('business-opening-afternoon').value;
+            const closingAfternoon = document.getElementById('business-closing-afternoon').value;
+            
+            if (!openingMorning || !closingMorning) {
+                Swal.fire('Error', 'Debes especificar al menos el horario de mañana', 'error');
+                return;
+            }
+            
+            // Validar que si hay horario de tarde, estén ambos campos
+            if ((openingAfternoon && !closingAfternoon) || (!openingAfternoon && closingAfternoon)) {
+                Swal.fire('Error', 'Si defines horario de tarde, debes especificar apertura y cierre', 'error');
+                return;
+            }
+            
+            // Construir array de horarios
+            const horarios = [
+                { apertura: openingMorning, cierre: closingMorning }
+            ];
+            
+            if (openingAfternoon && closingAfternoon) {
+                horarios.push({ apertura: openingAfternoon, cierre: closingAfternoon });
+            }
+            
+            formData.append('horarios', JSON.stringify(horarios));
+            
+            // Obtener días seleccionados
+            const selectedDays = [];
+            for (let i = 0; i < 7; i++) {
+                const checkbox = document.getElementById(`day-${i}`);
+                if (checkbox && checkbox.checked) {
+                    selectedDays.push(i);
+                }
+            }
+            
+            if (selectedDays.length === 0) {
+                Swal.fire('Error', 'Debes seleccionar al menos un día de apertura', 'error');
+                return;
+            }
+            
+            formData.append('dias_apertura', JSON.stringify(selectedDays));
+            
+            // Agregar archivo si existe
+            const photoInput = document.getElementById('business-photo');
+            if (photoInput.files && photoInput.files[0]) {
+                formData.append('foto', photoInput.files[0]);
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/negocios/`, {
+                    method: 'POST',
+                    // No especificar Content-Type para que el navegador lo configure automáticamente con boundary
+                    body: formData  // Enviar FormData en lugar de JSON
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    closeCreateBusinessModal();
+                    Swal.fire({
+                        title: '¡Negocio creado!',
+                        text: 'Tu negocio ha sido registrado exitosamente',
+                        icon: 'success',
+                        confirmButtonColor: '#4f46e5'
+                    });
+                    loadMyBusinesses();
+                } else {
+                    Swal.fire('Error', result.error, 'error');
+                }
+            } catch (err) {
+                Swal.fire('Error', 'Error de conexión', 'error');
+            }
+        }
+
+        async function deleteBusiness(id) {
+            const result = await Swal.fire({
+                title: '¿Eliminar negocio?',
+                text: 'Esta acción no se puede deshacer y eliminará todos los servicios y citas asociadas',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`${API_URL}/negocios/${id}?propietario_id=${currentUser.id}`, {
+                        method: 'DELETE'
+                    });
+                    if (res.ok) {
+                        Swal.fire({
+                            title: 'Negocio eliminado',
+                            text: 'El negocio ha sido eliminado exitosamente',
+                            icon: 'success',
+                            confirmButtonColor: '#4f46e5'
+                        });
+                        loadMyBusinesses();
+                    } else {
+                        const data = await res.json();
+                        Swal.fire('Error', data.error, 'error');
+                    }
+                } catch (err) {
+                    Swal.fire('Error', 'Error de conexión', 'error');
+                }
+            }
         }
 
         function generateFilters(negocios) {
@@ -244,22 +485,34 @@
                 return;
             }
             negociosData.forEach(negocio => {
-                const fotoBg = negocio.foto_url ? negocio.foto_url : 'https://images.unsplash.com/photo-1521590832896-017c4f98aa51?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
-                
+                // Solo usar foto_base64, nunca foto_url
+                // Si no hay foto_base64, mostrar un dibujo/ilustración por defecto
                 const cardLink = document.createElement('a');
                 cardLink.className = "group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 cursor-pointer flex flex-col h-full fade-in block text-left";
-                
-                // --- CAMBIO IMPORTANTE: Enlace al archivo detalle.html ---
-                cardLink.href = 'detalle.html'; 
-                // --------------------------------------------------------
 
-                cardLink.onclick = () => {
+                cardLink.href = 'detalle.html';
+
+                cardLink.onclick = (e) => {
                     localStorage.setItem('selected_business', JSON.stringify(negocio));
                 };
 
+                let fotoHtml;
+                if (negocio.foto_base64) {
+                    fotoHtml = `<img src="${negocio.foto_base64}" alt="${negocio.nombre}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">`;
+                } else {
+                    // Fondo de color e icono SVG inline
+                    fotoHtml = `<div class='w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-400' style='height: 100%; min-height: 12rem;'>
+                        <svg width="64" height="64" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" class="opacity-60">
+                          <rect x="3" y="7" width="18" height="13" rx="3" stroke="currentColor" stroke-width="1.5" fill="#6366f1"/>
+                          <circle cx="8.5" cy="13.5" r="2.5" fill="#fff"/>
+                          <path d="M21 17l-4.5-4.5a2 2 0 0 0-2.8 0L3 21" stroke="#fff" stroke-width="1.5"/>
+                        </svg>
+                    </div>`;
+                }
+
                 cardLink.innerHTML = `
                     <div class="h-48 overflow-hidden relative">
-                        <img src="${fotoBg}" alt="${negocio.nombre}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        ${fotoHtml}
                         <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-indigo-600 shadow-sm capitalize">${negocio.tipo_negocio}</div>
                     </div>
                     <div class="p-6 flex flex-col flex-grow">
@@ -273,10 +526,15 @@
                 `;
                 grid.appendChild(cardLink);
             });
-            lucide.createIcons();
+            // lucide.createIcons(); // Removido - se inicializa al final
         }
 
         function capitalize(str) { return str ? str.charAt(0).toUpperCase() + str.slice(1) : ''; }
+
+        function logout() {
+            localStorage.removeItem('sector_mind_user');
+            window.location.href = '/';
+        }
 
         document.getElementById('search-input').addEventListener('input', (e) => {
             currentSearchTerm = e.target.value;
@@ -285,9 +543,142 @@
 
         window.onload = () => {
             updateUI();
-            loadBusinesses();
-            lucide.createIcons();
+            // Inicializar iconos después de que todo esté cargado
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 100);
         };
+
+        // También inicializar iconos cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 50);
+        });
     </script>
+
+    <!-- Modal de Crear Negocio -->
+    <div id="modal-create-business" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Crear Nuevo Negocio</h3>
+                    <p class="text-xs text-slate-500 mt-1"><span class="text-red-500">*</span> Campos obligatorios</p>
+                </div>
+                <button onclick="closeCreateBusinessModal()" class="text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="handleCreateBusiness(event)" class="p-6 space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Nombre del Negocio <span class="text-red-500">*</span></label>
+                    <input type="text" id="business-name" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Tipo de Negocio <span class="text-red-500">*</span></label>
+                    <select id="business-type" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                        <option value="dentista">Dentista</option>
+                        <option value="peluqueria">Peluquería</option>
+                        <option value="fisioterapia">Fisioterapia</option>
+                        <option value="general">General</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Dirección <span class="text-red-500">*</span></label>
+                    <input type="text" id="business-address" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Descripción</label>
+                    <textarea id="business-description" rows="3" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500"></textarea>
+                </div>
+                
+                <!-- Horarios -->
+                <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+                    <h4 class="font-bold text-slate-900 mb-2 flex items-center">
+                        <i data-lucide="clock" class="w-4 h-4 mr-2 text-indigo-600"></i>
+                        Horarios de Apertura
+                    </h4>
+                    <p class="text-xs text-slate-600 mb-4">Define el horario de mañana (obligatorio). Si tu negocio tiene horario partido, también puedes definir el horario de tarde (opcional).</p>
+                    
+                    <!-- Horario de Mañana -->
+                    <div class="bg-white rounded-lg p-3 mb-3">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Horario de Mañana <span class="text-red-500">*</span></label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Apertura <span class="text-red-500">*</span></label>
+                                <input type="time" id="business-opening-morning" required class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Cierre <span class="text-red-500">*</span></label>
+                                <input type="time" id="business-closing-morning" required class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Horario de Tarde -->
+                    <div class="bg-white rounded-lg p-3">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Horario de Tarde (Opcional - Para horario partido)</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Apertura</label>
+                                <input type="time" id="business-opening-afternoon" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Cierre</label>
+                                <input type="time" id="business-closing-afternoon" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Días de apertura <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-7 gap-2">
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-0" value="0" checked class="mb-1">
+                            <span class="text-xs">Lun</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-1" value="1" checked class="mb-1">
+                            <span class="text-xs">Mar</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-2" value="2" checked class="mb-1">
+                            <span class="text-xs">Mié</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-3" value="3" checked class="mb-1">
+                            <span class="text-xs">Jue</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-4" value="4" checked class="mb-1">
+                            <span class="text-xs">Vie</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-5" value="5" class="mb-1">
+                            <span class="text-xs">Sáb</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-6" value="6" class="mb-1">
+                            <span class="text-xs">Dom</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Foto del Negocio (opcional)</label>
+                    <input type="file" id="business-photo" accept="image/*" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                </div>
+                
+                <button type="submit" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg flex items-center justify-center gap-2">
+                    <i data-lucide="plus" class="w-5 h-5"></i> Crear Negocio
+                </button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalle del Negocio - Sector Mind AI</title>
+    <link rel="icon" href="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z'/%3e%3cpath d='M9 13a4.5 4.5 0 0 0 3-4'/%3e%3cpath d='M6.003 5.125A3 3 0 0 0 6.401 6.5'/%3e%3cpath d='M3.477 10.896a4 4 0 0 1 .585-.396'/%3e%3cpath d='M6 18a4 4 0 0 1-1.967-.516'/%3e%3cpath d='M12 13h4'/%3e%3cpath d='M12 18h6a2 2 0 0 1 2 2v1'/%3e%3cpath d='M12 8h8'/%3e%3cpath d='M16 8V5a2 2 0 0 1 2-2'/%3e%3ccircle cx='16' cy='13' r='.5'/%3e%3ccircle cx='18' cy='3' r='.5'/%3e%3ccircle cx='20' cy='21' r='.5'/%3e%3ccircle cx='20' cy='8' r='.5'/%3e%3c/svg%3e" type="image/svg+xml">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -47,7 +48,8 @@
                     <div id="auth-buttons" class="hidden flex items-center space-x-3">
                         <button onclick="openModal('modal-login')" class="text-slate-600 hover:text-indigo-600 font-medium">Iniciar Sesión</button>
                         <button onclick="openModal('modal-register')" class="bg-indigo-600 text-white px-4 py-2 rounded-full font-medium hover:bg-indigo-700">Registrarse</button>
-                     </div>
+                    </div>
+                    <button id="logout-btn" onclick="logout()" class="hidden text-red-500 hover:text-red-700 font-medium text-sm border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition">Cerrar Sesión</button>
                 </div>
             </div>
         </div>
@@ -74,9 +76,12 @@
             </div>
 
             <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-                <h3 class="text-xl font-bold mb-6 flex items-center gap-2">
-                    <i data-lucide="sparkles" class="text-indigo-600"></i> Servicios Disponibles
-                </h3>
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i data-lucide="sparkles" class="text-indigo-600"></i> Servicios Disponibles
+                    </h3>
+                    <span class="text-xs text-slate-500 bg-slate-50 px-3 py-1 rounded-full">Click para reservar</span>
+                </div>
                 <div id="services-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
         </div>
@@ -158,8 +163,8 @@
             <button onclick="closeModal('modal-login')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
             <h2 class="text-2xl font-bold mb-6 text-slate-800">Bienvenido</h2>
             <form onsubmit="handleLogin(event)" class="space-y-4">
-                <input type="email" id="login-email" required placeholder="Email" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                <input type="password" id="login-password" required placeholder="Contraseña" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="email" id="login-email" required placeholder="Email *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="password" id="login-password" required placeholder="Contraseña *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
                 <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700">Entrar</button>
             </form>
         </div>
@@ -169,23 +174,115 @@
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative mx-4">
             <button onclick="closeModal('modal-register')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
             <h2 class="text-2xl font-bold mb-6 text-slate-800">Crear cuenta</h2>
+            <p class="text-xs text-slate-500 mb-4"><span class="text-red-500">*</span> Campos obligatorios</p>
             <form onsubmit="handleRegister(event)" class="space-y-4">
-                <input type="text" id="reg-name" required placeholder="Nombre Completo" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                <input type="email" id="reg-email" required placeholder="Email" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                <input type="password" id="reg-password" required placeholder="Contraseña" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="text" id="reg-name" required placeholder="Nombre Completo *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="email" id="reg-email" required placeholder="Email *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="password" id="reg-password" required placeholder="Contraseña *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1 ml-1">Foto de perfil (Opcional)</label>
                     <input type="file" id="reg-photo-file" accept="image/*" class="w-full p-2 border border-slate-300 rounded-xl text-sm">
                 </div>
-                <select id="reg-rol" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                    <option value="cliente">Cliente (Quiero reservar)</option>
-                    <option value="propietario">Dueño de Negocio</option>
-                </select>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1 ml-1">Rol <span class="text-red-500">*</span></label>
+                    <select id="reg-rol" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                        <option value="cliente">Cliente (Quiero reservar)</option>
+                        <option value="propietario">Dueño de Negocio</option>
+                    </select>
+                </div>
                 <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700">Registrarse</button>
             </form>
         </div>
     </div>
 
+    <div id="modal-booking" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative mx-4 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeBookingModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 z-10"><i data-lucide="x" class="w-6 h-6"></i></button>
+            
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Reservar Cita</h2>
+                <div id="booking-service-info" class="flex items-center gap-3 text-slate-600">
+                    <i data-lucide="scissors" class="w-5 h-5 text-indigo-600"></i>
+                    <span class="font-medium"></span>
+                </div>
+            </div>
+
+            <button id="booking-confirm-btn" onclick="confirmBooking()" disabled class="w-full bg-slate-300 text-slate-500 py-4 rounded-xl font-bold cursor-not-allowed transition shadow-lg flex items-center justify-center gap-2 mb-6">
+                <i data-lucide="check-circle" class="w-5 h-5"></i>
+                Selecciona fecha y hora
+            </button>
+
+            <div class="space-y-6 max-h-96 overflow-y-auto">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-4 h-4 text-indigo-600"></i>
+                        Selecciona un día disponible <span class="text-red-500">*</span>
+                    </label>
+                    <div id="booking-calendar" class="grid grid-cols-7 gap-2 p-4 border-2 border-slate-200 rounded-xl bg-slate-50">
+                        <!-- Calendar will be populated here -->
+                    </div>
+                </div>
+
+                <div id="booking-time-section" class="hidden">
+                    <label class="block text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                        <i data-lucide="clock" class="w-4 h-4 text-indigo-600"></i>
+                        Horarios disponibles <span class="text-red-500">*</span>
+                    </label>
+                    <div id="booking-time-slots" class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto p-2 border border-slate-100 rounded-xl bg-white">
+                        <!-- Time slots will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
+<script>
+function logout() {
+    localStorage.removeItem('sector_mind_user');
+    window.location.href = '/';
+}
+// Redirige a la principal si el usuario es propietario (al cargar o tras login/register)
+function redirectIfPropietario() {
+    let user = null;
+    try {
+        user = JSON.parse(localStorage.getItem('sector_mind_user'));
+    } catch {}
+    if (user && user.rol && user.rol.toLowerCase() === 'propietario') {
+        window.location.href = '/index.html';
+    }
+}
+window.addEventListener('DOMContentLoaded', redirectIfPropietario);
+// Hook para login/register
+if (typeof updateUI === 'function') {
+  const oldUpdateUI = updateUI;
+  window.updateUI = function() { oldUpdateUI(); updateLogoutBtn(); redirectIfPropietario(); };
+}
+</script>
 </body>
+<script>
+
+function updateLogoutBtn() {
+    const btn = document.getElementById('logout-btn');
+    if (!btn) return;
+    let user = null;
+    try {
+        user = JSON.parse(localStorage.getItem('sector_mind_user'));
+    } catch {}
+    if (user && user.nombre) {
+        btn.classList.remove('hidden');
+    } else {
+        btn.classList.add('hidden');
+    }
+}
+
+if (typeof updateUI === 'function') {
+    const oldUpdateUI = updateUI;
+    window.updateUI = function() { oldUpdateUI(); updateLogoutBtn(); };
+    // Llama también tras login/register
+    window.addEventListener('DOMContentLoaded', updateLogoutBtn);
+} else {
+    window.addEventListener('DOMContentLoaded', updateLogoutBtn);
+}
+</script>
 </html>

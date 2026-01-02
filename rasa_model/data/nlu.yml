@@ -1,177 +1,205 @@
 version: "3.1"
 
 nlu:
-- intent: greet
-  examples: |
-    - hola
-    - buenos días
-    - /greet{"negocio": "FisioMente Centro"}
-    - /greet{"negocio": "Peluquería Estilo"}
-    - /greet{"negocio": "Taller Paco"}
+  - intent: greet
+    examples: |
+      - hola
+      - buenos días
+      - qué tal
+      - buenas tardes
+      - hola buenas
 
-- intent: goodbye
-  examples: |
-    - adiós
-    - hasta luego
-    - chao
+  - intent: goodbye
+    examples: |
+      - adiós
+      - hasta luego
+      - chao
+      - bye
+      - nos vemos
 
-- intent: reservar_servicio
-  examples: |
-    - quiero un corte
-    - quiero un cortesito
-    - corte de pelo
-    - tinte
-    - peinado
-    - barba
-    - mechas
-    - fisioterapia
-    - masaje
-    - punción seca
-    - osteopatía
-    - limpieza
-    - empaste
-    - revisión
-    - cambio de aceite
-    - itv
-    - manicura
-    - necesito cita para un corte
-    - reservar hueco
+  - intent: thanks
+    examples: |
+      - gracias
+      - muchas gracias
+      - te lo agradezco
+      - mil gracias
+      - ok gracias
+      - vale gracias
+      - perfecto gracias
+      - genial gracias
+      - muy bien gracias
+      - de acuerdo gracias
+      - entendido gracias
+      - thank you
+      - thanks
+      
+  - intent: bot_challenge
+    examples: |
+      - eres un bot
+      - eres una ia
+      - eres humano
+      - eres artificial
+      - quién eres
+      - quien eres
+      - quienes sois
+      - eres un robot
+      - eres una persona
+      - hablas solo o hay alguien
+      - estoy hablando con una máquina
+      - eres real
 
-# --- AQUÍ ESTÁ EL CAMBIO CLAVE ---
-- intent: informar_fecha
-  examples: |
-    - mañana
-    - para mañana
-    - para mañana por la tarde
-    - para mañana por la mañana
-    - lo quiero para hoy
-    - hoy
-    - pasado mañana
-    - para el lunes
-    - el lunes
-    - el martes
-    - para el miércoles
-    - el jueves
-    - el viernes
-    - el sábado
-    - por la tarde
-    - por la mañana
-    - a las 5
-    - para las 10:00
-    - mañana a las 17:00
-    - el 7 de diciembre
-    - 07/12/2025
-    - la semana que viene
-    - cuando puedas
-    - para dentro de un rato
+  - intent: consultar_mis_citas
+    examples: |
+      - quiero ver mis citas
+      - mis citas
+      - ver mis turnos
+      - mis reservas
+      - consultar mis citas
+      - mis citas pendientes
+      - cuales son mis citas
+      - qué reservas tengo
+      - tengo citas
+      - mostrar mis citas
 
-- intent: affirm
-  examples: |
-    - sí
-    - si
-    - Si
-    - correcto
-    - vale
-    - perfecto
-    - exacto
-    - ok
+  - intent: cancelar_cita
+    examples: |
+      - cancelar mi cita
+      - quiero anular
+      - borrar reserva
+      - anular turno
+      - eliminar mi cita
+      - cancelar cita
+      - anular cita
+      - quiero cancelar
+      - quiero cancelar mi cita
+      - cancela mi cita
+      - anula mi cita
+      - quitar mi cita
+      - quiero anular mi reserva
+      - cancelar mi reserva
+      - borrar mi cita
+      - eliminar reserva
 
-- intent: deny
-  examples: |
-    - no
-    - espera
-    - corregir
+  - intent: seleccionar_cita
+    examples: |
+      - 1
+      - 2
+      - 3
+      - la 1
+      - la 2
+      - cita 1
+      - cita 2
+      - número 1
+      - número 2
+      - quiero la primera
+      - la primera
+      - la segunda
+      - primera
+      - segunda
+      - elijo la 1
+      - elijo la 2
 
-- intent: bot_challenge
-  examples: |
-    - eres un bot?
+  - intent: consultar_horarios
+    examples: |
+      - ver horario
+      - cuál es el horario
+      - quiero ver tu horario
+      - qué horarios tienes
+      - ver huecos disponibles
 
-- intent: consultar_horarios
-  examples: |
-    - qué horario tenéis
-    - a qué hora abrís
-    - cuándo abrís
-    - horario de apertura
-    - horarios
-    - cuándo estáis abiertos
-    - hasta qué hora abrís
-    - a qué hora cerráis
-    - horario del negocio
+  - intent: affirm
+    examples: |
+      - sí
+      - si
+      - correcto
+      - claro
+      - vale
 
-- intent: consultar_servicios
-  examples: |
-    - qué servicios tenéis
-    - qué servicios ofrecéis
-    - qué hacéis
-    - que me podéis hacer
-    - servicios disponibles
-    - qué tipos de servicios
-    - cuánto cuesta un corte
-    - precios
-    - tarifas
-    - cuánto vale
+  - intent: deny
+    examples: |
+      - no
+      - prefiero no
+      - en realidad no
+      - no gracias
+      - mejor no
 
-- intent: consultar_ubicacion
-  examples: |
-    - dónde estáis
-    - cuál es vuestra dirección
-    - ubicación
-    - dónde os encuentro
-    - cómo llego
-    - dirección del negocio
+  - intent: reservar_servicio
+    examples: |
+      - quiero reservar
+      - reserva una cita
+      - quiero hacer una reserva
+      - necesito una cita
+      - quiero agendar
+      - quiero un servicio
+      - necesito un servicio
+      - quiero algo
+      - quisiera algo
+      - me gustaría algo
+      - hacerme algo
+      - vengo por algo
 
-- intent: consultar_mis_citas
-  examples: |
-    - tengo cita
-    - cuándo tengo cita
-    - mis citas
-    - ver mis reservas
-    - qué citas tengo
-    - tengo algo reservado
-    - cuándo es mi cita
-    - qué día tengo cita
+  - intent: inform
+    examples: |
+      - mañana a las 10
+      - hoy a las 15:00
+      - el lunes a las 9
+      - para el martes a las 11
+      - el viernes por la tarde
+      - pasado mañana
+      - mañana a las 10:45
+      - hoy las 11
+      - a las 10
+      - las 11
+      - a las 9:30
+      - 10:00
+      - 15:30
 
-- intent: cancelar_cita
-  examples: |
-    - cancela mi cita
-    - quiero cancelar
-    - anular cita
-    - eliminar mi reserva
-    - borra mi cita
-    - cancelar la cita del lunes
-    - quiero anular mi cita de mañana
-    - cancela mi próxima cita
+  - intent: consultar_servicios
+    examples: |
+      - qué servicios ofrecen
+      - qué hacen aquí
+      - qué servicios tienen
+      - qué tratamientos
+      - qué ofrecen
 
-- intent: info_general
-  examples: |
-    - qué es este sitio
-    - cuéntame sobre el negocio
-    - información
-    - quiénes sois
-    - sobre vosotros
-    - qué hacéis aquí
+  - intent: consultar_ubicacion
+    examples: |
+      - dónde están
+      - cuál es la dirección
+      - dónde queda
+      - cómo llegar
+      - ubicación
 
-- intent: inform
-  examples: |
-    - 1
-    - 2
-    - 3
-    - el primero
-    - la primera
-    - el número 1
-    - opción 2
-    - esa
-    - la segunda
+  - intent: cambiar_horario
+    examples: |
+      - cambiar mi cita
+      - modificar horario
+      - cambiar fecha
+      - cambiar turno
+      - quiero cambiar la cita
+      - cambiar cita
+      - modificar mi cita
+      - quiero modificar mi cita
+      - cambiar la fecha de mi cita
+      - quiero cambiar el horario
+      - reprogramar mi cita
+      - mover mi cita
+      - necesito cambiar la cita
+      - cambiar la hora
+      - cambiar mi turno
 
-- intent: pedir_mas_opciones
-  examples: |
-    - más días
-    - hay más días disponibles
-    - qué días hay después
-    - más horarios
-    - tienes más huecos
-    - y más adelante
-    - otros días
-    - más opciones
-    - hay más disponibilidad
-    - muéstrame más días
+  - intent: info_general
+    examples: |
+      - cuéntame sobre el negocio
+      - qué es esto
+      - información general
+      - qué hacen
+      - sobre el negocio
+
+  - intent: pedir_mas_opciones
+    examples: |
+      - más opciones
+      - ver más días
+      - otros horarios
+      - más fechas
+      - otras alternativas

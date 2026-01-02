@@ -1,0 +1,89 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: sector_mind_db
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sectormind -d sectormind_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build: .
+    container_name: sector_mind_backend
+    env_file:
+      - .env
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - API_URL=${API_URL}
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      - ./rasa_model:/app/rasa_model
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  rasa:
+    image: rasa/rasa:3.6.2
+    container_name: sector_mind_rasa
+    working_dir: /app/project
+    env_file:
+      - .env
+    command: ["run", "--enable-api", "--cors", "*", "--model", "models"]
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./rasa_model:/app/project
+      - ./rasa_model/endpoints.docker.yml:/app/project/endpoints.yml:ro
+    depends_on:
+      - rasa-actions
+      - backend
+    restart: unless-stopped
+
+  rasa-actions:
+    build:
+      context: ./rasa_model
+      dockerfile: Dockerfile.actions
+    container_name: sector_mind_rasa_actions
+    working_dir: /app
+    env_file:
+      - .env
+    ports:
+      - "5055:5055"
+    environment:
+      - API_URL=${API_URL}
+    volumes:
+      - ./rasa_model/actions:/app/actions
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+    name: sector_mind_postgres_data
+
+networks:
+  default:
+    name: sector_mind_net

@@ -1,6 +1,6 @@
 name: Sector Mind CI
 
-# Se ejecuta cuando haces push a la rama main o pull request
+# Se ejecuta cuando haces push a trunk
 on:
   push:
     branches: [ "trunk" ]
@@ -8,9 +8,26 @@ on:
     branches: [ "trunk" ]
 
 jobs:
-  # TRABAJO 1: VERIFICAR BACKEND (FLASK)
+  # TRABAJO 1: VERIFICAR BACKEND (FLASK) + PostgreSQL
   test-backend:
     runs-on: ubuntu-latest
+    
+    # Servicio PostgreSQL para tests
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: sectormind
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: sectormind_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
     steps:
     - uses: actions/checkout@v3
     
@@ -22,21 +39,25 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # Instalamos librerías del proyecto + librerías de test
         pip install -r requirements.txt
         pip install pytest flake8
         
     - name: Lint with Flake8 (Calidad de código)
       run: |
-        # stop the build if there are Python syntax errors or undefined names
         flake8 backend --count --select=E9,F63,F7,F82 --show-source --statistics
         
-    - name: Run Backend Tests
+    - name: Initialize PostgreSQL Schema
+      env:
+        DATABASE_URL: postgresql://sectormind:password@localhost:5432/sectormind_db
       run: |
-        # Ejecuta el script de gestión de base de datos para crear la estructura antes de testear
+        # Ejecuta el script de gestión de base de datos para crear tablas
         python -m backend.manage_db
-        # Ejecuta los tests en la ruta correcta y con PYTHONPATH adecuado
-        PYTHONPATH=. pytest backend/tests
+        
+    - name: Run Backend Tests (75 tests)
+      env:
+        DATABASE_URL: postgresql://sectormind:password@localhost:5432/sectormind_db
+      run: |
+        PYTHONPATH=. pytest backend/tests -v
 
   # TRABAJO 2: VERIFICAR IA (RASA)
   test-rasa:
@@ -51,20 +72,25 @@ jobs:
       with:
         python-version: "3.10"
         
-    - name: Install Rasa dependencies
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install rasa
+        pip install -r requirements.txt
+        pip install rasa pytest
         
     - name: Rasa Data Validation
-      # Esto comprueba si hay errores en domain.yml, nlu.yml o stories.yml
+      # Comprueba si hay errores en domain.yml, nlu.yml o stories.yml
       run: |
         cd rasa_model
         rasa data validate
 
-    - name: Rasa NLU Test
-      # Entrena un modelo ligero y lo prueba (Cross-validation)
-      # Esto asegura que tus nuevos ejemplos no confunden a la IA
+    - name: Run Rasa Actions Tests (29 tests)
+      run: |
+        PYTHONPATH=. pytest rasa_model/tests/test_actions.py -v
+
+    - name: Rasa NLU Cross-Validation
+      # Entrena un modelo ligero y lo prueba con cross-validation
+      # Esto asegura que los nuevos ejemplos no confunden a la IA
       run: |
         cd rasa_model
         rasa test nlu --cross-validation --folds 3
