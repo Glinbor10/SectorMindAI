@@ -114,46 +114,13 @@ nlu:
       - quiero hacer una reserva
       - necesito una cita
       - quiero agendar
-      - quiero un corte
-      - quiero un corte de pelo
-      - necesito un corte
-      - quiero cortarme el pelo
-      - hacerme un corte
-      - quiero un tinte
-      - necesito un tinte
-      - quiero teñirme
-      - hacerme un tinte
-      - quiero un mechas
-      - necesito mechas
-      - quiero unas mechas
-      - quiero un peinado
-      - hacerme un peinado
-      - quiero una limpieza
-      - necesito una limpieza
-      - quiero limpieza dental
-      - quiero una revisión
-      - necesito una revisión
-      - quiero un masaje
-      - necesito un masaje
-      - quiero fisioterapia
-      - necesito fisioterapia
-      - quiero rehabilitación
-      - quiero un tratamiento
-      - necesito un tratamiento
       - quiero un servicio
-      - quisiera un corte
-      - quisiera teñirme
-      - quisiera un masaje
-      - me gustaría un corte
-      - me gustaría un tinte
-      - me gustaría un masaje
-      - vengo por un corte
-      - vengo a cortarme el pelo
-      - vengo por un tinte
-      - vengo a teñirme
-      - reservar cita
-      - agendar cita
-      - pedir cita
+      - necesito un servicio
+      - quiero algo
+      - quisiera algo
+      - me gustaría algo
+      - hacerme algo
+      - vengo por algo
 
   - intent: inform
     examples: |

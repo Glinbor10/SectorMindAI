@@ -68,6 +68,12 @@ slots:
     mappings:
       - type: custom
 
+  servicio_nombre:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
   horarios_disponibles:
     type: any
     influence_conversation: false
@@ -80,6 +86,18 @@ slots:
     mappings:
       - type: custom
 
+  cita_id_cancelar:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  cita_id_cambio:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
   citas_disponibles:
     type: any
     influence_conversation: false
@@ -87,17 +105,33 @@ slots:
       - type: custom
 
   # SLOT ÚNICO DE CONTROL DE FLUJO
-  # Valores posibles: null, "reserva_fecha", "cancelar_seleccion", "cancelar_confirmacion", "cambiar_seleccion", "cambiar_fecha"
+  # Valores posibles: null, "reserva_fecha", "reserva_hora", "cancelar_seleccion", "cancelar_confirmacion", "cambiar_seleccion", "cambiar_fecha", "cambiar_hora"
   flujo_activo:
     type: categorical
     values:
       - reserva_fecha
+      - reserva_hora
       - cancelar_seleccion
       - cancelar_confirmacion
       - cambiar_seleccion
       - cambiar_fecha
+      - cambiar_hora
     influence_conversation: true
     mappings:
+      - type: custom
+
+  # Nuevos slots para el flujo de dos pasos (fecha + hora)
+  fecha_reserva:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  horarios_dia:
+    type: any
+    influence_conversation: false
+    mappings:
+      - type: custom
       - type: custom
 
 responses:
@@ -140,6 +174,7 @@ actions:
     - action_normalizar_servicio
     - action_mostrar_disponibilidad
     - action_reservar_cita
+    - action_confirmar_hora_reserva
     - action_info_negocio
     - action_mostrar_horarios
     - action_listar_servicios
@@ -148,9 +183,10 @@ actions:
     - action_cancelar_cita
     - action_cambiar_horario
     - action_seleccionar_cita_cambio
+    - action_confirmar_fecha_cambio
+    - action_confirmar_hora_cambio
     - action_seleccionar_cita_cancelar
     - action_procesar_confirmacion_cancelar
-    - action_confirmar_cambio_horario
     - action_fallback_inteligente
     - action_responder_bot_challenge
 

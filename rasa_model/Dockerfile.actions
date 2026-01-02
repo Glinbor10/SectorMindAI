@@ -5,7 +5,7 @@ FROM rasa/rasa-sdk:3.6.2
 USER root
 
 # Instalar dependencias adicionales necesarias para las acciones
-RUN pip install --no-cache-dir requests python-dotenv
+RUN pip install --no-cache-dir requests python-dotenv fuzzywuzzy Levenshtein
 
 # Volver al usuario rasa
 USER 1001

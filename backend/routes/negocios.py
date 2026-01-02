@@ -49,12 +49,44 @@ def obtener_negocio(negocio_id):
         WHERE n.id = %s
     """
     negocio = conn.execute(query, (negocio_id,)).fetchone()
-    conn.close()
     
     if negocio is None:
+        conn.close()
         return jsonify({'error': 'Negocio no encontrado'}), 404
         
     row_dict = dict(negocio)
+    
+    # Obtener horarios de la tabla horarios_negocio
+    horarios_query = """
+        SELECT dia_semana, hora_apertura, hora_cierre
+        FROM horarios_negocio
+        WHERE negocio_id = %s
+        ORDER BY dia_semana, hora_apertura
+    """
+    horarios_rows = conn.execute(horarios_query, (negocio_id,)).fetchall()
+    conn.close()
+    
+    # Formatear horarios en texto legible
+    dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    horarios_texto = ""
+    if horarios_rows:
+        dia_actual = None
+        for row in horarios_rows:
+            dia_semana = row['dia_semana']  # Access by column name
+            hora_apertura = row['hora_apertura']
+            hora_cierre = row['hora_cierre']
+            if dia_semana != dia_actual:
+                if dia_actual is not None:
+                    horarios_texto += "\n"
+                horarios_texto += f"{dias[dia_semana]}: {hora_apertura.strftime('%H:%M')} - {hora_cierre.strftime('%H:%M')}"
+                dia_actual = dia_semana
+            else:
+                horarios_texto += f" y {hora_apertura.strftime('%H:%M')} - {hora_cierre.strftime('%H:%M')}"
+    else:
+        horarios_texto = "No disponible"
+    
+    row_dict['horarios'] = horarios_texto
+    
     # Solo exponer foto_base64
     return jsonify(row_dict)
 

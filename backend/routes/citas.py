@@ -42,6 +42,9 @@ def obtener_citas():
         
         params = []
         conditions = []
+        
+        # Siempre excluir citas canceladas
+        conditions.append("c.estado != 'cancelada'")
 
         if cliente_id:
             conditions.append("c.cliente_id = %s")
@@ -51,8 +54,7 @@ def obtener_citas():
             conditions.append("c.negocio_id = %s")
             params.append(negocio_id)
         
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
+        query += " WHERE " + " AND ".join(conditions)
         
         query += " ORDER BY c.fecha_hora_cita DESC"
 
@@ -154,7 +156,11 @@ def modificar_cita(cita_id):
     servicio_id = data.get('servicio_id')
     fecha_hora_cita = data.get('fecha_hora_cita')
     
+    print(f"📥 PUT /citas/{cita_id} - Data: {data}")
+    print(f"   servicio_id: {servicio_id}, fecha_hora_cita: {fecha_hora_cita}")
+    
     if not (servicio_id and fecha_hora_cita):
+        print(f"❌ Faltan datos obligatorios")
         return jsonify({'error': 'Faltan datos obligatorios'}), 400
     
     conn = get_db_connection()
