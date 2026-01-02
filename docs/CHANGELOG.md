@@ -5,10 +5,37 @@ Todas las modificaciones notables en el proyecto Sector Mind AI se documentarán
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere al versionado semántico.
 
 
-## [v0.5.0] - Desde el 20/12/2025 hasta la actualidad (Refactorización Rasa y Flujo Propietario)
-
+## [v0.5.0] - 2025-12-20 hasta 2026-01-02 (Refactorización Rasa, Flujo Propietario y Búsqueda de Clientes)
 
 ### ✨ Añadido (Added)
+
+**Búsqueda de Clientes por Email (2026-01-02):**
+- Nuevo endpoint `GET /usuarios/buscar?q=<email>` para búsqueda de clientes
+  - Filtrado automático a solo usuarios con rol "cliente" (excluye propietarios)
+  - Búsqueda case-insensitive con LIKE pattern
+  - Máximo 10 resultados, mínimo 2 caracteres de query
+  - Retorna: `id`, `nombre`, `email`, `foto_perfil_base64`
+- Autocomplete interactivo en formularios de crear/editar cita
+  - Dropdown con foto, nombre y email del cliente
+  - Debounce 300ms para reducir carga del servidor
+  - Validación: requiere seleccionar cliente antes de enviar
+- Tests: `test_buscar_usuarios_filtra_por_rol_cliente` - Verifica filtro de rol
+
+**Correcciones UX Frontend (2026-01-02):**
+- **Bug Timezone (UTC Shift):** `.toISOString()` convertía horarios locales a UTC (-1 hora)
+  - Solución: Formateo manual local `YYYY-MM-DDTHH:MM` sin conversión
+  - Aplicado a: `loadAvailableSlots()`, `loadEditAvailableSlots()`, `handleCreateCita()`
+  - Tests: `test_post_citas_formato_iso_T` - Valida formato sin segundos
+- **Modal Close Error:** Error null al intentar limpiar campo `cita-cliente` inexistente
+  - Solución: Actualizados IDs correctos - `cita-cliente-email`, `cita-cliente-id`, `cita-cliente-nombre`
+  - Cierre limpio del modal con reset de campos y mensaje
+- **Response Parsing:** Falso "Error de conexión" tras cita exitosa (respuesta JSON vacía)
+  - Solución: Try-catch seguro en `.json()` con fallback null
+
+**Mejoras Creación de Citas:**
+- Aceptación flexible de formatos datetime: `YYYY-MM-DDTHH:MM` y `YYYY-MM-DD HH:MM:SS`
+- Soporte de `usuario_id` como alias de `cliente_id` en payload (retrocompatibilidad)
+- Test: `test_post_citas_con_usuario_id` - Valida alias usuario_id
 
 **Refactorización Backend y DevOps:**
 - Ahora existen dos bases de datos independientes: una principal (`sectormind_db`) y otra exclusiva para tests (`sectormind_test_db`). Esto permite ejecutar tests sin afectar los datos reales.
@@ -72,7 +99,11 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
   - 6 tests de extracción de horas (exacta, con espacio, más cercana, inválida, texto, media)
   - 2 stubs de fuzzy matching para futura implementación
 - Tests de stories deshabilitados en `run_tests.ps1` por ser demasiado estrictos.
-- Suite final de 101 tests automatizados (89 backend + 12 Rasa acciones).
+- **3 nuevos tests (2026-01-02):**
+  - `test_buscar_usuarios_filtra_por_rol_cliente` - Verifica filtro rol="cliente"
+  - `test_post_citas_formato_iso_T` - Valida formato `YYYY-MM-DDTHH:MM` (sin segundos)
+  - `test_post_citas_con_usuario_id` - Valida alias `usuario_id` para `cliente_id`
+- Suite final: **104 tests automatizados (92 backend + 12 Rasa acciones) - 100% passing**
 
 ### 🔧 Cambiado (Changed)
 

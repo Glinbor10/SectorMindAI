@@ -54,7 +54,14 @@ async function handleRegister(e) {
             saveUserSession(data);
             closeModal('modal-register');
             Swal.fire({ title: '¡Bienvenido!', text: `Cuenta creada para ${data.nombre}`, icon: 'success', confirmButtonColor: '#4f46e5' });
-        } else { Swal.fire('Error', data.error, 'error'); }
+        } else { 
+            Swal.fire({
+                title: 'Error al Registrar',
+                text: data.error,
+                icon: 'error',
+                confirmButtonColor: '#ef4444'
+            });
+        }
     } catch (err) { Swal.fire('Error', 'Error al registrarse', 'error'); }
 }
 

@@ -101,12 +101,15 @@ def crear_negocio():
 
     # Permitir tanto JSON como FormData
     foto_base64 = None
+    horarios = None
     if request.content_type and request.content_type.startswith('multipart/form-data'):
         nombre = request.form.get('nombre')
         tipo_negocio = request.form.get('tipo_negocio', 'general')
         direccion = request.form.get('direccion')
         descripcion = request.form.get('descripcion')
         propietario_id = request.form.get('propietario_id')
+        horarios = request.form.get('horarios')
+        dias_apertura = request.form.get('dias_apertura')
         # Procesar archivo de foto si existe
         if 'foto' in request.files:
             foto_file = request.files['foto']
@@ -120,6 +123,8 @@ def crear_negocio():
         direccion = data.get('direccion')
         descripcion = data.get('descripcion')
         propietario_id = data.get('propietario_id')
+        horarios = data.get('horarios')
+        dias_apertura = data.get('dias_apertura')
 
     if not (nombre and direccion and propietario_id):
         return jsonify({'error': 'Faltan datos obligatorios'}), 400
@@ -128,9 +133,36 @@ def crear_negocio():
         propietario_id = int(propietario_id)
     except (ValueError, TypeError):
         return jsonify({'error': 'propietario_id inválido'}), 400
+    
+    # Parsear días de apertura y horarios si vienen como JSON string
+    import json
+    if dias_apertura is not None and isinstance(dias_apertura, str):
+        try:
+            dias_apertura = json.loads(dias_apertura)
+        except json.JSONDecodeError:
+            return jsonify({'error': 'dias_apertura debe ser un array JSON válido'}), 400
+    
+    if horarios is not None and isinstance(horarios, str):
+        try:
+            horarios = json.loads(horarios)
+        except json.JSONDecodeError:
+            return jsonify({'error': 'horarios debe ser un array JSON válido'}), 400
+    
+    # Permitir crear negocio sin horarios; normalizar a listas vacías cuando no se envían
+    if dias_apertura is None:
+        dias_apertura = []
+    if horarios is None:
+        horarios = []
+    
+    if dias_apertura and not isinstance(dias_apertura, list):
+        return jsonify({'error': 'dias_apertura debe ser una lista'}), 400
+    
+    if horarios and not isinstance(horarios, list):
+        return jsonify({'error': 'horarios debe ser una lista'}), 400
 
     conn = get_db_connection()
     try:
+        # Crear el negocio
         if foto_base64:
             cursor = conn.execute(
                 'INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, propietario_id, foto_base64) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
@@ -142,9 +174,23 @@ def crear_negocio():
                 (nombre, tipo_negocio, direccion, descripcion, propietario_id)
             )
         new_id = cursor.fetchone()['id']
+        
+        # Insertar horarios si se enviaron; permite negocio sin horarios
+        if dias_apertura and horarios:
+            for dia in dias_apertura:
+                for horario in horarios:
+                    conn.execute(
+                        'INSERT INTO horarios_negocio (negocio_id, dia_semana, hora_apertura, hora_cierre) VALUES (%s, %s, %s, %s)',
+                        (new_id, dia, horario['apertura'], horario['cierre'])
+                    )
+            message = 'Negocio creado exitosamente con horarios'
+        else:
+            message = 'Negocio creado exitosamente'
+        
         conn.commit()
-        return jsonify({'id': new_id, 'message': 'Negocio creado exitosamente'}), 201
+        return jsonify({'id': new_id, 'message': message}), 201
     except Exception as e:
+        conn.close()
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
@@ -156,10 +202,11 @@ def actualizar_negocio(negocio_id):
 
     data = request.get_json()
     nombre = data.get('nombre') if data else None
+    tipo_negocio = data.get('tipo_negocio') if data else None
     descripcion = data.get('descripcion') if data else None
     direccion = data.get('direccion') if data else None
     foto_base64 = data.get('foto_base64') if data else None
-    if not any([nombre, descripcion, foto_base64, direccion]):
+    if not any([nombre, tipo_negocio, descripcion, foto_base64, direccion]):
         return jsonify({'error': 'No hay datos para actualizar'}), 400
 
     conn = get_db_connection()
@@ -169,6 +216,9 @@ def actualizar_negocio(negocio_id):
         if nombre is not None:
             updates.append("nombre = %s")
             params.append(nombre)
+        if tipo_negocio is not None:
+            updates.append("tipo_negocio = %s")
+            params.append(tipo_negocio)
         if descripcion is not None:
             updates.append("descripcion = %s")
             params.append(descripcion)
@@ -222,6 +272,43 @@ def obtener_horarios_negocio(negocio_id):
             result.append(horario_dict)
         return jsonify(result)
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+# 6b. ACTUALIZAR HORARIOS DE UN NEGOCIO
+@negocios_bp.route('/<int:negocio_id>/horarios', methods=['PUT'])
+def actualizar_horarios_negocio(negocio_id):
+    data = request.get_json()
+    horarios = data.get('horarios')
+    dias_apertura = data.get('dias_apertura')
+    
+    if not (horarios and dias_apertura):
+        return jsonify({'error': 'Debes especificar horarios y dias_apertura'}), 400
+    
+    if not isinstance(dias_apertura, list) or len(dias_apertura) == 0:
+        return jsonify({'error': 'dias_apertura debe ser una lista con al menos un día'}), 400
+    
+    if not isinstance(horarios, list) or len(horarios) == 0:
+        return jsonify({'error': 'horarios debe ser una lista con al menos un horario'}), 400
+    
+    conn = get_db_connection()
+    try:
+        # Eliminar horarios existentes
+        conn.execute('DELETE FROM horarios_negocio WHERE negocio_id = %s', (negocio_id,))
+        
+        # Insertar nuevos horarios para cada día y cada rango horario (mañana/tarde)
+        for dia in dias_apertura:
+            for horario in horarios:
+                conn.execute(
+                    'INSERT INTO horarios_negocio (negocio_id, dia_semana, hora_apertura, hora_cierre) VALUES (%s, %s, %s, %s)',
+                    (negocio_id, dia, horario['apertura'], horario['cierre'])
+                )
+        
+        conn.commit()
+        return jsonify({'message': 'Horarios actualizados exitosamente'}), 200
+    except Exception as e:
+        conn.close()
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()

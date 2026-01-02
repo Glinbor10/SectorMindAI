@@ -114,8 +114,8 @@
             <button onclick="closeModal('modal-login')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
             <h2 class="text-2xl font-bold mb-6 text-slate-800">Bienvenido</h2>
             <form onsubmit="handleLogin(event)" class="space-y-4">
-                <input type="email" id="login-email" required placeholder="Email" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                <input type="password" id="login-password" required placeholder="Contraseña" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="email" id="login-email" required placeholder="Email *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="password" id="login-password" required placeholder="Contraseña *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
                 <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700">Entrar</button>
             </form>
         </div>
@@ -125,15 +125,18 @@
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative mx-4">
             <button onclick="closeModal('modal-register')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i data-lucide="x"></i></button>
             <h2 class="text-2xl font-bold mb-6 text-slate-800">Crear cuenta</h2>
+            <p class="text-xs text-slate-500 mb-4"><span class="text-red-500">*</span> Campos obligatorios</p>
             <form onsubmit="handleRegister(event)" class="space-y-4">
-                <input type="text" id="reg-name" required placeholder="Nombre Completo" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                <input type="email" id="reg-email" required placeholder="Email" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                <input type="password" id="reg-password" required placeholder="Contraseña" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="text" id="reg-name" required placeholder="Nombre Completo *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="email" id="reg-email" required placeholder="Email *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <input type="password" id="reg-password" required placeholder="Contraseña *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1 ml-1">Foto de perfil (Opcional)</label>
                     <input type="file" id="reg-photo-file" accept="image/*" class="w-full p-2 border border-slate-300 rounded-xl text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                 </div>
-                <select id="reg-rol" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1 ml-1">Rol <span class="text-red-500">*</span></label>
+                    <select id="reg-rol" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
                     <option value="cliente">Cliente (Quiero reservar)</option>
                     <option value="propietario">Dueño de Negocio</option>
                 </select>
@@ -182,7 +185,14 @@
                     saveUserSession(data);
                     closeModal('modal-register');
                     Swal.fire({ title: 'Sector Mind AI', text: `¡Cuenta creada! Bienvenido, ${data.nombre}`, icon: 'success', confirmButtonColor: '#4f46e5' });
-                } else { Swal.fire('Error', data.error, 'error'); }
+                } else { 
+                    Swal.fire({
+                        title: 'Error al Registrar',
+                        text: data.error,
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
             } catch (err) { Swal.fire('Error', 'Error al registrarse', 'error'); }
         }
 
@@ -297,7 +307,18 @@
             document.getElementById('business-type').value = 'general';
             document.getElementById('business-address').value = '';
             document.getElementById('business-description').value = '';
+            document.getElementById('business-opening-morning').value = '';
+            document.getElementById('business-closing-morning').value = '';
+            document.getElementById('business-opening-afternoon').value = '';
+            document.getElementById('business-closing-afternoon').value = '';
             document.getElementById('business-photo').value = '';
+            // Resetear checkboxes de días
+            for (let i = 0; i < 7; i++) {
+                const checkbox = document.getElementById(`day-${i}`);
+                if (checkbox) {
+                    checkbox.checked = (i < 5); // Lun-Vie por defecto
+                }
+            }
         }
 
         async function handleCreateBusiness(e) {
@@ -309,6 +330,50 @@
             formData.append('direccion', document.getElementById('business-address').value);
             formData.append('descripcion', document.getElementById('business-description').value);
             formData.append('propietario_id', currentUser.id);
+            
+            // Agregar horarios
+            const openingMorning = document.getElementById('business-opening-morning').value;
+            const closingMorning = document.getElementById('business-closing-morning').value;
+            const openingAfternoon = document.getElementById('business-opening-afternoon').value;
+            const closingAfternoon = document.getElementById('business-closing-afternoon').value;
+            
+            if (!openingMorning || !closingMorning) {
+                Swal.fire('Error', 'Debes especificar al menos el horario de mañana', 'error');
+                return;
+            }
+            
+            // Validar que si hay horario de tarde, estén ambos campos
+            if ((openingAfternoon && !closingAfternoon) || (!openingAfternoon && closingAfternoon)) {
+                Swal.fire('Error', 'Si defines horario de tarde, debes especificar apertura y cierre', 'error');
+                return;
+            }
+            
+            // Construir array de horarios
+            const horarios = [
+                { apertura: openingMorning, cierre: closingMorning }
+            ];
+            
+            if (openingAfternoon && closingAfternoon) {
+                horarios.push({ apertura: openingAfternoon, cierre: closingAfternoon });
+            }
+            
+            formData.append('horarios', JSON.stringify(horarios));
+            
+            // Obtener días seleccionados
+            const selectedDays = [];
+            for (let i = 0; i < 7; i++) {
+                const checkbox = document.getElementById(`day-${i}`);
+                if (checkbox && checkbox.checked) {
+                    selectedDays.push(i);
+                }
+            }
+            
+            if (selectedDays.length === 0) {
+                Swal.fire('Error', 'Debes seleccionar al menos un día de apertura', 'error');
+                return;
+            }
+            
+            formData.append('dias_apertura', JSON.stringify(selectedDays));
             
             // Agregar archivo si existe
             const photoInput = document.getElementById('business-photo');
@@ -496,7 +561,10 @@
     <div id="modal-create-business" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center">
-                <h3 class="text-2xl font-bold text-slate-900">Crear Nuevo Negocio</h3>
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Crear Nuevo Negocio</h3>
+                    <p class="text-xs text-slate-500 mt-1"><span class="text-red-500">*</span> Campos obligatorios</p>
+                </div>
                 <button onclick="closeCreateBusinessModal()" class="text-slate-400 hover:text-slate-600 transition">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
@@ -504,12 +572,12 @@
             
             <form onsubmit="handleCreateBusiness(event)" class="p-6 space-y-6">
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Nombre del Negocio</label>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Nombre del Negocio <span class="text-red-500">*</span></label>
                     <input type="text" id="business-name" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Tipo de Negocio</label>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Tipo de Negocio <span class="text-red-500">*</span></label>
                     <select id="business-type" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
                         <option value="dentista">Dentista</option>
                         <option value="peluqueria">Peluquería</option>
@@ -519,13 +587,86 @@
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2">Dirección</label>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Dirección <span class="text-red-500">*</span></label>
                     <input type="text" id="business-address" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
                 </div>
                 
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-2">Descripción</label>
                     <textarea id="business-description" rows="3" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500"></textarea>
+                </div>
+                
+                <!-- Horarios -->
+                <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+                    <h4 class="font-bold text-slate-900 mb-2 flex items-center">
+                        <i data-lucide="clock" class="w-4 h-4 mr-2 text-indigo-600"></i>
+                        Horarios de Apertura
+                    </h4>
+                    <p class="text-xs text-slate-600 mb-4">Define el horario de mañana (obligatorio). Si tu negocio tiene horario partido, también puedes definir el horario de tarde (opcional).</p>
+                    
+                    <!-- Horario de Mañana -->
+                    <div class="bg-white rounded-lg p-3 mb-3">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Horario de Mañana <span class="text-red-500">*</span></label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Apertura <span class="text-red-500">*</span></label>
+                                <input type="time" id="business-opening-morning" required class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Cierre <span class="text-red-500">*</span></label>
+                                <input type="time" id="business-closing-morning" required class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Horario de Tarde -->
+                    <div class="bg-white rounded-lg p-3">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Horario de Tarde (Opcional - Para horario partido)</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Apertura</label>
+                                <input type="time" id="business-opening-afternoon" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Cierre</label>
+                                <input type="time" id="business-closing-afternoon" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Días de apertura <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-7 gap-2">
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-0" value="0" checked class="mb-1">
+                            <span class="text-xs">Lun</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-1" value="1" checked class="mb-1">
+                            <span class="text-xs">Mar</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-2" value="2" checked class="mb-1">
+                            <span class="text-xs">Mié</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-3" value="3" checked class="mb-1">
+                            <span class="text-xs">Jue</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-4" value="4" checked class="mb-1">
+                            <span class="text-xs">Vie</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-5" value="5" class="mb-1">
+                            <span class="text-xs">Sáb</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="day-6" value="6" class="mb-1">
+                            <span class="text-xs">Dom</span>
+                        </label>
+                    </div>
                 </div>
                 
                 <div>

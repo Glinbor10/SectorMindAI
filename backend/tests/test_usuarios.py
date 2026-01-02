@@ -32,3 +32,30 @@ def test_obtener_usuario_existente(client):
     assert data['rol'] == 'cliente'
     # Puede tener foto_perfil_base64 o no
     assert 'foto_perfil_base64' in data
+
+
+def test_buscar_usuarios_filtra_por_rol_cliente(app, db_conn, client):
+    """GET /usuarios/buscar devuelve solo clientes y filtra por email (case-insensitive)."""
+    cursor = db_conn.cursor()
+
+    # Crear un cliente y un propietario
+    cursor.execute(
+        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Cliente Busqueda', 'cliente_buscar@test.com', 'hash', 'cliente')
+    )
+    cliente_id = cursor.fetchone()['id']
+
+    cursor.execute(
+        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (%s, %s, %s, %s)",
+        ('Prop Busqueda', 'prop_buscar@test.com', 'hash', 'propietario')
+    )
+
+    db_conn.commit()
+    cursor.close()
+
+    # Buscar por "clien" debe devolver solo el cliente, no el propietario
+    response = client.get('/usuarios/buscar?q=clien')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert any(u['id'] == cliente_id for u in data)
+    assert all(u['email'] != 'prop_buscar@test.com' for u in data)

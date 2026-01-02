@@ -47,8 +47,8 @@ Docker Compose y los scripts PowerShell permiten levantar, detener, testear y ma
 
 ## 📋 **Estado del Proyecto**
 
-El proyecto ha alcanzado la versión **v0.5.0 (Arquitectura modular + IA contextual + Frontend avanzado)**.
-Sistema de reservas con IA contextual desplegable en contenedores, 101 tests automatizados (89 backend + 12 Rasa), base de datos relacional de nivel empresarial y frontend con calendario interactivo.
+El proyecto ha alcanzado la versión **v0.5.0 (Arquitectura modular + IA contextual + Frontend avanzado + Búsqueda de Clientes)**.
+Sistema de reservas con IA contextual desplegable en contenedores, 104 tests automatizados (92 backend + 12 Rasa), base de datos relacional de nivel empresarial, frontend con calendario interactivo y búsqueda de clientes por email.
 
 
 ### 🎯 Funcionalidades Principales (Sistema Completo)
@@ -63,6 +63,8 @@ Sistema de reservas con IA contextual desplegable en contenedores, 101 tests aut
 - **Interpretación NLU:** Procesamiento de fechas en lenguaje natural ("mañana", "el lunes")
 - **Intento de agradecimiento (`thanks`):** El bot reconoce y responde a agradecimientos en español (13 ejemplos, 3 respuestas)
 - **Frontend avanzado:** Calendario interactivo para crear y editar citas visualmente
+- **Búsqueda de Clientes por Email:** Autocomplete inteligente que muestra solo clientes (excluyendo propietarios), con fotos, nombres y emails
+- **Corrección de Timezone:** Formato local de fecha/hora sin conversión UTC (elimina desplazamientos de horario)
 
 ---
 
@@ -344,13 +346,13 @@ Login Cliente:     cliente@sectormind.com / u
 
 ## 🧪 **Tests y Calidad del Código**
 
-El proyecto cuenta con **101 tests automatizados** que validan toda la funcionalidad dentro de Docker:
+El proyecto cuenta con **104 tests automatizados** (92 backend + 12 Rasa) que validan toda la funcionalidad dentro de Docker:
 
 ### **Ejecutar TODOS los tests (Recomendado):**
 ```bash
 .\run_tests.ps1
 ```
-Resultado: `[OK] Total: 101 tests passed`
+Resultado: `[OK] Total: 104 tests passed (92 backend + 12 Rasa)`
 
 ### **Con reporte de cobertura:**
 ```bash
@@ -359,7 +361,7 @@ Resultado: `[OK] Total: 101 tests passed`
 
 ### **Ejecuciones Selectivas:**
 ```bash
-.\run_tests.ps1 -BackendOnly   # 89 tests del API
+.\run_tests.ps1 -BackendOnly   # 92 tests del API
 .\run_tests.ps1 -RasaOnly      # 12 tests de IA
 .\run_tests.ps1 -Verbose       # Con output detallado
 ```
@@ -368,11 +370,16 @@ Resultado: `[OK] Total: 101 tests passed`
 
 | Módulo | Tests | Estado |
 |--------|-------|--------|
-| **Backend API** | 89 | ✅ 100% Passing |
+| **Backend API** | 92 | ✅ 100% Passing |
 | **Rasa Actions** | 12 | ✅ 100% Passing |
-| **Total** | 101 | ✅ 100% Passing |
+| **Total** | 104 | ✅ 100% Passing |
 
 **Nota:** Los tests de stories están deshabilitados (solo unitarios). Los tests se ejecutan dentro del contenedor backend con BD PostgreSQL dedicada. Cada test es independiente y limpia su estado automáticamente.
+
+**Tests Nuevos (v0.5.0 - Enero 2, 2026):**
+- ✅ `test_buscar_usuarios_filtra_por_rol_cliente` - Verifica filtro de búsqueda solo clientes
+- ✅ `test_post_citas_formato_iso_T` - Valida formato `YYYY-MM-DDTHH:MM` sin segundos
+- ✅ `test_post_citas_con_usuario_id` - Valida alias `usuario_id` para `cliente_id`
 
 ---
 
@@ -518,8 +525,16 @@ git push origin main --tags
 
 ---
 
-**Cambios v0.5.0:**
-- Refactorización arquitectónica de Rasa: 9 módulos especializados, 82% reducción en actions.py
-- Intento de agradecimiento (`thanks`) con 13 ejemplos y 3 respuestas
-- Frontend con calendario interactivo para gestión de citas
-- Tests de stories deshabilitados, solo unitarios (101 tests)
+**Cambios v0.5.0 (Diciembre 20, 2025 - Enero 2, 2026):**
+- ✅ Refactorización arquitectónica de Rasa: 9 módulos especializados, 82% reducción en actions.py (2356 → 421 líneas)
+- ✅ Intento de agradecimiento (`thanks`) con 13 ejemplos y 3 respuestas
+- ✅ Frontend con calendario interactivo para gestión de citas
+- ✅ Tests de stories deshabilitados, solo unitarios (104 tests: 92 backend + 12 Rasa)
+- ✅ **Búsqueda de Clientes por Email** (Enero 2):
+  - Endpoint `GET /usuarios/buscar?q=<email>` filtra solo clientes
+  - Autocomplete interactivo con dropdown visual
+  - Validación: requiere seleccionar cliente antes de crear cita
+- ✅ **Correcciones UX Frontend** (Enero 2):
+  - Bug Timezone: Formato local sin conversión UTC
+  - Modal Close: Limpieza correcta de campos
+  - Response Parsing: Manejo seguro de respuestas vacías

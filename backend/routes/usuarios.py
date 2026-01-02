@@ -75,3 +75,23 @@ def actualizar_usuario(user_id):
         return jsonify({'error': 'Error interno del servidor'}), 500
     finally:
         conn.close()
+
+# 3. BUSCAR USUARIOS POR EMAIL (GET)
+@usuarios_bp.route('/buscar', methods=['GET'])
+def buscar_usuarios():
+    """Busca usuarios por email (autocompletado)."""
+    query = request.args.get('q', '').strip()
+    if not query or len(query) < 2:
+        return jsonify([]), 200
+    
+    conn = get_db_connection()
+    try:
+        usuarios = conn.execute(
+            'SELECT id, nombre, email, foto_perfil_base64 FROM usuarios WHERE LOWER(email) LIKE LOWER(%s) AND rol = %s LIMIT 10',
+            (f'%{query}%', 'cliente')
+        ).fetchall()
+        return jsonify([dict(u) for u in usuarios]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()

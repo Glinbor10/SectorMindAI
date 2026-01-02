@@ -147,6 +147,22 @@ class ExtractorFechaHora:
                 print(f"[DEBUG extraer_solo_hora] Hora número: {hora}:{minuto:02d}")
 
         if hora is not None:
+            # Detectar modificadores de horario (tarde/noche/pm)
+            es_tarde_noche = False
+            if any(palabra in texto_lower for palabra in ['tarde', 'noche', 'pm', 'p.m.', 'p.m']):
+                es_tarde_noche = True
+                # Si la hora es menor a 12 y se especifica tarde/noche/pm, añadir 12 horas
+                if hora < 12:
+                    hora += 12
+                    print(f"[DEBUG extraer_solo_hora] Ajustada a formato 24h: {hora}:00 (tarde/noche/pm)")
+            
+            # Detectar mañana/am para asegurar que no se ajuste
+            if any(palabra in texto_lower for palabra in ['mañana', 'madrugada', 'am', 'a.m.', 'a.m']):
+                # Asegurar que está en formato mañana (no hacer nada si ya es < 12)
+                if hora >= 12 and hora < 24:
+                    hora -= 12
+                    print(f"[DEBUG extraer_solo_hora] Ajustada a formato mañana: {hora}:00 (am)")
+            
             hora_buscada = f"{hora:02d}:{minuto:02d}"
             
             # Buscar coincidencia exacta

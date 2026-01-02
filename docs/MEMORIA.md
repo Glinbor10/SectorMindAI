@@ -104,7 +104,7 @@
 
 ---
 
-### **v0.5.0 - Refactorización Rasa y Flujo Propietario**
+### **v0.5.0 - Refactorización Rasa, Búsqueda de Clientes y UX de Citas desde web de Propietario**
 **Fecha:** Enero 2, 2026 ← **ESTADO ACTUAL**
 
 **Logros:**
@@ -120,22 +120,54 @@
 - ✅ Uso de metadatos para identificar negocio y usuario en cada interacción
 - ✅ Respuestas contextuales de urgencias según tipo de negocio
 - ✅ FuzzyWuzzy para tolerancia a errores ortográficos en servicios
-- ✅ Sistema de tests robusto: 101 tests (89 backend + 12 Rasa acciones)
+- ✅ Sistema de tests robusto: 104 tests (92 backend + 12 Rasa acciones) - **100% passing**
+
+**Nuevas Funcionalidades (Enero 2):**
+1. **Búsqueda de Clientes por Email:**
+   - Endpoint `GET /usuarios/buscar?q=<email>` filtra por email (case-insensitive)
+   - **Filtra solo usuarios con rol "cliente"** (excluye propietarios)
+   - Autocomplete en formularios de crear/editar cita
+   - Dropdown con foto, nombre y email del cliente
+   - Mínimo 2 caracteres para activar búsqueda
+
+2. **Corrección de Timezone (UTC Shift):**
+   - Bug: `.toISOString()` convertía horarios locales a UTC, causando desplazamiento de -1 hora
+   - Solución: Formateo manual local `YYYY-MM-DDTHH:MM` sin conversión UTC
+   - Aplicado a: `loadAvailableSlots()`, `loadEditAvailableSlots()`, `handleCreateCita()`
+
+3. **Mejoras en Creación de Citas:**
+   - Acepta formato ISO `YYYY-MM-DDTHH:MM` (con y sin segundos)
+   - Soporta `usuario_id` como alias de `cliente_id` en payload
+   - Validación robusta: verifica servicio, cliente y fecha/hora antes de enviar
+   - Manejo de respuestas JSON vacías (evita falso "Error de conexión")
+
+4. **Refactorización Cierre de Modal:**
+   - Corregido error null al cerrar modal (limpia inputs reales)
+   - Resetea campos: email, id, nombre, resultados y mensaje seleccionado
 
 **Detalles Técnicos:**
-1. **Arquitectura Modular Rasa:** 9 archivos especializados con responsabilidades claras
-   - `extractores.py`: Parsing de fechas/horas naturales con soporte de espacios
-   - `reservas.py`, `cambios.py`, `cancelaciones.py`: Flujos multi-paso
-   - `actions.py`: Cerebro central con ActionFallbackInteligente (421 líneas)
-2. **Gestión de Urgencias Contextual:** Respuestas adaptadas por tipo de negocio
-3. **FuzzyWuzzy:** Detección de servicios con errores ("tinti" → "Tinte")
-4. **Frontend Avanzado:** Calendario mensual interactivo con validación en tiempo real
-5. **Tests Actualizados:** Tests de stories deshabilitados, solo unitarios (más confiables)
+1. **Backend (routes/usuarios.py):** Filtro `rol = 'cliente'` en query LIKE
+   ```sql
+   SELECT id, nombre, email, foto_perfil_base64 FROM usuarios 
+   WHERE LOWER(email) LIKE LOWER(%s) AND rol = 'cliente' LIMIT 10
+   ```
+
+2. **Frontend (gestion_negocio.html):**
+   - Event listener con debounce 300ms en `cita-cliente-email`
+   - Dropdown dinámico mostrando solo clientes
+   - Almacena ID oculto para validación
+   - Confirmación visual "✓ Cliente seleccionado"
+
+3. **Tests Nuevos (92 tests totales):**
+   - `test_post_citas_formato_iso_T`: Valida formato YYYY-MM-DDTHH:MM
+   - `test_post_citas_con_usuario_id`: Valida alias usuario_id
+   - `test_buscar_usuarios_filtra_por_rol_cliente`: Verifica filtro de rol
 
 **Métricas:**
-- 101 tests: 100% passing (89 backend + 12 Rasa)
+- 104 tests: 100% passing (92 backend + 12 Rasa)
 - Reducción 82% en actions.py (2356 → 421 líneas)
 - 9 módulos Rasa especializados
+- 0 falsos positivos en búsqueda de clientes
 - Producción estable ✅
 
 
