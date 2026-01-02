@@ -159,7 +159,7 @@
             document.getElementById('user-menu').classList.remove('hidden');
             document.getElementById('user-menu').classList.add('flex');
             document.getElementById('user-name-display').innerText = currentUser.nombre;
-            const avatar = currentUser.foto_perfil_url ? currentUser.foto_perfil_url : `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
+            const avatar = currentUser.foto_perfil_base64 || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
             document.getElementById('user-avatar-display').src = avatar;
         }
 
@@ -168,7 +168,7 @@
             document.getElementById('profile-email').innerText = user.email;
             document.getElementById('profile-role').innerText = user.rol;
             document.getElementById('edit-name').value = user.nombre;
-            const avatar = user.foto_perfil_url ? user.foto_perfil_url : `https://ui-avatars.com/api/?name=${user.nombre}&background=random`;
+            const avatar = user.foto_perfil_base64 || `https://ui-avatars.com/api/?name=${user.nombre}&background=random`;
             document.getElementById('profile-img').src = avatar;
         }
 

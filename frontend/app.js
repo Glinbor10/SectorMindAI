@@ -54,7 +54,14 @@ async function handleRegister(e) {
             saveUserSession(data);
             closeModal('modal-register');
             Swal.fire({ title: '¡Bienvenido!', text: `Cuenta creada para ${data.nombre}`, icon: 'success', confirmButtonColor: '#4f46e5' });
-        } else { Swal.fire('Error', data.error, 'error'); }
+        } else { 
+            Swal.fire({
+                title: 'Error al Registrar',
+                text: data.error,
+                icon: 'error',
+                confirmButtonColor: '#ef4444'
+            });
+        }
     } catch (err) { Swal.fire('Error', 'Error al registrarse', 'error'); }
 }
 
@@ -80,12 +87,14 @@ window.onload = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const negocioId = urlParams.get('id');
     if (negocioId) {
-        // Fetch the business data from API
+        // Si hay ID en URL, siempre fetch desde API (ignorar localStorage)
         try {
             const res = await fetch(`${API_URL}/negocios/${negocioId}`);
             if (res.ok) {
                 businessData = await res.json();
+                // Actualizar localStorage con el nuevo negocio
                 localStorage.setItem('selected_business', JSON.stringify(businessData));
+                console.log(`✅ Negocio cargado desde URL: ${businessData.nombre} (ID: ${negocioId})`);
             } else {
                 console.error('Failed to fetch business');
                 window.location.href = '/';
@@ -97,17 +106,24 @@ window.onload = async () => {
             return;
         }
     } else {
+        // Sin ID en URL, intentar cargar del localStorage
         const storedBiz = localStorage.getItem('selected_business');
-        if (!storedBiz) { window.location.href = '/'; return; }
+        if (!storedBiz) { 
+            console.error('No business selected');
+            window.location.href = '/'; 
+            return; 
+        }
         try {
             businessData = JSON.parse(storedBiz);
+            console.log(`✅ Negocio cargado desde localStorage: ${businessData.nombre} (ID: ${businessData.id})`);
         } catch (e) {
             console.error('Error parsing stored business data:', e);
             window.location.href = '/';
             return;
         }
-        if (!businessData || typeof businessData !== 'object') {
+        if (!businessData || typeof businessData !== 'object' || !businessData.id) {
             console.error('Invalid business data:', businessData);
+            localStorage.removeItem('selected_business'); // Limpiar localStorage corrupto
             window.location.href = '/';
             return;
         }
@@ -159,7 +175,7 @@ function updateUI() {
         document.getElementById('user-menu').classList.add('flex');
         document.getElementById('auth-buttons').classList.add('hidden');
         document.getElementById('user-name-display').innerText = currentUser.nombre;
-        const avatar = currentUser.foto_perfil_url || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
+        const avatar = currentUser.foto_perfil_base64 || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
         document.getElementById('user-avatar-display').src = avatar;
     } else {
         document.getElementById('user-menu').classList.add('hidden');
@@ -191,7 +207,7 @@ function renderBusinessInfo(biz) {
     document.getElementById('biz-address').innerHTML = `<i data-lucide="map-pin" class="w-4 h-4 mr-2"></i> ${biz.direccion || 'Dirección no disponible'}`;
     document.getElementById('biz-type').innerText = biz.tipo_negocio;
     document.getElementById('ai-agent-title').innerText = `Agente IA de ${biz.nombre}`;
-    const imgUrl = biz.foto_url || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=80';
+    const imgUrl = biz.foto_base64 || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=80';
     document.getElementById('biz-img').src = imgUrl;
 
     if (biz.servicios) renderServices(biz.servicios);
@@ -287,6 +303,15 @@ async function sendToRasa(msg, hidden = false, typingElementId = null) {
         if (!hidden) {
             if (data.length === 0) handleBotResponse('Ups, no he entendido eso. ¿Puedes repetirlo?');
             else data.forEach(rta => handleBotResponse(rta.text));
+        } else {
+            // Si hidden, solo procesar mensajes de slots
+            if (Array.isArray(data)) {
+                data.forEach(rta => {
+                    if (typeof rta.text === 'string' && rta.text.startsWith('[SLOTS]')) {
+                        handleBotResponse(rta.text);
+                    }
+                });
+            }
         }
     } catch (err) {
         if (typingElementId) document.getElementById(typingElementId).remove();
@@ -295,6 +320,17 @@ async function sendToRasa(msg, hidden = false, typingElementId = null) {
 }
 
 function handleBotResponse(text) {
+    // Si el mensaje contiene los slots, mostrar solo en consola
+    if (typeof text === 'string' && text.startsWith('[SLOTS]')) {
+        try {
+            const slotsStr = text.replace('[SLOTS]', '').trim();
+            const slots = JSON.parse(slotsStr.replace(/'/g, '"'));
+            console.log('🎯 SLOTS RASA:', slots);
+        } catch (e) {
+            console.warn('No se pudo parsear los slots:', text);
+        }
+        return;
+    }
     addMsg('bot', text);
     if (isVoiceMode) {
         const voiceResBox = document.getElementById('voice-response-box');

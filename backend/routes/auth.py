@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, request, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from ..db import get_db_connection
-from ..db_utils import adapt_query
+
 
 load_dotenv()
 
@@ -26,43 +26,31 @@ def register():
     email = request.form.get('email')
     password = request.form.get('password')
     rol = request.form.get('rol')
-    archivo = request.files.get('foto_perfil')
+    archivo = request.files.get('foto_perfil') if request.files.get('foto_perfil') else None
 
     if not (nombre and email and password and rol):
         return jsonify({'error': 'Faltan datos obligatorios'}), 400
 
     hashed_password = generate_password_hash(password)
-    foto_url = None
-
-    # Procesamiento de foto
-    if archivo and archivo.filename != '':
-        if allowed_file(archivo.filename):
-            ext = archivo.filename.rsplit('.', 1)[1].lower()
-            filename = f"user_{uuid.uuid4().hex[:8]}.{ext}"
-            
-            upload_folder = current_app.config.get('UPLOAD_FOLDER') or os.getenv('UPLOAD_FOLDER', '/app/uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            
-            filepath = os.path.join(upload_folder, filename)
-            archivo.save(filepath)
-            foto_url = f"/uploads/{filename}"
+    foto_base64 = None
+    if archivo:
+        import base64
+        file_bytes = archivo.read()
+        foto_base64 = f"data:image/{archivo.filename.rsplit('.',1)[1].lower()};base64," + base64.b64encode(file_bytes).decode('utf-8')
 
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        
-        # 🔧 PostgreSQL EXCLUSIVAMENTE
         cursor.execute(
-            adapt_query('''
-                INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_url) 
+            '''
+                INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_base64) 
                 VALUES (%s, %s, %s, %s, %s) 
                 RETURNING id
-            '''),
-            (nombre, email, hashed_password, rol, foto_url)
+            ''',
+            (nombre, email, hashed_password, rol, foto_base64)
         )
         new_user_id = cursor.fetchone()['id']
         conn.commit()
-        
     except Exception as e:
         conn.rollback()
         if 'unique' in str(e).lower() or 'duplicate' in str(e).lower():
@@ -77,7 +65,7 @@ def register():
         'nombre': nombre,
         'email': email,
         'rol': rol,
-        'foto_perfil_url': foto_url
+        'foto_perfil_base64': foto_base64
     }), 201
 
 
@@ -107,7 +95,7 @@ def login():
             'nombre': user['nombre'],
             'email': user['email'],
             'rol': user['rol'],
-            'foto_perfil_url': user['foto_perfil_url']
+            'foto_perfil_base64': user.get('foto_perfil_base64')
         }), 200
         
     finally:

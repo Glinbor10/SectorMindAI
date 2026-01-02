@@ -4,6 +4,125 @@ Todas las modificaciones notables en el proyecto Sector Mind AI se documentarán
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere al versionado semántico.
 
+
+## [v0.5.0] - 2025-12-20 hasta 2026-01-02 (Refactorización Rasa, Flujo Propietario y Búsqueda de Clientes)
+
+### ✨ Añadido (Added)
+
+**Búsqueda de Clientes por Email (2026-01-02):**
+- Nuevo endpoint `GET /usuarios/buscar?q=<email>` para búsqueda de clientes
+  - Filtrado automático a solo usuarios con rol "cliente" (excluye propietarios)
+  - Búsqueda case-insensitive con LIKE pattern
+  - Máximo 10 resultados, mínimo 2 caracteres de query
+  - Retorna: `id`, `nombre`, `email`, `foto_perfil_base64`
+- Autocomplete interactivo en formularios de crear/editar cita
+  - Dropdown con foto, nombre y email del cliente
+  - Debounce 300ms para reducir carga del servidor
+  - Validación: requiere seleccionar cliente antes de enviar
+- Tests: `test_buscar_usuarios_filtra_por_rol_cliente` - Verifica filtro de rol
+
+**Correcciones UX Frontend (2026-01-02):**
+- **Bug Timezone (UTC Shift):** `.toISOString()` convertía horarios locales a UTC (-1 hora)
+  - Solución: Formateo manual local `YYYY-MM-DDTHH:MM` sin conversión
+  - Aplicado a: `loadAvailableSlots()`, `loadEditAvailableSlots()`, `handleCreateCita()`
+  - Tests: `test_post_citas_formato_iso_T` - Valida formato sin segundos
+- **Modal Close Error:** Error null al intentar limpiar campo `cita-cliente` inexistente
+  - Solución: Actualizados IDs correctos - `cita-cliente-email`, `cita-cliente-id`, `cita-cliente-nombre`
+  - Cierre limpio del modal con reset de campos y mensaje
+- **Response Parsing:** Falso "Error de conexión" tras cita exitosa (respuesta JSON vacía)
+  - Solución: Try-catch seguro en `.json()` con fallback null
+
+**Mejoras Creación de Citas:**
+- Aceptación flexible de formatos datetime: `YYYY-MM-DDTHH:MM` y `YYYY-MM-DD HH:MM:SS`
+- Soporte de `usuario_id` como alias de `cliente_id` en payload (retrocompatibilidad)
+- Test: `test_post_citas_con_usuario_id` - Valida alias usuario_id
+
+**Refactorización Backend y DevOps:**
+- Ahora existen dos bases de datos independientes: una principal (`sectormind_db`) y otra exclusiva para tests (`sectormind_test_db`). Esto permite ejecutar tests sin afectar los datos reales.
+- La base de datos de producción en Docker ahora persiste los datos correctamente entre reinicios de contenedores, gracias al volumen `sector_mind_postgres_data`.
+- Eliminado el borrado y repoblamiento automático de la base de datos al arrancar el backend: ahora los datos solo se restauran manualmente si se ejecuta el script correspondiente.
+- Eliminación completa de `db_utils.py` y de la función `adapt_query` en todo el backend. Todas las rutas y lógica ahora usan queries PostgreSQL directas con `%s`.
+- Refactorización de `logic.py`, `routes/auth.py`, `routes/citas.py` y `routes/negocios.py` para eliminar dependencias de SQLite y adaptar queries a PostgreSQL.
+- Centralización de todos los scripts PowerShell (`start_docker.ps1`, `stop_docker.ps1`, `run_tests.ps1`, `manage_db.ps1`) en la carpeta `scripts/` y actualización de todas las referencias en VS Code (Action Buttons y tasks.json).
+- Mejora de los scripts para que funcionen correctamente desde la raíz del proyecto, eliminando rutas relativas innecesarias.
+- Eliminación de scripts y archivos obsoletos relacionados con SQLite y migraciones antiguas.
+- Añadido botón de Action Button y tarea de VS Code para ejecutar `manage_db.py` vía Docker.
+- Mejora del script de tests (`run_tests.ps1`) para mostrar de forma clara los tests pasados y fallidos tanto de backend como de Rasa.
+
+**Flujo Propietario y Refactorización Rasa:**
+- Flujo de trabajo completo como propietario: gestión de negocios, servicios y clientes desde la plataforma.
+- Corrección de bugs detectados en producción.
+- **Refactorización arquitectónica de acciones de Rasa:** Modularización completa del código de acciones
+  - `actions.py` dividido de 2356 líneas en 9 módulos especializados (reducción del 82%)
+  - **Módulos auxiliares:**
+    - `utils.py` (106 líneas) - Funciones comunes reutilizables (limpiar_flujo, obtener_horarios, formatear_horarios)
+    - `extractores.py` (150 líneas) - Clase ExtractorFechaHora con parsing de fechas/horas naturales
+  - **Módulos de flujos:**
+    - `contexto.py` (131 líneas) - Inicialización y detección de servicios con fuzzy matching
+    - `reservas.py` (132 líneas) - Flujo de reserva en 2 pasos (fecha → hora)
+    - `cambios.py` (204 líneas) - Flujo de cambio en 3 pasos (seleccionar → fecha → hora)
+    - `cancelaciones.py` (143 líneas) - Flujo de cancelación en 2 pasos
+    - `consultas.py` (209 líneas) - Acciones de consulta sin flujos
+    - `actions.py` (421 líneas) - Cerebro central con ActionFallbackInteligente
+  - Eliminación de 1935 líneas de código duplicado y deuda técnica
+  - Mejor separación de responsabilidades y mantenibilidad
+  - Facilita testing unitario y trabajo colaborativo
+- Rasa ahora usa un sistema general para la gestión de citas de todos los negocios, usando metadatos para identificar el negocio y el usuario en cada interacción.
+- Respuestas contextuales de urgencias según tipo de negocio (dentista, peluquería, fisioterapia), evitando solapamientos y malentendidos.
+- Identificación de intenciones de reserva y consulta usando FuzzyWuzzy para tolerancia a errores ortográficos en los servicios.
+- Eliminación de duplicidad y repetición de código en acciones de Rasa.
+- Mejor comprensión del modelo y reducción de malentendidos.
+
+**Frontend Gestión de Negocio:**
+- Sistema completo de gestión de citas desde el panel del propietario con calendario interactivo visual.
+- Botones de editar/eliminar integrados en cada cita mostrada.
+- Modal de creación de citas con selector de servicio, cliente, fecha y hora interactivos.
+- Modal de edición de citas con mismo sistema interactivo de calendario y horarios.
+- Calendario visual mensual con navegación prev/next month y selección de fechas.
+- Lista de horarios disponibles que se actualizan dinámicamente al seleccionar fecha.
+- Validación de disponibilidad en tiempo real consultando la API `/disponibilidad`.
+- Filtrado automático de slots pasados si la fecha seleccionada es hoy.
+- Confirmación visual de fecha/hora seleccionada antes de crear/editar cita.
+- Botones de crear/guardar deshabilitados hasta completar selección de fecha y hora.
+- Event listeners para cerrar modales al hacer clic fuera del contenido.
+- Scroll independiente en lista de citas (máx height con overflow-y-auto).
+
+**Intents y Detección de Agradecimientos:**
+- Nuevo intent `thanks` con 13 ejemplos en español (gracias, muchas gracias, ok gracias, vale gracias, perfecto gracias, etc.).
+- Respuesta `utter_thanks` con 3 variaciones amigables que ofrecen seguir ayudando.
+- Regla en `rules.yml` para manejar agradecimientos automáticamente.
+- Modelo reentrenado y contenedor de Rasa reiniciado para aplicar cambios.
+
+**Tests y Validación:**
+- 12 tests unitarios para `ExtractorFechaHora` en `test_acciones.py` cubriendo:
+  - 4 tests de extracción de fechas (mañana, lunes, número, no disponible)
+  - 6 tests de extracción de horas (exacta, con espacio, más cercana, inválida, texto, media)
+  - 2 stubs de fuzzy matching para futura implementación
+- Tests de stories deshabilitados en `run_tests.ps1` por ser demasiado estrictos.
+- **3 nuevos tests (2026-01-02):**
+  - `test_buscar_usuarios_filtra_por_rol_cliente` - Verifica filtro rol="cliente"
+  - `test_post_citas_formato_iso_T` - Valida formato `YYYY-MM-DDTHH:MM` (sin segundos)
+  - `test_post_citas_con_usuario_id` - Valida alias `usuario_id` para `cliente_id`
+- Suite final: **104 tests automatizados (92 backend + 12 Rasa acciones) - 100% passing**
+
+### 🔧 Cambiado (Changed)
+
+- Refactorización de las acciones de Rasa para centralizar la gestión de citas y urgencias.
+- Uso de metadatos en los mensajes para mantener el contexto de negocio y usuario.
+- Mejoras en la experiencia de usuario para propietarios y clientes.
+- Script `run_tests.ps1` optimizado para ejecutar solo tests unitarios de backend y Rasa acciones.
+- Tests de stories comentados para evitar falsos negativos en CI/CD.
+
+### 🐛 Corregido (Fixed)
+
+- Bugs en la gestión de citas y servicios detectados en el desarrollo.
+- Solapamiento de respuestas de urgencias y repetición de código en Rasa.
+- Validación de disponibilidad de horarios al crear/editar citas desde el panel de gestión.
+- Parsing de fechas/horas con mayor tolerancia a formatos diversos (espacios, texto natural).
+- Intent `thanks` ahora reconocido correctamente y responde con mensajes amigables.
+
+---
+
 ## [v0.4.0] - 2025-12-20 (Profesionalización con Docker y PostgreSQL)
 
 ### ✨ Añadido (Added)
@@ -56,6 +175,111 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 - **Eliminación Total de SQLite:** Cero imports de sqlite3 en codebase
   - `db.py` - Usa psycopg2 exclusivamente
   - `db_utils.py` - Adaptación de queries de '?' a '%s'
+  - Todas las rutas - Usan PostgreSQL con RETURNING id
+
+**Tests:**
+- **Fixtures Dinámicos:** `logic_test_data` ahora genera cliente_id en runtime
+- **Gestión de Errores HTTP:** Status codes corregidos (409 para conflictos de horario)
+- **Fecha Dinámica Rasa:** `test_cancelar_cita_lista_citas` usa datetime.now() + timedelta
+
+**Dependencias:**
+- **requirements.txt Pinned:** Versiones exactas para reproducibilidad
+  - Flask==3.0.0
+  - psycopg2-binary==2.9.9
+  - rasa==3.6.13
+  - pytest==7.4.3
+
+**Documentación:**
+- **README Restructurado:** Secciones de Arquitectura, Uso Rápido, Instalación
+- **Arquitectura de Microservicios:** Diagrama ASCII y tabla de servicios
+- **Guía de Action Buttons:** Instrucciones paso a paso
+
+### 🐛 Corregido (Fixed)
+
+- **Bug: Photo URLs Corruptas** - Actualización a URLs válidas de Unsplash/Pexels
+- **Bug: Tests de Rasa Fallando por Fechas** - Implementación de cálculo dinámico
+- **Bug: Rasa Tests No Ejecutables** - Montaje de volumen rasa_model en backend container
+- **Bug: Dependencias de Compilación** - Adición de build-essential en Dockerfile
+- **Bug: setuptools/wheel Incompatibles** - Upgrade automático en Dockerfile
+- **Bug: Fixtures Hardcodeados** - Cliente_id ahora dinámico en conftest.py
+
+---
+
+### ✨ Añadido (Added)
+
+**Flujo Propietario y Refactorización Rasa:**
+- Flujo de trabajo completo como propietario: gestión de negocios, servicios y clientes desde la plataforma.
+- Corrección de bugs detectados en producción.
+- Refactorización inicial de Rasa para eliminar deuda técnica y unificar la lógica de gestión de citas.
+- Rasa ahora usa un sistema general para la gestión de citas de todos los negocios, usando metadatos para identificar el negocio y el usuario en cada interacción.
+- Respuestas contextuales de urgencias según tipo de negocio (dentista, peluquería, fisioterapia), evitando solapamientos y malentendidos.
+- Identificación de intenciones de reserva y consulta usando FuzzyWuzzy para tolerancia a errores ortográficos en los servicios.
+- Eliminación de duplicidad y repetición de código en acciones de Rasa.
+- Mejor comprensión del modelo y reducción de malentendidos.
+
+### 🔧 Cambiado (Changed)
+
+- Refactorización de las acciones de Rasa para centralizar la gestión de citas y urgencias.
+- Uso de metadatos en los mensajes para mantener el contexto de negocio y usuario.
+- Mejoras en la experiencia de usuario para propietarios y clientes.
+
+### 🐛 Corregido (Fixed)
+
+- Bugs en la gestión de citas y servicios detectados en el desarrollo.
+- Solapamiento de respuestas de urgencias y repetición de código en Rasa.
+
+---
+
+### ✨ Añadido (Added)
+
+**Orquestación Profesional:**
+- **Docker Compose:** Sistema de 4 microservicios completamente containerizado
+  - `backend`: Flask API en contenedor con volumen de rasa_model
+  - `postgres`: PostgreSQL 15-Alpine con persistencia garantizada
+  - `rasa`: Motor de diálogo Rasa 3.6.13
+  - `rasa-actions`: Servidor de acciones personalizadas
+- **Red Docker Interna:** Comunicación segura entre servicios en red privada `sector_mind_net`
+- **Volúmenes Persistentes:** 
+  - Base de datos PostgreSQL (volumen named)
+  - Modelo Rasa (volumen bind mount)
+
+**Infraestructura y DevOps:**
+- **Action Buttons en VS Code:** Interfaz gráfica para operaciones comunes
+  - 🚀 `INICIAR TODO SECTOR MIND` - Levanta stack completo
+  - 🛑 `STOP DOCKER` - Detiene e elimina contenedores
+  - 🧪 `TESTS` - Ejecuta suite unificada de tests
+- **Scripts PowerShell Profesionales:**
+  - `start_docker.ps1` - Manejo robusto de errores, esperas inteligentes
+  - `stop_docker.ps1` - Limpieza completa de contenedores
+  - `run_tests.ps1` - Ejecución flexible con flags (-BackendOnly, -RasaOnly, -Coverage)
+- **CI/CD Ready:** Dockerfile optimizado con multi-stage build, setuptools/wheel preinstalados
+
+**Base de Datos:**
+- **Migración PostgreSQL 100%:** Sustitución completa de SQLite
+  - Transacciones ACID garantizadas
+  - RealDictCursor para resultados dict-like
+  - Preparación para escalabilidad horizontal
+- **Schema Mejorado:** 7 tablas relacionales normalizadas con constraints integrity
+- **manage_db.py Refactorizado:** Adaptado exclusivamente a PostgreSQL
+
+**Testing e Integración:**
+- **Suite Unificada:** 104 tests (75 backend + 29 Rasa) con ejecución centralizada
+  - Backend: 100% cobertura en rutas críticas
+  - Rasa: Tests parametrizados con mocking de APIs
+  - Fechas dinámicas en tests para evitar fallos temporales
+- **Ejecución desde Docker:** Tests se ejecutan dentro del contenedor backend
+- **Resumen de Tests Mejorado:** Salida con conteo de tests pasados vs. exit codes
+
+**Frontend:**
+- **Fotos de Negocios Reales:** URLs actualizadas a Unsplash/Pexels con verificación manual
+- **Credenciales Simplificadas:** Contraseñas cortas (p, c) para pruebas rápidas
+
+### 🔧 Cambiado (Changed)
+
+**Backend:**
+- **Eliminación Total de SQLite:** Cero imports de sqlite3 en codebase
+  - `db.py` - Usa psycopg2 exclusivamente
+  - `db_utils.py` - Adaptación de queries de '?' a '%s (archivo ya eliminado)'
   - Todas las rutas - Usan PostgreSQL con RETURNING id
 
 **Tests:**

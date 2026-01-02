@@ -1,6 +1,6 @@
 name: Sector Mind CI
 
-# Se ejecuta cuando haces push a trunk o pull request
+# Se ejecuta cuando haces push a trunk
 on:
   push:
     branches: [ "trunk" ]
@@ -59,7 +59,7 @@ jobs:
       run: |
         PYTHONPATH=. pytest backend/tests -v
 
-  # TRABAJO 2: VERIFICAR IA (RASA) - 29 tests
+  # TRABAJO 2: VERIFICAR IA (RASA)
   test-rasa:
     runs-on: ubuntu-latest
     needs: test-backend # Solo se ejecuta si el backend está bien

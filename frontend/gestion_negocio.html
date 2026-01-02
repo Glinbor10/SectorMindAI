@@ -30,10 +30,11 @@
                 </div>
 
                 <div class="flex items-center space-x-4">
-                    <button onclick="window.location.href='/'" class="text-slate-600 hover:text-indigo-600 font-medium">
-                        <i data-lucide="arrow-left" class="w-4 h-4 inline mr-1"></i> Volver a tus Negocios
-                    </button>
-                    <button onclick="logout()" class="text-red-500 hover:text-red-700 font-medium text-sm border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition ml-4">Cerrar Sesión</button>
+                    <div id="user-menu" class="hidden flex items-center gap-3 cursor-pointer" onclick="window.location.href='/perfil.html'">
+                        <span id="user-name-display" class="font-medium text-slate-700">Usuario</span>
+                        <img id="user-avatar-display" src="" class="w-10 h-10 rounded-full border-2 border-indigo-100 object-cover bg-slate-200">
+                    </div>
+                    <button id="logout-btn" onclick="logout()" class="hidden text-red-500 hover:text-red-700 font-medium text-sm border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition">Cerrar Sesión</button>
                 </div>
             </div>
         </div>
@@ -42,14 +43,444 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="mb-8">
             <div class="flex items-center gap-4 mb-2">
+                <div class="flex items-center gap-4">
+                    <div class="relative w-16 h-16">
+                        <img id="business-photo" src="" alt="Foto del negocio" class="w-16 h-16 rounded-xl object-cover border border-slate-200 bg-slate-100">
+                        <button id="edit-photo-btn" type="button" class="absolute bottom-1 right-1 bg-white border border-slate-200 rounded-full p-1 shadow hover:bg-indigo-50 transition group" title="Cambiar foto">
+                            <i data-lucide="pencil" class="w-4 h-4 text-indigo-600 group-hover:text-indigo-800"></i>
+                        </button>
+                        <form id="form-photo-upload" enctype="multipart/form-data" class="hidden">
+                            <input type="file" id="input-photo-upload" accept="image/*" />
+                        </form>
+                    </div>
+                </div>
                 <h1 id="business-title" class="text-3xl font-bold text-slate-900">Cargando...</h1>
+                <button onclick="openEditBusinessModal()" class="flex items-center gap-2 text-indigo-600 hover:text-white hover:bg-indigo-600 border border-indigo-200 px-4 py-2 rounded-lg font-medium text-sm transition bg-white shadow-sm">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    Editar información
+                </button>
                 <button onclick="deleteBusiness()" class="flex items-center gap-2 text-red-600 hover:text-white hover:bg-red-600 border border-red-200 px-4 py-2 rounded-lg font-medium text-sm transition bg-white shadow-sm">
                     <i data-lucide="trash" class="w-5 h-5"></i>
                     Eliminar negocio
                 </button>
             </div>
-            <p id="business-subtitle" class="text-slate-500">Gestión de tu negocio</p>
-                // Eliminar negocio
+            <div class="flex items-center gap-3 mb-1">
+                <span id="business-type" class="font-bold uppercase text-indigo-700"></span>
+                <span id="business-subtitle" class="text-slate-500"></span>
+            </div>
+            <div id="business-description" class="text-slate-600 text-sm"></div>
+
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Servicios y Horarios -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Horarios del Negocio -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-slate-900 flex items-center">
+                            <i data-lucide="clock" class="mr-2 text-indigo-600"></i>
+                            Horario del Negocio
+                        </h2>
+                        <button onclick="openEditScheduleModal()" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm flex items-center gap-1">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i> Editar
+                        </button>
+                    </div>
+                    <div id="schedule-container" class="text-slate-600">
+                        <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full inline-block"></div>
+                        <span class="text-slate-400 ml-2">Cargando horarios...</span>
+                    </div>
+                </div>
+                
+                <!-- Servicios -->
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-slate-900 flex items-center">
+                            <i data-lucide="sparkles" class="mr-2 text-indigo-600"></i>
+                            Servicios
+                        </h2>
+                        <button onclick="openCreateServiceModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Servicio
+                        </button>
+                    </div>
+                    <div id="services-container" class="space-y-4">
+                        <div class="text-center py-8 bg-white rounded-2xl border border-slate-200 border-dashed">
+                            <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full inline-block"></div>
+                            <p class="text-slate-400 mt-2">Cargando servicios...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Citas -->
+            <div class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-slate-900 flex items-center">
+                        <i data-lucide="calendar-check" class="mr-2 text-indigo-600"></i>
+                        Citas Recientes
+                    </h2>
+                    <button onclick="openCreateCitaModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Nueva Cita
+                    </button>
+                </div>
+                <div id="citas-container" class="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto">
+                    <div class="text-center py-8 bg-white rounded-2xl border border-slate-200 border-dashed">
+                        <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full inline-block"></div>
+                        <p class="text-slate-400 mt-2">Cargando citas...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Editar Información del Negocio -->
+    <div id="modal-edit-business" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Editar Información del Negocio</h3>
+                    <p class="text-xs text-slate-500 mt-1"><span class="text-red-500">*</span> Campos obligatorios</p>
+                </div>
+                <button onclick="closeEditBusinessModal()" class="text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="handleEditBusiness(event)" class="p-6 space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Nombre del Negocio <span class="text-red-500">*</span></label>
+                    <input type="text" id="edit-business-name" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Tipo de Negocio <span class="text-red-500">*</span></label>
+                    <select id="edit-business-type" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                        <option value="dentista">Dentista</option>
+                        <option value="peluqueria">Peluquería</option>
+                        <option value="fisioterapia">Fisioterapia</option>
+                        <option value="general">General</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Dirección <span class="text-red-500">*</span></label>
+                    <input type="text" id="edit-business-address" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Descripción</label>
+                    <textarea id="edit-business-description" rows="3" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500"></textarea>
+                </div>
+                
+                <button type="submit" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg flex items-center justify-center gap-2">
+                    <i data-lucide="save" class="w-5 h-5"></i> Guardar Cambios
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Crear Servicio -->
+    <div id="modal-create-service" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full">
+            <div class="p-6">
+                <h3 class="text-2xl font-bold text-slate-900 mb-6">Crear Nuevo Servicio</h3>
+                <form onsubmit="handleCreateService(event)" class="space-y-4">
+                    <input type="text" id="service-name" required placeholder="Nombre del servicio *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <input type="number" id="service-price" required step="0.01" placeholder="Precio (€) *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <input type="number" id="service-duration" required placeholder="Duración (minutos) *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">Crear Servicio</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Servicio -->
+    <div id="modal-edit-service" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full">
+            <div class="p-6">
+                <h3 class="text-2xl font-bold text-slate-900 mb-6">Editar Servicio</h3>
+                <form onsubmit="handleEditService(event)" class="space-y-4">
+                    <input type="hidden" id="edit-service-id">
+                    <input type="text" id="edit-service-name" required placeholder="Nombre del servicio *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <input type="number" id="edit-service-price" required step="0.01" placeholder="Precio (€) *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <input type="number" id="edit-service-duration" required placeholder="Duración (minutos) *" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <div class="flex gap-2">
+                        <button type="submit" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">Guardar</button>
+                        <button type="button" onclick="closeEditServiceModal()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-300 transition">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Horario -->
+    <div id="modal-edit-schedule" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Editar Horario</h3>
+                    <p class="text-xs text-slate-500 mt-1"><span class="text-red-500">*</span> Campos obligatorios</p>
+                </div>
+                <button onclick="closeEditScheduleModal()" class="text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="handleEditSchedule(event)" class="p-6 space-y-6">
+                <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+                    <p class="text-xs text-slate-600 mb-4">Define el horario de mañana (obligatorio). Si tu negocio tiene horario partido, también puedes definir el horario de tarde (opcional).</p>
+                    
+                    <!-- Horario de Mañana -->
+                    <div class="bg-white rounded-lg p-3 mb-3">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Horario de Mañana <span class="text-red-500">*</span></label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Apertura <span class="text-red-500">*</span></label>
+                                <input type="time" id="schedule-opening-morning" required class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Cierre <span class="text-red-500">*</span></label>
+                                <input type="time" id="schedule-closing-morning" required class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Horario de Tarde -->
+                    <div class="bg-white rounded-lg p-3">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Horario de Tarde (Opcional - Para horario partido)</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Apertura</label>
+                                <input type="time" id="schedule-opening-afternoon" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-slate-600 mb-1">Cierre</label>
+                                <input type="time" id="schedule-closing-afternoon" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Días de apertura <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-7 gap-2">
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="schedule-day-0" value="0" class="mb-1">
+                            <span class="text-xs">Lun</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="schedule-day-1" value="1" class="mb-1">
+                            <span class="text-xs">Mar</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="schedule-day-2" value="2" class="mb-1">
+                            <span class="text-xs">Mié</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="schedule-day-3" value="3" class="mb-1">
+                            <span class="text-xs">Jue</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="schedule-day-4" value="4" class="mb-1">
+                            <span class="text-xs">Vie</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="schedule-day-5" value="5" class="mb-1">
+                            <span class="text-xs">Sáb</span>
+                        </label>
+                        <label class="flex flex-col items-center cursor-pointer">
+                            <input type="checkbox" id="schedule-day-6" value="6" class="mb-1">
+                            <span class="text-xs">Dom</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg flex items-center justify-center gap-2">
+                    <i data-lucide="save" class="w-5 h-5"></i> Guardar Cambios
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Crear Cita -->
+    <div id="modal-create-cita" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <h3 class="text-2xl font-bold text-slate-900 mb-2">Crear Nueva Cita</h3>
+                <p class="text-xs text-slate-500 mb-4"><span class="text-red-500">*</span> Campos obligatorios</p>
+                <form onsubmit="handleCreateCita(event)" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Servicio <span class="text-red-500">*</span></label>
+                        <select id="cita-service" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                            <option value="">Seleccionar servicio...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Cliente (buscar por email) <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <input type="email" id="cita-cliente-email" required placeholder="Buscar cliente por email..." autocomplete="off" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                            <input type="hidden" id="cita-cliente-id">
+                            <input type="hidden" id="cita-cliente-nombre">
+                            <div id="cita-cliente-results" class="hidden absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-xl shadow-lg max-h-60 overflow-y-auto"></div>
+                        </div>
+                        <p id="cita-cliente-selected" class="hidden text-xs text-indigo-600 mt-1 flex items-center gap-1">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            <span></span>
+                        </p>
+                    </div>
+                    
+                    <!-- Calendario Interactivo -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-3">Seleccionar Fecha y Hora <span class="text-red-500">*</span></label>
+                        
+                        <!-- Navegación del calendario -->
+                        <div class="flex items-center justify-between mb-4">
+                            <button type="button" id="prev-month" class="p-2 hover:bg-slate-100 rounded-lg transition">
+                                <i data-lucide="chevron-left" class="w-5 h-5 text-slate-600"></i>
+                            </button>
+                            <h4 id="calendar-title" class="text-lg font-bold text-slate-900">Enero 2026</h4>
+                            <button type="button" id="next-month" class="p-2 hover:bg-slate-100 rounded-lg transition">
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-slate-600"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Días de la semana -->
+                        <div class="grid grid-cols-7 gap-1 mb-2">
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Lun</div>
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Mar</div>
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Mié</div>
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Jue</div>
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Vie</div>
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Sáb</div>
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Dom</div>
+                        </div>
+                        
+                        <!-- Grid del calendario -->
+                        <div id="calendar-grid" class="grid grid-cols-7 gap-1 mb-4">
+                            <!-- Los días se generan dinámicamente -->
+                        </div>
+                        
+                        <!-- Horarios disponibles -->
+                        <div id="horarios-container" class="hidden">
+                            <h5 class="text-sm font-medium text-slate-700 mb-2">Horarios disponibles para <span id="selected-date"></span>:</h5>
+                            <div id="horarios-list" class="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                                <!-- Los horarios se generan dinámicamente -->
+                            </div>
+                        </div>
+                        
+                        <!-- Fecha y hora seleccionada -->
+                        <div id="selected-datetime" class="hidden mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                            <p class="text-sm text-indigo-800">
+                                <span class="font-medium">Fecha y hora seleccionada:</span> 
+                                <span id="selected-datetime-text"></span>
+                            </p>
+                        </div>
+                        
+                        <input type="hidden" id="cita-fecha-hora" required>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button type="submit" id="create-cita-btn" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition" disabled>Crear Cita</button>
+                        <button type="button" onclick="closeCreateCitaModal()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-300 transition">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Cita -->
+    <div id="modal-edit-cita" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <h3 class="text-2xl font-bold text-slate-900 mb-2">Editar Cita</h3>
+                <p class="text-xs text-slate-500 mb-4"><span class="text-red-500">*</span> Campos obligatorios</p>
+                <form onsubmit="handleEditCita(event)" class="space-y-6">
+                    <input type="hidden" id="edit-cita-id">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Servicio <span class="text-red-500">*</span></label>
+                        <select id="edit-cita-service" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                            <option value="">Seleccionar servicio...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Cliente (buscar por email) <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <input type="email" id="edit-cita-cliente-email" required placeholder="Buscar cliente por email..." autocomplete="off" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                            <input type="hidden" id="edit-cita-cliente-id">
+                            <input type="hidden" id="edit-cita-cliente-nombre">
+                            <div id="edit-cita-cliente-results" class="hidden absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-xl shadow-lg max-h-60 overflow-y-auto"></div>
+                        </div>
+                        <p id="edit-cita-cliente-selected" class="hidden text-xs text-indigo-600 mt-1 flex items-center gap-1">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            <span></span>
+                        </p>
+                    </div>
+                    
+                    <!-- Calendario Interactivo para Edición -->
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-3">Seleccionar Fecha y Hora <span class="text-red-500">*</span></label>
+                        
+                        <!-- Navegación del calendario -->
+                        <div class="flex items-center justify-between mb-4">
+                            <button type="button" id="edit-prev-month" class="p-2 hover:bg-slate-100 rounded-lg transition">
+                                <i data-lucide="chevron-left" class="w-5 h-5 text-slate-600"></i>
+                            </button>
+                            <h4 id="edit-calendar-title" class="text-lg font-bold text-slate-900">Enero 2026</h4>
+                            <button type="button" id="edit-next-month" class="p-2 hover:bg-slate-100 rounded-lg transition">
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-slate-600"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Días de la semana -->
+                        <div class="grid grid-cols-7 gap-1 mb-2">
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Lun</div>
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Mar</div>
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Mié</div>
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Jue</div>
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Vie</div>
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Sáb</div>
+                            <div class="text-center text-xs font-medium text-slate-500 py-2">Dom</div>
+                        </div>
+                        
+                        <!-- Grid del calendario -->
+                        <div id="edit-calendar-grid" class="grid grid-cols-7 gap-1 mb-4">
+                            <!-- Los días se generan dinámicamente -->
+                        </div>
+                        
+                        <!-- Horarios disponibles -->
+                        <div id="edit-horarios-container" class="hidden">
+                            <h5 class="text-sm font-medium text-slate-700 mb-2">Horarios disponibles para <span id="edit-selected-date"></span>:</h5>
+                            <div id="edit-horarios-list" class="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                                <!-- Los horarios se generan dinámicamente -->
+                            </div>
+                        </div>
+                        
+                        <!-- Fecha y hora seleccionada -->
+                        <div id="edit-selected-datetime" class="hidden mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                            <p class="text-sm text-indigo-800">
+                                <span class="font-medium">Fecha y hora seleccionada:</span> 
+                                <span id="edit-selected-datetime-text"></span>
+                            </p>
+                        </div>
+                        
+                        <input type="hidden" id="edit-cita-fecha-hora" required>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button type="submit" id="edit-cita-btn" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition" disabled>Guardar</button>
+                        <button type="button" onclick="closeEditCitaModal()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-300 transition">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        function logout() {
+            localStorage.removeItem('sector_mind_user');
+            window.location.href = '/';
+        }
                 async function deleteBusiness() {
                     const result = await Swal.fire({
                         title: '¿Eliminar negocio?',
@@ -68,7 +499,11 @@
                             });
                             if (res.ok) {
                                 Swal.fire('Negocio eliminado', '', 'success');
-                                window.location.href = '/perfil.html';
+                                // Limpiar ids y volver a perfil
+                                localStorage.removeItem('gestion_negocio_id');
+                                sessionStorage.removeItem('gestion_negocio_id');
+                                localStorage.removeItem('selected_business');
+                                setTimeout(() => { window.location.href = '/perfil.html'; }, 1200);
                             } else {
                                 const error = await res.json();
                                 Swal.fire('Error', error.error, 'error');
@@ -78,86 +513,46 @@
                         }
                     }
                 }
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Servicios -->
-            <div class="lg:col-span-2 space-y-6">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-bold text-slate-900 flex items-center">
-                        <i data-lucide="sparkles" class="mr-2 text-indigo-600"></i>
-                        Servicios
-                    </h2>
-                    <button onclick="openCreateServiceModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition flex items-center gap-2">
-                        <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Servicio
-                    </button>
-                </div>
-                <div id="services-container" class="space-y-4">
-                    <div class="text-center py-8 bg-white rounded-2xl border border-slate-200 border-dashed">
-                        <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full inline-block"></div>
-                        <p class="text-slate-400 mt-2">Cargando servicios...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Citas -->
-            <div class="space-y-6">
-                <h2 class="text-xl font-bold text-slate-900 flex items-center">
-                    <i data-lucide="calendar-check" class="mr-2 text-indigo-600"></i>
-                    Citas Recientes
-                </h2>
-                <div id="citas-container" class="space-y-4">
-                    <div class="text-center py-8 bg-white rounded-2xl border border-slate-200 border-dashed">
-                        <div class="typing-dot w-2 h-2 bg-slate-400 rounded-full inline-block"></div>
-                        <p class="text-slate-400 mt-2">Cargando citas...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Modal Crear Servicio -->
-    <div id="modal-create-service" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full">
-            <div class="p-6">
-                <h3 class="text-2xl font-bold text-slate-900 mb-6">Crear Nuevo Servicio</h3>
-                <form onsubmit="handleCreateService(event)" class="space-y-4">
-                    <input type="text" id="service-name" required placeholder="Nombre del servicio" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                    <input type="number" id="service-price" required step="0.01" placeholder="Precio (€)" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                    <input type="number" id="service-duration" required placeholder="Duración (minutos)" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">Crear Servicio</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Editar Servicio -->
-    <div id="modal-edit-service" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full">
-            <div class="p-6">
-                <h3 class="text-2xl font-bold text-slate-900 mb-6">Editar Servicio</h3>
-                <form onsubmit="handleEditService(event)" class="space-y-4">
-                    <input type="hidden" id="edit-service-id">
-                    <input type="text" id="edit-service-name" required placeholder="Nombre del servicio" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                    <input type="number" id="edit-service-price" required step="0.01" placeholder="Precio (€)" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                    <input type="number" id="edit-service-duration" required placeholder="Duración (minutos)" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                    <div class="flex gap-2">
-                        <button type="submit" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">Guardar</button>
-                        <button type="button" onclick="closeEditServiceModal()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-300 transition">Cancelar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <script>
         let currentUser = null;
         let currentBusiness = null;
         let currentBusinessId = null;
+        let availableServices = []; // Para almacenar los servicios disponibles
 
-        window.onload = async () => {
-            // lucide.createIcons(); // Removido - se inicializa al final
+        function updateLogoutBtn() {
+            const logoutBtn = document.getElementById('logout-btn');
+            const userMenu = document.getElementById('user-menu');
+            const userStr = localStorage.getItem('sector_mind_user');
             
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                
+                // Mostrar menú de usuario con foto
+                if (userMenu) {
+                    userMenu.classList.remove('hidden');
+                    userMenu.classList.add('flex');
+                    document.getElementById('user-name-display').innerText = user.nombre;
+                    document.getElementById('user-avatar-display').src = user.foto_perfil_base64 || `https://ui-avatars.com/api/?name=${user.nombre}&background=random`;
+                }
+                
+                // Mostrar botón de logout
+                if (logoutBtn) {
+                    logoutBtn.classList.remove('hidden');
+                }
+            } else {
+                if (userMenu) {
+                    userMenu.classList.add('hidden');
+                    userMenu.classList.remove('flex');
+                }
+                if (logoutBtn) {
+                    logoutBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        // Permite abrir la gestión de negocio sin mostrar el id en la URL
+        // Para navegar: guardar el id en sessionStorage/localStorage y redirigir a gestion_negocio.html
+        window.onload = async () => {
+                        updateLogoutBtn();
             // Cargar usuario
             const userStr = localStorage.getItem('sector_mind_user');
             if (!userStr) {
@@ -165,16 +560,30 @@
                 return;
             }
             currentUser = JSON.parse(userStr);
-            
-            // Obtener ID del negocio de la URL
-            const urlParams = new URLSearchParams(window.location.search);
-            currentBusinessId = urlParams.get('id');
+
+            // Obtener id de negocio desde sessionStorage/localStorage/selected_business
+            currentBusinessId = sessionStorage.getItem('gestion_negocio_id') || localStorage.getItem('gestion_negocio_id');
             if (!currentBusinessId) {
+                const selectedBiz = localStorage.getItem('selected_business');
+                if (selectedBiz) {
+                    try {
+                        const bizObj = JSON.parse(selectedBiz);
+                        if (bizObj && bizObj.id) {
+                            currentBusinessId = bizObj.id;
+                            localStorage.setItem('gestion_negocio_id', currentBusinessId);
+                            sessionStorage.setItem('gestion_negocio_id', currentBusinessId);
+                        }
+                    } catch (e) {}
+                }
+            }
+            if (!currentBusinessId) {
+                // Si no hay id, volver a perfil
                 window.location.href = '/perfil.html';
                 return;
             }
-            
+
             await loadBusinessData();
+            await loadSchedule();
             await loadServices();
             await loadCitas();
         };
@@ -185,52 +594,164 @@
                 if (res.ok) {
                     currentBusiness = await res.json();
                     document.getElementById('business-title').textContent = currentBusiness.nombre;
-                    document.getElementById('business-subtitle').textContent = `${currentBusiness.tipo_negocio} - ${currentBusiness.direccion}`;
+                    document.getElementById('business-type').textContent = currentBusiness.tipo_negocio ? currentBusiness.tipo_negocio.toUpperCase() : '';
+                    document.getElementById('business-subtitle').textContent = currentBusiness.direccion || '';
+                    // Mostrar descripción
+                    const descriptionEl = document.getElementById('business-description');
+                    if (descriptionEl) {
+                        descriptionEl.textContent = currentBusiness.descripcion || 'Sin descripción';
+                    }
+                    // Mostrar foto (solo base64)
+                    const photo = document.getElementById('business-photo');
+                    if (currentBusiness.foto_base64) {
+                        photo.src = currentBusiness.foto_base64;
+                    } else {
+                        photo.src = 'https://via.placeholder.com/64x64/6366f1/ffffff?text=Negocio';
+                    }
+                    lucide.createIcons();
                 } else {
                     window.location.href = '/perfil.html';
                 }
-            } catch (err) {
-                console.error('Error cargando negocio:', err);
-                window.location.href = '/perfil.html';
+            } catch (e) {
+                // Manejo de error opcional
             }
         }
 
+        function openEditBusinessModal() {
+            if (!currentBusiness) return;
+            
+            // Pre-poblar los campos del formulario con los valores actuales
+            document.getElementById('edit-business-name').value = currentBusiness.nombre || '';
+            document.getElementById('edit-business-type').value = currentBusiness.tipo_negocio || '';
+            document.getElementById('edit-business-address').value = currentBusiness.direccion || '';
+            document.getElementById('edit-business-description').value = currentBusiness.descripcion || '';
+            
+            // Mostrar el modal
+            document.getElementById('modal-edit-business').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeEditBusinessModal() {
+            document.getElementById('modal-edit-business').classList.add('hidden');
+            // Limpiar el formulario
+            document.getElementById('form-edit-business').reset();
+        }
+
+        async function handleEditBusiness(e) {
+            e.preventDefault();
+            
+            const nombre = document.getElementById('edit-business-name').value.trim();
+            const tipo_negocio = document.getElementById('edit-business-type').value.trim();
+            const direccion = document.getElementById('edit-business-address').value.trim();
+            const descripcion = document.getElementById('edit-business-description').value.trim();
+            
+            if (!nombre || !tipo_negocio || !direccion) {
+                Swal.fire('Error', 'Por favor completa todos los campos obligatorios', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/negocios/${currentBusinessId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        nombre: nombre,
+                        tipo_negocio: tipo_negocio,
+                        direccion: direccion,
+                        descripcion: descripcion
+                    })
+                });
+                
+                if (response.ok) {
+                    Swal.fire('Éxito', 'Información del negocio actualizada correctamente', 'success');
+                    closeEditBusinessModal();
+                    await loadBusinessData();
+                } else {
+                    const errorData = await response.json();
+                    Swal.fire('Error', errorData.error || 'No se pudo actualizar la información', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Error de conexión al actualizar la información', 'error');
+            }
+        }
+        
+        async function loadSchedule() {
+            const container = document.getElementById('schedule-container');
+            try {
+                const res = await fetch(`${API_URL}/negocios/${currentBusinessId}/horarios`);
+                if (res.ok) {
+                    const horarios = await res.json();
+                    
+                    // Extraer días únicos para deshabilitar días cerrados en el calendario
+                    businessOpenDays = [...new Set(horarios.map(h => h.dia_semana))];
+                    console.log('loadSchedule - businessOpenDays cargados:', businessOpenDays);
+                    
+                    if (horarios.length === 0) {
+                        container.innerHTML = '<p class="text-slate-500 text-sm">No hay horarios configurados</p>';
+                    } else {
+                        const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+                        const horariosAgrupados = {};
+                        
+                        horarios.forEach(h => {
+                            const key = `${h.hora_apertura}-${h.hora_cierre}`;
+                            if (!horariosAgrupados[key]) {
+                                horariosAgrupados[key] = [];
+                            }
+                            horariosAgrupados[key].push(h.dia_semana);
+                        });
+                        
+                        let html = '<div class="space-y-2">';
+                        for (const [horario, diasList] of Object.entries(horariosAgrupados)) {
+                            const [apertura, cierre] = horario.split('-');
+                            const diasNombres = diasList.sort((a, b) => a - b).map(d => dias[d]).join(', ');
+                            html += `<div class="flex items-center gap-2 text-sm">
+                                <i data-lucide="calendar" class="w-4 h-4 text-indigo-600"></i>
+                                <span class="font-medium">${diasNombres}:</span>
+                                <span>${apertura} - ${cierre}</span>
+                            </div>`;
+                        }
+                        html += '</div>';
+                        container.innerHTML = html;
+                        lucide.createIcons();
+                    }
+                } else {
+                    container.innerHTML = '<p class="text-red-500 text-sm">Error al cargar horarios</p>';
+                }
+            } catch (err) {
+                container.innerHTML = '<p class="text-red-500 text-sm">Error al cargar horarios</p>';
+            }
+        }
         async function loadServices() {
             const container = document.getElementById('services-container');
             try {
                 const res = await fetch(`${API_URL}/negocios/${currentBusinessId}/servicios`);
                 const servicios = await res.json();
-                
+                availableServices = servicios; // Guardar servicios globalmente
                 container.innerHTML = '';
-                if (servicios.length === 0) {
-                    container.innerHTML = `<div class="text-center py-8 bg-white rounded-2xl border border-slate-200 border-dashed"><i data-lucide="sparkles" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i><p class="text-slate-500">No hay servicios configurados</p></div>`;
+                if (!servicios || servicios.length === 0) {
+                    container.innerHTML = `<div class="text-center py-8 bg-white rounded-2xl border border-slate-200 border-dashed"><i data-lucide="sparkles" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i><p class="text-slate-500">No hay servicios</p></div>`;
                 } else {
                     servicios.forEach(servicio => {
                         const card = document.createElement('div');
-                        card.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-200";
+                        card.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between";
                         card.innerHTML = `
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <h3 class="font-bold text-slate-900 text-lg">${servicio.nombre}</h3>
-                                    <p class="text-slate-500 text-sm">${servicio.duracion_minutos} minutos</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-slate-900 text-xl">${servicio.precio}€</p>
-                                    <div class="flex gap-2 mt-2">
-                                        <button onclick="editService(${servicio.id}, '${servicio.nombre}', ${servicio.precio}, ${servicio.duracion_minutos})" class="text-indigo-600 hover:text-indigo-800">
-                                            <i data-lucide="edit" class="w-4 h-4"></i>
-                                        </button>
-                                        <button onclick="deleteService(${servicio.id})" class="text-red-600 hover:text-red-800">
-                                            <i data-lucide="trash" class="w-4 h-4"></i>
-                                        </button>
-                                    </div>
-                                </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">${servicio.nombre}</h4>
+                                <p class="text-xs text-slate-500 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${servicio.duracion_minutos} min</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="block font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">${servicio.precio}€</span>
+                                <button onclick="editService(${servicio.id}, '${servicio.nombre}', ${servicio.precio}, ${servicio.duracion_minutos})" class="ml-2 text-indigo-600 hover:text-indigo-900"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                <button onclick="deleteService(${servicio.id})" class="ml-2 text-red-500 hover:text-red-700"><i data-lucide="trash" class="w-4 h-4"></i></button>
                             </div>
                         `;
                         container.appendChild(card);
                     });
                 }
-                // lucide.createIcons(); // Removido - se inicializa al final
+                lucide.createIcons();
             } catch (err) {
                 container.innerHTML = '<p class="text-red-500">Error al cargar servicios.</p>';
             }
@@ -262,16 +783,26 @@
                                     <p class="font-medium text-slate-900 text-sm">${cita.cliente_nombre}</p>
                                     <p class="text-slate-500 text-xs">${cita.servicio_nombre}</p>
                                 </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-slate-900 text-sm">${fechaStr}</p>
-                                    <p class="text-slate-500 text-xs">${horaStr}</p>
+                                <div class="text-right flex items-center gap-2">
+                                    <div>
+                                        <p class="font-bold text-slate-900 text-sm">${fechaStr}</p>
+                                        <p class="text-slate-500 text-xs">${horaStr}</p>
+                                    </div>
+                                    <div class="flex gap-1">
+                                        <button onclick="editCita(${cita.id}, '${cita.cliente_nombre}', ${cita.servicio_id}, '${cita.fecha_hora_cita}', '${cita.cliente_email || ''}')" class="text-indigo-600 hover:text-indigo-900 p-1" title="Editar cita">
+                                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                        </button>
+                                        <button onclick="deleteCita(${cita.id})" class="text-red-500 hover:text-red-700 p-1" title="Eliminar cita">
+                                            <i data-lucide="trash" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         `;
                         container.appendChild(card);
                     });
                 }
-                // lucide.createIcons(); // Removido - se inicializa al final
+                lucide.createIcons();
             } catch (err) {
                 container.innerHTML = '<p class="text-red-500">Error al cargar citas.</p>';
             }
@@ -326,6 +857,124 @@
 
         function closeEditServiceModal() {
             document.getElementById('modal-edit-service').classList.add('hidden');
+        }
+
+        function openEditScheduleModal() {
+            // Cargar horarios actuales y llenar el formulario
+            fetch(`${API_URL}/negocios/${currentBusinessId}/horarios`)
+                .then(res => res.json())
+                .then(horarios => {
+                    if (horarios.length > 0) {
+                        // Agrupar horarios por día para identificar mañana y tarde
+                        const horariosPorDia = {};
+                        horarios.forEach(h => {
+                            if (!horariosPorDia[h.dia_semana]) {
+                                horariosPorDia[h.dia_semana] = [];
+                            }
+                            horariosPorDia[h.dia_semana].push(h);
+                        });
+                        
+                        // Tomar el primer día con horarios para obtener los valores de mañana/tarde
+                        const primerDia = Object.values(horariosPorDia)[0];
+                        if (primerDia.length > 0) {
+                            // Ordenar por hora de apertura
+                            primerDia.sort((a, b) => a.hora_apertura.localeCompare(b.hora_apertura));
+                            
+                            // Horario de mañana (primer horario)
+                            document.getElementById('schedule-opening-morning').value = primerDia[0].hora_apertura;
+                            document.getElementById('schedule-closing-morning').value = primerDia[0].hora_cierre;
+                            
+                            // Horario de tarde (segundo horario si existe)
+                            if (primerDia.length > 1) {
+                                document.getElementById('schedule-opening-afternoon').value = primerDia[1].hora_apertura;
+                                document.getElementById('schedule-closing-afternoon').value = primerDia[1].hora_cierre;
+                            } else {
+                                document.getElementById('schedule-opening-afternoon').value = '';
+                                document.getElementById('schedule-closing-afternoon').value = '';
+                            }
+                        }
+                        
+                        // Marcar los días que están en los horarios
+                        for (let i = 0; i < 7; i++) {
+                            const checkbox = document.getElementById(`schedule-day-${i}`);
+                            checkbox.checked = horarios.some(h => h.dia_semana === i);
+                        }
+                    }
+                    document.getElementById('modal-edit-schedule').classList.remove('hidden');
+                    lucide.createIcons();
+                })
+                .catch(err => {
+                    Swal.fire('Error', 'No se pudieron cargar los horarios', 'error');
+                });
+        }
+
+        function closeEditScheduleModal() {
+            document.getElementById('modal-edit-schedule').classList.add('hidden');
+        }
+
+        async function handleEditSchedule(e) {
+            e.preventDefault();
+            
+            const openingMorning = document.getElementById('schedule-opening-morning').value;
+            const closingMorning = document.getElementById('schedule-closing-morning').value;
+            const openingAfternoon = document.getElementById('schedule-opening-afternoon').value;
+            const closingAfternoon = document.getElementById('schedule-closing-afternoon').value;
+            
+            if (!openingMorning || !closingMorning) {
+                Swal.fire('Error', 'Debes especificar al menos el horario de mañana', 'error');
+                return;
+            }
+            
+            // Validar que si hay horario de tarde, estén ambos campos
+            if ((openingAfternoon && !closingAfternoon) || (!openingAfternoon && closingAfternoon)) {
+                Swal.fire('Error', 'Si defines horario de tarde, debes especificar apertura y cierre', 'error');
+                return;
+            }
+            
+            const selectedDays = [];
+            for (let i = 0; i < 7; i++) {
+                const checkbox = document.getElementById(`schedule-day-${i}`);
+                if (checkbox && checkbox.checked) {
+                    selectedDays.push(i);
+                }
+            }
+            
+            if (selectedDays.length === 0) {
+                Swal.fire('Error', 'Debes seleccionar al menos un día de apertura', 'error');
+                return;
+            }
+            
+            // Construir array de horarios
+            const horarios = [
+                { apertura: openingMorning, cierre: closingMorning }
+            ];
+            
+            if (openingAfternoon && closingAfternoon) {
+                horarios.push({ apertura: openingAfternoon, cierre: closingAfternoon });
+            }
+            
+            const data = {
+                horarios: horarios,
+                dias_apertura: selectedDays
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/negocios/${currentBusinessId}/horarios`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    closeEditScheduleModal();
+                    Swal.fire('¡Horario actualizado!', '', 'success');
+                    loadSchedule();
+                } else {
+                    Swal.fire('Error', result.error, 'error');
+                }
+            } catch (err) {
+                Swal.fire('Error', 'Error de conexión', 'error');
+            }
         }
 
         async function handleEditService(e) {
@@ -387,6 +1036,886 @@
             }
         }
 
+        // Variables globales para el calendario
+        let currentCalendarDate = new Date();
+        let selectedDate = null;
+        let selectedTime = null;
+        let availableSlots = {};
+        
+        // Variables para el calendario de edición
+        let editCurrentCalendarDate = new Date();
+        let editSelectedDate = null;
+        let editSelectedTime = null;
+        let businessOpenDays = []; // Días en que el negocio abre (0-6, donde 0=lunes)
+
+        function openCreateCitaModal() {
+            // Resetear estado del calendario
+            selectedDate = null;
+            selectedTime = null;
+            currentCalendarDate = new Date();
+            availableSlots = {};
+            
+            console.log('openCreateCitaModal - businessOpenDays:', businessOpenDays);
+            
+            // Llenar el select de servicios
+            const serviceSelect = document.getElementById('cita-service');
+            serviceSelect.innerHTML = '<option value="">Seleccionar servicio...</option>';
+            availableServices.forEach(servicio => {
+                const option = document.createElement('option');
+                option.value = servicio.id;
+                option.textContent = `${servicio.nombre} - ${servicio.precio}€`;
+                serviceSelect.appendChild(option);
+            });
+            
+            // Generar calendario inicial
+            generateCalendar();
+            
+            // Ocultar contenedores de horarios y selección
+            document.getElementById('horarios-container').classList.add('hidden');
+            document.getElementById('selected-datetime').classList.add('hidden');
+            
+            // Deshabilitar botón de crear
+            document.getElementById('create-cita-btn').disabled = true;
+            
+            document.getElementById('modal-create-cita').classList.remove('hidden');
+            
+            // Event listeners para navegación del calendario
+            document.getElementById('prev-month').onclick = () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+                generateCalendar();
+            };
+            
+            document.getElementById('next-month').onclick = () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+                generateCalendar();
+            };
+            
+            // Event listener para cambio de servicio
+            serviceSelect.onchange = () => {
+                selectedDate = null;
+                selectedTime = null;
+                document.getElementById('horarios-container').classList.add('hidden');
+                document.getElementById('selected-datetime').classList.add('hidden');
+                document.getElementById('create-cita-btn').disabled = true;
+                if (serviceSelect.value) {
+                    generateCalendar();
+                } else {
+                    // Limpiar calendario si no hay servicio seleccionado
+                    const calendarGrid = document.getElementById('calendar-grid');
+                    calendarGrid.innerHTML = '';
+                }
+            };
+        }
+
+        function generateCalendar() {
+            const calendarGrid = document.getElementById('calendar-grid');
+            const calendarTitle = document.getElementById('calendar-title');
+            
+            // Actualizar título
+            const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                              'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            calendarTitle.textContent = `${monthNames[currentCalendarDate.getMonth()]} ${currentCalendarDate.getFullYear()}`;
+            
+            // Limpiar grid
+            calendarGrid.innerHTML = '';
+            
+            // Obtener información del mes
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay() + 1); // Lunes como primer día
+            
+            // Generar días
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            for (let i = 0; i < 42; i++) { // 6 semanas x 7 días
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'text-center py-3 text-sm cursor-pointer hover:bg-indigo-50 rounded-lg transition relative';
+                dayDiv.textContent = currentDate.getDate();
+                
+                // Verificar si es del mes actual
+                if (currentDate.getMonth() !== month) {
+                    dayDiv.classList.add('text-slate-300');
+                } else if (currentDate < today) {
+                    dayDiv.classList.add('text-slate-300', 'cursor-not-allowed');
+                } else {
+                    // Verificar si el negocio abre ese día de la semana
+                    const dayOfWeek = currentDate.getDay(); // 0=domingo, 1=lunes, etc
+                    const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Ajustar: 0=lunes, 6=domingo
+                    const isOpenDay = businessOpenDays.includes(adjustedDay);
+                    
+                    if (!isOpenDay) {
+                        // Día cerrado: mostrar en gris con indicador visual
+                        dayDiv.classList.add('text-slate-300', 'cursor-not-allowed', 'opacity-50');
+                        dayDiv.title = 'Negocio cerrado este día';
+                    } else {
+                        // Día abierto: permitir selección
+                        dayDiv.classList.add('text-slate-700', 'hover:text-indigo-600');
+                        dayDiv.onclick = () => selectDate(currentDate);
+                        
+                        // Marcar fecha seleccionada
+                        if (selectedDate && currentDate.toDateString() === selectedDate.toDateString()) {
+                            dayDiv.classList.add('bg-indigo-600', 'text-white', 'hover:bg-indigo-700');
+                        }
+                    }
+                }
+                
+                calendarGrid.appendChild(dayDiv);
+            }
+        }
+
+        async function selectDate(date) {
+            selectedDate = date;
+            selectedTime = null;
+            
+            console.log('selectDate llamado para:', date.toDateString());
+            
+            // Actualizar visual del calendario
+            generateCalendar();
+            
+            // Mostrar contenedor de horarios
+            document.getElementById('horarios-container').classList.remove('hidden');
+            document.getElementById('selected-datetime').classList.add('hidden');
+            document.getElementById('create-cita-btn').disabled = true;
+            
+            // Actualizar fecha seleccionada
+            const dateStr = date.toLocaleDateString('es-ES', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            document.getElementById('selected-date').textContent = dateStr;
+            
+            // Cargar horarios disponibles
+            await loadAvailableSlots(date);
+        }
+
+        async function loadAvailableSlots(date) {
+            const serviceId = document.getElementById('cita-service').value;
+            if (!serviceId) return;
+            
+            const horariosList = document.getElementById('horarios-list');
+            horariosList.innerHTML = '<div class="col-span-3 text-center py-4"><div class="typing-dot w-2 h-2 bg-slate-400 rounded-full inline-block"></div><p class="text-slate-400 mt-2 text-sm">Cargando horarios...</p></div>';
+            
+            try {
+                // Usar formato local para evitar conversión UTC
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
+                console.log('loadAvailableSlots - fecha:', dateStr, 'servicio:', serviceId);
+                
+                const response = await fetch(`${API_URL}/disponibilidad`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        negocio_id: currentBusinessId,
+                        servicio_id: parseInt(serviceId),
+                        fecha: dateStr
+                    })
+                });
+                
+                console.log('loadAvailableSlots - response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('loadAvailableSlots - data:', data);
+                    const slots = data.disponibles || [];
+                    
+                    // Verificar si hay mensaje de negocio cerrado
+                    if (data.mensaje) {
+                        horariosList.innerHTML = `<div class="col-span-3 text-center py-4 text-amber-600 text-sm"><i data-lucide="alert-circle" class="w-5 h-5 mx-auto mb-2"></i><p>${data.mensaje}</p></div>`;
+                        lucide.createIcons();
+                        return;
+                    }
+                    
+                    // Filtrar slots futuros si es hoy
+                    const now = new Date();
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    let availableSlots = slots;
+                    if (date.toDateString() === today.toDateString()) {
+                        availableSlots = slots.filter(slot => {
+                            const slotTime = new Date(`${dateStr} ${slot.split(' ')[1]}`);
+                            return slotTime > now;
+                        });
+                    }
+                    
+                    console.log('loadAvailableSlots - availableSlots:', availableSlots.length);
+                    
+                    availableSlots.forEach(slot => {
+                        const time = slot.split(' ')[1].substring(0, 5); // HH:MM
+                        const timeDiv = document.createElement('div');
+                        timeDiv.className = 'p-2 text-center bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition text-sm font-medium';
+                        timeDiv.textContent = time;
+                        timeDiv.onclick = () => selectTime(time);
+                        horariosList.appendChild(timeDiv);
+                    });
+                    
+                    if (availableSlots.length === 0) {
+                        horariosList.innerHTML = '<div class="col-span-3 text-center py-4 text-slate-500 text-sm">No hay horarios disponibles para este día</div>';
+                    }
+                    lucide.createIcons();
+                } else {
+                    horariosList.innerHTML = '<div class="col-span-3 text-center py-4 text-red-500 text-sm">Error al cargar horarios</div>';
+                }
+            } catch (error) {
+                console.error('loadAvailableSlots - error:', error);
+                horariosList.innerHTML = '<div class="col-span-3 text-center py-4 text-red-500 text-sm">Error de conexión</div>';
+            }
+        }
+
+        function selectTime(time) {
+            selectedTime = time;
+            
+            // Actualizar visual de los horarios
+            const timeDivs = document.querySelectorAll('#horarios-list > div');
+            timeDivs.forEach(div => {
+                if (div.textContent === time) {
+                    div.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+                } else {
+                    div.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+                }
+            });
+            
+            // Mostrar fecha y hora seleccionada
+            const dateTimeStr = `${selectedDate.toLocaleDateString('es-ES')} a las ${time}`;
+            document.getElementById('selected-datetime-text').textContent = dateTimeStr;
+            document.getElementById('selected-datetime').classList.remove('hidden');
+            
+            // Actualizar input hidden
+            const dateTimeISO = new Date(selectedDate);
+            const [hours, minutes] = time.split(':');
+            dateTimeISO.setHours(parseInt(hours), parseInt(minutes));
+            document.getElementById('cita-fecha-hora').value = dateTimeISO.toISOString().slice(0, 16);
+            
+            // Habilitar botón de crear
+            document.getElementById('create-cita-btn').disabled = false;
+        }
+
+        function closeCreateCitaModal() {
+            document.getElementById('modal-create-cita').classList.add('hidden');
+            document.getElementById('cita-service').value = '';
+            // Reset campos de cliente del buscador
+            const emailInput = document.getElementById('cita-cliente-email');
+            if (emailInput) emailInput.value = '';
+            const clienteIdInput = document.getElementById('cita-cliente-id');
+            if (clienteIdInput) clienteIdInput.value = '';
+            const clienteNombreInput = document.getElementById('cita-cliente-nombre');
+            if (clienteNombreInput) clienteNombreInput.value = '';
+            const resultsBox = document.getElementById('cita-cliente-results');
+            if (resultsBox) resultsBox.classList.add('hidden');
+            const selectedMsg = document.getElementById('cita-cliente-selected');
+            if (selectedMsg) selectedMsg.classList.add('hidden');
+            document.getElementById('cita-fecha-hora').value = '';
+            selectedDate = null;
+            selectedTime = null;
+        }
+
+        async function handleCreateCita(e) {
+            e.preventDefault();
+            
+            const serviceId = document.getElementById('cita-service').value;
+            if (!serviceId) {
+                Swal.fire('Error', 'Por favor selecciona un servicio', 'error');
+                return;
+            }
+
+            if (!selectedDate || !selectedTime) {
+                Swal.fire('Error', 'Por favor selecciona una fecha y hora', 'error');
+                return;
+            }
+            
+            const usuarioId = document.getElementById('cita-cliente-id').value;
+            const usuarioNombre = document.getElementById('cita-cliente-nombre').value;
+            
+            if (!usuarioId) {
+                Swal.fire('Error', 'Por favor selecciona un cliente del buscador', 'error');
+                return;
+            }
+            
+            // Crear fecha completa en horario local (sin convertir a UTC)
+            const dateTime = new Date(selectedDate);
+            const [hours, minutes] = selectedTime.split(':');
+            dateTime.setHours(parseInt(hours), parseInt(minutes));
+            const year = dateTime.getFullYear();
+            const month = String(dateTime.getMonth() + 1).padStart(2, '0');
+            const day = String(dateTime.getDate()).padStart(2, '0');
+            const hoursStr = String(dateTime.getHours()).padStart(2, '0');
+            const minutesStr = String(dateTime.getMinutes()).padStart(2, '0');
+            const fechaHoraCita = `${year}-${month}-${day}T${hoursStr}:${minutesStr}`;
+            
+            const data = {
+                negocio_id: parseInt(currentBusinessId),
+                servicio_id: parseInt(serviceId),
+                usuario_id: parseInt(usuarioId),
+                cliente_nombre: usuarioNombre,
+                fecha_hora_cita: fechaHoraCita,
+                propietario_id: currentUser.id
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/citas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                let result = null;
+                try {
+                    result = await res.json();
+                } catch (parseErr) {
+                    // Respuesta vacía o no-JSON (aun así puede haber creado la cita)
+                    result = null;
+                }
+
+                if (res.ok) {
+                    closeCreateCitaModal();
+                    Swal.fire('¡Cita creada!', '', 'success');
+                    loadCitas();
+                } else {
+                    console.error('Error creando cita:', result);
+                    Swal.fire('Error', (result && result.error) || 'No se pudo crear la cita', 'error');
+                }
+            } catch (err) {
+                console.error('Error de red creando cita:', err);
+                Swal.fire('Error', 'Error de conexión', 'error');
+            }
+        }
+
+        function editCita(id, clienteNombre, servicioId, fechaHora, usuarioEmail = '') {
+            // Resetear estado del calendario de edición
+            editSelectedDate = null;
+            editSelectedTime = null;
+            editCurrentCalendarDate = new Date();
+            
+            // Llenar el select de servicios
+            const serviceSelect = document.getElementById('edit-cita-service');
+            serviceSelect.innerHTML = '<option value="">Seleccionar servicio...</option>';
+            availableServices.forEach(servicio => {
+                const option = document.createElement('option');
+                option.value = servicio.id;
+                option.textContent = `${servicio.nombre} - ${servicio.precio}€`;
+                if (servicio.id === servicioId) {
+                    option.selected = true;
+                }
+                serviceSelect.appendChild(option);
+            });
+            
+            // Llenar los campos
+            document.getElementById('edit-cita-id').value = id;
+            document.getElementById('edit-cita-cliente-email').value = usuarioEmail || '';
+            document.getElementById('edit-cita-cliente-nombre').value = clienteNombre;
+            
+            // Si hay email, mostrar como seleccionado y buscar el ID
+            if (usuarioEmail) {
+                const selectedMsg = document.getElementById('edit-cita-cliente-selected');
+                selectedMsg.querySelector('span').textContent = `Cliente seleccionado: ${clienteNombre}`;
+                selectedMsg.classList.remove('hidden');
+                
+                // Buscar el ID del usuario por email
+                fetch(`${API_URL}/usuarios/buscar?q=${encodeURIComponent(usuarioEmail)}`)
+                    .then(res => res.json())
+                    .then(usuarios => {
+                        if (usuarios.length > 0) {
+                            const usuario = usuarios.find(u => u.email === usuarioEmail) || usuarios[0];
+                            document.getElementById('edit-cita-cliente-id').value = usuario.id;
+                        }
+                    })
+                    .catch(err => console.error('Error buscando ID de usuario:', err));
+            }
+            
+            // Convertir la fecha al formato datetime-local
+            const dateObj = new Date(fechaHora);
+            editSelectedDate = new Date(dateObj);
+            editSelectedTime = dateObj.toTimeString().substring(0, 5);
+            
+            // Generar calendario de edición
+            editCurrentCalendarDate = new Date(editSelectedDate);
+            generateEditCalendar();
+            
+            // Mostrar horarios para la fecha actual
+            document.getElementById('edit-horarios-container').classList.remove('hidden');
+            const dateStr = editSelectedDate.toLocaleDateString('es-ES', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            document.getElementById('edit-selected-date').textContent = dateStr;
+            
+            // Cargar y mostrar horarios
+            loadEditAvailableSlots(editSelectedDate).then(() => {
+                // Marcar el horario actual como seleccionado
+                selectEditTime(editSelectedTime);
+            });
+            
+            document.getElementById('modal-edit-cita').classList.remove('hidden');
+            
+            // Event listeners para navegación del calendario de edición
+            document.getElementById('edit-prev-month').onclick = () => {
+                editCurrentCalendarDate.setMonth(editCurrentCalendarDate.getMonth() - 1);
+                generateEditCalendar();
+            };
+            
+            document.getElementById('edit-next-month').onclick = () => {
+                editCurrentCalendarDate.setMonth(editCurrentCalendarDate.getMonth() + 1);
+                generateEditCalendar();
+            };
+            
+            // Event listener para cambio de servicio en edición
+            serviceSelect.onchange = () => {
+                editSelectedDate = null;
+                editSelectedTime = null;
+                document.getElementById('edit-horarios-container').classList.add('hidden');
+                document.getElementById('edit-selected-datetime').classList.add('hidden');
+                document.getElementById('edit-cita-btn').disabled = true;
+                if (serviceSelect.value) {
+                    generateEditCalendar();
+                } else {
+                    // Limpiar calendario si no hay servicio seleccionado
+                    const calendarGrid = document.getElementById('edit-calendar-grid');
+                    calendarGrid.innerHTML = '';
+                }
+            };
+            
+            // Inicializar iconos después de abrir el modal
+            setTimeout(() => {
+                lucide.createIcons();
+            }, 100);
+        }
+
+        function closeEditCitaModal() {
+            document.getElementById('modal-edit-cita').classList.add('hidden');
+        }
+
+        async function handleEditCita(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-cita-id').value;
+            const usuarioNombre = document.getElementById('edit-cita-cliente-nombre').value;
+            const usuarioId = document.getElementById('edit-cita-cliente-id').value;
+            const servicioId = document.getElementById('edit-cita-service').value;
+            
+            if (!editSelectedDate || !editSelectedTime) {
+                showAlert('Por favor selecciona una fecha y hora para la cita.', 'error');
+                return;
+            }
+            
+            if (!servicioId) {
+                showAlert('Por favor selecciona un servicio.', 'error');
+                return;
+            }
+            
+            if (!usuarioNombre) {
+                showAlert('Por favor ingresa o selecciona un cliente.', 'error');
+                return;
+            }
+            
+            // Construir la fecha y hora completa en formato local (sin conversión UTC)
+            const [hours, minutes] = editSelectedTime.split(':');
+            const year = editSelectedDate.getFullYear();
+            const month = String(editSelectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(editSelectedDate.getDate()).padStart(2, '0');
+            const hoursStr = String(hours).padStart(2, '0');
+            const minutesStr = String(minutes).padStart(2, '0');
+            
+            // Formato: YYYY-MM-DDTHH:MM (sin conversión UTC)
+            const fecha_hora_cita = `${year}-${month}-${day}T${hoursStr}:${minutesStr}`;
+            
+            const citaData = {
+                cliente_nombre: usuarioNombre,
+                servicio_id: parseInt(servicioId),
+                fecha_hora_cita: fecha_hora_cita,
+                propietario_id: currentUser.id
+            };
+            
+            if (usuarioId) {
+                citaData.usuario_id = parseInt(usuarioId);
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/citas/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(citaData)
+                });
+                
+                if (response.ok) {
+                    Swal.fire('¡Cita actualizada!', '', 'success');
+                    document.getElementById('modal-edit-cita').classList.add('hidden');
+                    loadCitas();
+                } else {
+                    const error = await response.json();
+                    Swal.fire('Error', `Error al actualizar la cita: ${error.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('Error', 'Error al conectar con el servidor.', 'error');
+            }
+        }
+
+        async function deleteCita(id) {
+            const result = await Swal.fire({
+                title: '¿Eliminar cita?',
+                text: 'Esta acción no se puede deshacer',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`${API_URL}/citas/${id}?propietario_id=${currentUser.id}`, {
+                        method: 'DELETE'
+                    });
+                    if (res.ok) {
+                        Swal.fire('Cita eliminada', '', 'success');
+                        loadCitas();
+                    } else {
+                        const error = await res.json();
+                        Swal.fire('Error', error.error, 'error');
+                    }
+                } catch (err) {
+                    Swal.fire('Error', 'Error de conexión', 'error');
+                }
+            }
+        }
+
+        // Funciones del calendario de edición
+        function generateEditCalendar() {
+            const calendarGrid = document.getElementById('edit-calendar-grid');
+            const calendarTitle = document.getElementById('edit-calendar-title');
+            
+            // Actualizar título
+            const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                              'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            calendarTitle.textContent = `${monthNames[editCurrentCalendarDate.getMonth()]} ${editCurrentCalendarDate.getFullYear()}`;
+            
+            // Limpiar grid
+            calendarGrid.innerHTML = '';
+            
+            // Obtener información del mes
+            const year = editCurrentCalendarDate.getFullYear();
+            const month = editCurrentCalendarDate.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay() + 1); // Lunes como primer día
+            
+            // Generar días
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            for (let i = 0; i < 42; i++) { // 6 semanas x 7 días
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'text-center py-3 text-sm cursor-pointer hover:bg-indigo-50 rounded-lg transition relative';
+                dayDiv.textContent = currentDate.getDate();
+                
+                // Verificar si es del mes actual
+                if (currentDate.getMonth() !== month) {
+                    dayDiv.classList.add('text-slate-300');
+                } else if (currentDate < today) {
+                    dayDiv.classList.add('text-slate-300', 'cursor-not-allowed');
+                } else {
+                    // Verificar si el negocio abre ese día de la semana
+                    const dayOfWeek = currentDate.getDay(); // 0=domingo, 1=lunes, etc
+                    const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Ajustar: 0=lunes, 6=domingo
+                    const isOpenDay = businessOpenDays.includes(adjustedDay);
+                    
+                    if (!isOpenDay) {
+                        // Día cerrado: mostrar en gris con indicador visual
+                        dayDiv.classList.add('text-slate-300', 'cursor-not-allowed', 'opacity-50');
+                        dayDiv.title = 'Negocio cerrado este día';
+                    } else {
+                        // Día abierto: permitir selección
+                        dayDiv.classList.add('text-slate-700', 'hover:text-indigo-600');
+                        dayDiv.onclick = () => selectEditDate(currentDate);
+                        
+                        // Marcar fecha seleccionada
+                        if (editSelectedDate && currentDate.toDateString() === editSelectedDate.toDateString()) {
+                            dayDiv.classList.add('bg-indigo-600', 'text-white', 'hover:bg-indigo-700');
+                        }
+                    }
+                }
+                
+                calendarGrid.appendChild(dayDiv);
+            }
+        }
+
+        async function selectEditDate(date) {
+            editSelectedDate = date;
+            editSelectedTime = null;
+            
+            // Actualizar visual del calendario
+            generateEditCalendar();
+            
+            // Mostrar contenedor de horarios
+            document.getElementById('edit-horarios-container').classList.remove('hidden');
+            document.getElementById('edit-selected-datetime').classList.add('hidden');
+            document.getElementById('edit-cita-btn').disabled = true;
+            
+            // Actualizar fecha seleccionada
+            const dateStr = date.toLocaleDateString('es-ES', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            document.getElementById('edit-selected-date').textContent = dateStr;
+            
+            // Cargar horarios disponibles
+            await loadEditAvailableSlots(date);
+        }
+
+        async function loadEditAvailableSlots(date) {
+            const serviceId = document.getElementById('edit-cita-service').value;
+            const citaId = document.getElementById('edit-cita-id').value;
+            if (!serviceId) return;
+            
+            const horariosList = document.getElementById('edit-horarios-list');
+            horariosList.innerHTML = '<div class="col-span-3 text-center py-4"><div class="typing-dot w-2 h-2 bg-slate-400 rounded-full inline-block"></div><p class="text-slate-400 mt-2 text-sm">Cargando horarios...</p></div>';
+            
+            try {
+                // Usar formato local para evitar conversión UTC
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
+                const response = await fetch(`${API_URL}/disponibilidad`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        negocio_id: currentBusinessId,
+                        servicio_id: parseInt(serviceId),
+                        fecha: dateStr,
+                        cita_id_excluir: parseInt(citaId)  // Excluir la cita actual
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const slots = data.disponibles || [];
+                    
+                    // Verificar si hay mensaje de negocio cerrado
+                    if (data.mensaje) {
+                        horariosList.innerHTML = `<div class="col-span-3 text-center py-4 text-amber-600 text-sm"><i data-lucide="alert-circle" class="w-5 h-5 mx-auto mb-2"></i><p>${data.mensaje}</p></div>`;
+                        lucide.createIcons();
+                        return;
+                    }
+                    
+                    // Filtrar slots futuros si es hoy
+                    const now = new Date();
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    let availableSlots = slots;
+                    if (date.toDateString() === today.toDateString()) {
+                        availableSlots = slots.filter(slot => {
+                            const slotTime = new Date(`${dateStr} ${slot.split(' ')[1]}`);
+                            return slotTime > now;
+                        });
+                    }
+                    
+                    availableSlots.forEach(slot => {
+                        const time = slot.split(' ')[1].substring(0, 5); // HH:MM
+                        const timeDiv = document.createElement('div');
+                        timeDiv.className = 'p-2 text-center bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition text-sm font-medium';
+                        timeDiv.textContent = time;
+                        timeDiv.onclick = () => selectEditTime(time);
+                        horariosList.appendChild(timeDiv);
+                    });
+                    
+                    if (availableSlots.length === 0) {
+                        horariosList.innerHTML = '<div class="col-span-3 text-center py-4 text-slate-500 text-sm">No hay horarios disponibles para este día</div>';
+                    }
+                    lucide.createIcons();
+                } else {
+                    horariosList.innerHTML = '<div class="col-span-3 text-center py-4 text-red-500 text-sm">Error al cargar horarios</div>';
+                }
+            } catch (error) {
+                horariosList.innerHTML = '<div class="col-span-3 text-center py-4 text-red-500 text-sm">Error de conexión</div>';
+            }
+        }
+
+        function selectEditTime(time) {
+            editSelectedTime = time;
+            
+            // Actualizar visual de los horarios
+            const timeDivs = document.querySelectorAll('#edit-horarios-list > div');
+            timeDivs.forEach(div => {
+                if (div.textContent === time) {
+                    div.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+                } else {
+                    div.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+                }
+            });
+            
+            // Mostrar fecha y hora seleccionada
+            const dateTimeStr = `${editSelectedDate.toLocaleDateString('es-ES')} a las ${time}`;
+            document.getElementById('edit-selected-datetime-text').textContent = dateTimeStr;
+            document.getElementById('edit-selected-datetime').classList.remove('hidden');
+            
+            // Habilitar botón de guardar
+            document.getElementById('edit-cita-btn').disabled = false;
+        }
+
+        function showAlert(message, type) {
+            Swal.fire(type === 'error' ? 'Error' : 'Éxito', message, type);
+        }
+
+        // ========== BUSCADOR DE USUARIOS POR EMAIL ==========
+        let buscarUsuariosTimeout = null;
+        
+        // Para crear cita
+        const clienteEmailInput = document.getElementById('cita-cliente-email');
+        const clienteResults = document.getElementById('cita-cliente-results');
+        
+        if (clienteEmailInput) {
+            clienteEmailInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                
+                // Limpiar campos ocultos si el usuario está escribiendo
+                document.getElementById('cita-cliente-id').value = '';
+                document.getElementById('cita-cliente-nombre').value = '';
+                document.getElementById('cita-cliente-selected').classList.add('hidden');
+                
+                if (query.length < 2) {
+                    clienteResults.classList.add('hidden');
+                    clienteResults.innerHTML = '';
+                    return;
+                }
+                
+                clearTimeout(buscarUsuariosTimeout);
+                buscarUsuariosTimeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`${API_URL}/usuarios/buscar?q=${encodeURIComponent(query)}`);
+                        const usuarios = await res.json();
+                        
+                        if (usuarios.length === 0) {
+                            clienteResults.innerHTML = '<div class="p-3 text-slate-500 text-sm">No se encontraron usuarios</div>';
+                        } else {
+                            clienteResults.innerHTML = usuarios.map(u => `
+                                <div class="p-3 hover:bg-indigo-50 cursor-pointer flex items-center gap-3 border-b border-slate-100 last:border-b-0" onclick="seleccionarUsuarioCrear(${u.id}, '${u.nombre.replace(/'/g, "\\'")}', '${u.email}')">
+                                    <img src="${u.foto_perfil_base64 || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(u.nombre) + '&background=random'}" class="w-8 h-8 rounded-full object-cover">
+                                    <div>
+                                        <div class="font-medium text-slate-900 text-sm">${u.nombre}</div>
+                                        <div class="text-xs text-slate-500">${u.email}</div>
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
+                        
+                        clienteResults.classList.remove('hidden');
+                    } catch (err) {
+                        console.error('Error buscando usuarios:', err);
+                    }
+                }, 300);
+            });
+            
+            // Cerrar dropdown al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#cita-cliente-email') && !e.target.closest('#cita-cliente-results')) {
+                    clienteResults.classList.add('hidden');
+                }
+            });
+        }
+        
+        function seleccionarUsuarioCrear(id, nombre, email) {
+            document.getElementById('cita-cliente-email').value = email;
+            document.getElementById('cita-cliente-id').value = id;
+            document.getElementById('cita-cliente-nombre').value = nombre;
+            document.getElementById('cita-cliente-results').classList.add('hidden');
+            
+            const selectedMsg = document.getElementById('cita-cliente-selected');
+            selectedMsg.querySelector('span').textContent = `Cliente seleccionado: ${nombre}`;
+            selectedMsg.classList.remove('hidden');
+            
+            setTimeout(() => lucide.createIcons(), 50);
+        }
+        
+        // Para editar cita
+        const editClienteEmailInput = document.getElementById('edit-cita-cliente-email');
+        const editClienteResults = document.getElementById('edit-cita-cliente-results');
+        
+        if (editClienteEmailInput) {
+            editClienteEmailInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                
+                // Limpiar campos ocultos si el usuario está escribiendo
+                document.getElementById('edit-cita-cliente-id').value = '';
+                document.getElementById('edit-cita-cliente-nombre').value = '';
+                document.getElementById('edit-cita-cliente-selected').classList.add('hidden');
+                
+                if (query.length < 2) {
+                    editClienteResults.classList.add('hidden');
+                    editClienteResults.innerHTML = '';
+                    return;
+                }
+                
+                clearTimeout(buscarUsuariosTimeout);
+                buscarUsuariosTimeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`${API_URL}/usuarios/buscar?q=${encodeURIComponent(query)}`);
+                        const usuarios = await res.json();
+                        
+                        if (usuarios.length === 0) {
+                            editClienteResults.innerHTML = '<div class="p-3 text-slate-500 text-sm">No se encontraron usuarios</div>';
+                        } else {
+                            editClienteResults.innerHTML = usuarios.map(u => `
+                                <div class="p-3 hover:bg-indigo-50 cursor-pointer flex items-center gap-3 border-b border-slate-100 last:border-b-0" onclick="seleccionarUsuarioEditar(${u.id}, '${u.nombre.replace(/'/g, "\\'")}', '${u.email}')">
+                                    <img src="${u.foto_perfil_base64 || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(u.nombre) + '&background=random'}" class="w-8 h-8 rounded-full object-cover">
+                                    <div>
+                                        <div class="font-medium text-slate-900 text-sm">${u.nombre}</div>
+                                        <div class="text-xs text-slate-500">${u.email}</div>
+                                    </div>
+                                </div>
+                            `).join('');
+                        }
+                        
+                        editClienteResults.classList.remove('hidden');
+                    } catch (err) {
+                        console.error('Error buscando usuarios:', err);
+                    }
+                }, 300);
+            });
+            
+            // Cerrar dropdown al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#edit-cita-cliente-email') && !e.target.closest('#edit-cita-cliente-results')) {
+                    editClienteResults.classList.add('hidden');
+                }
+            });
+        }
+        
+        function seleccionarUsuarioEditar(id, nombre, email) {
+            document.getElementById('edit-cita-cliente-email').value = email;
+            document.getElementById('edit-cita-cliente-id').value = id;
+            document.getElementById('edit-cita-cliente-nombre').value = nombre;
+            document.getElementById('edit-cita-cliente-results').classList.add('hidden');
+            
+            const selectedMsg = document.getElementById('edit-cita-cliente-selected');
+            selectedMsg.querySelector('span').textContent = `Cliente seleccionado: ${nombre}`;
+            selectedMsg.classList.remove('hidden');
+            
+            setTimeout(() => lucide.createIcons(), 50);
+        }
+
         // Inicializar iconos después de que todo esté cargado
         setTimeout(() => {
             lucide.createIcons();
@@ -397,6 +1926,55 @@
             setTimeout(() => {
                 lucide.createIcons();
             }, 50);
+            // Asignar eventos de foto
+            const inputPhoto = document.getElementById('input-photo-upload');
+            const editPhotoBtn = document.getElementById('edit-photo-btn');
+            if (editPhotoBtn && inputPhoto) {
+                editPhotoBtn.addEventListener('click', () => {
+                    inputPhoto.click();
+                });
+                inputPhoto.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = async function(evt) {
+                        const base64String = evt.target.result;
+                        try {
+                            const res = await fetch(`${API_URL}/negocios/${currentBusinessId}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ foto_base64: base64String })
+                            });
+                            const result = await res.json();
+                            if (res.ok) {
+                                Swal.fire('Foto actualizada', '', 'success');
+                                if (result.foto_base64) {
+                                    document.getElementById('business-photo').src = result.foto_base64;
+                                    currentBusiness.foto_base64 = result.foto_base64;
+                                    setTimeout(() => location.reload(), 500);
+                                }
+                            } else {
+                                Swal.fire('Error', result.error || 'No se pudo actualizar la foto', 'error');
+                            }
+                        } catch (err) {
+                            Swal.fire('Error', 'Error de conexión', 'error');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // Event listeners para cerrar modales al hacer clic fuera
+            document.getElementById('modal-create-cita').addEventListener('click', (e) => {
+                if (e.target.id === 'modal-create-cita') {
+                    closeCreateCitaModal();
+                }
+            });
+            document.getElementById('modal-edit-cita').addEventListener('click', (e) => {
+                if (e.target.id === 'modal-edit-cita') {
+                    closeEditCitaModal();
+                }
+            });
         });
     </script>
 </body>

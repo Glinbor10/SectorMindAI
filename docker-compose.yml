@@ -13,7 +13,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sectormind"]
+      test: ["CMD-SHELL", "pg_isready -U sectormind -d sectormind_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,11 +30,9 @@ services:
       - FLASK_ENV=production
       - DATABASE_URL=${DATABASE_URL}
       - API_URL=${API_URL}
-      - UPLOAD_FOLDER=/app/frontend/uploads
     volumes:
       - ./backend:/app/backend
       - ./frontend:/app/frontend
-      - ./uploads:/app/uploads
       - ./rasa_model:/app/rasa_model
     depends_on:
       db:

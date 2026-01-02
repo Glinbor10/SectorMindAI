@@ -5,16 +5,9 @@ nlu:
     examples: |
       - hola
       - buenos días
-      - buenas tardes
       - qué tal
+      - buenas tardes
       - hola buenas
-      - hey
-      - buenas
-      - saludo
-      - hola que tal
-      - buen dia
-      - buenas noches
-      - hola amigo
 
   - intent: goodbye
     examples: |
@@ -23,134 +16,88 @@ nlu:
       - chao
       - bye
       - nos vemos
-      - hasta pronto
-      - adios
-      - chau
-      - me voy
-      - gracias y adios
-      - ya está todo
-      - perfecto adios
-      - eso es todo
-      - nada más
+
+  - intent: thanks
+    examples: |
+      - gracias
+      - muchas gracias
+      - te lo agradezco
+      - mil gracias
+      - ok gracias
+      - vale gracias
+      - perfecto gracias
+      - genial gracias
+      - muy bien gracias
+      - de acuerdo gracias
+      - entendido gracias
+      - thank you
+      - thanks
+      
   - intent: bot_challenge
     examples: |
-      - qué eres
-      - que eres
       - eres un bot
       - eres una ia
-      - eres artificial
-      - eres un chatbot
-      - qué tipo de bot eres
       - eres humano
+      - eres artificial
+      - quién eres
+      - quien eres
+      - quienes sois
+      - eres un robot
+      - eres una persona
+      - hablas solo o hay alguien
+      - estoy hablando con una máquina
       - eres real
-      - me hablas desde un programa
-      - eres una máquina
-      - qué inteligencia eres
-      - eres de rasa
-      - cómo funcionas
-      - eres un asistente virtual
+
   - intent: consultar_mis_citas
     examples: |
       - quiero ver mis citas
-      - qué tengo reservado
       - mis citas
       - ver mis turnos
       - mis reservas
-      - que citas tengo
-      - qué tengo agendado
-      - ver mis citas pendientes
       - consultar mis citas
-      - mis próximas citas
-      - tengo alguna cita
-      - ver mi agenda
-      - mis turnos agendados
-      - qué días tengo reservado
-      - cuando tengo cita
-      - revisar mis citas
-      - ver mis citas
-      - consultar mis citas
-      - qué citas tengo
-      - mostrar mis citas
       - mis citas pendientes
-
+      - cuales son mis citas
+      - qué reservas tengo
+      - tengo citas
+      - mostrar mis citas
 
   - intent: cancelar_cita
     examples: |
-      - quiero anular
       - cancelar mi cita
+      - quiero anular
       - borrar reserva
       - anular turno
       - eliminar mi cita
-      - cancelar turno
-      - quitar mi reserva
-      - no puedo ir a la cita
-      - anular mi reserva
-      - borrar mi cita
-      - cancelar cita pendiente
-      - quiero cancelar
-      - eliminar turno
-      - anular la cita
-      - borrar turno
-      - no voy a poder ir
-      - quiero anular una cita
-      - anular una cita
       - cancelar cita
+      - anular cita
+      - quiero cancelar
       - quiero cancelar mi cita
-      - eliminar cita
-      - borrar cita
+      - cancela mi cita
+      - anula mi cita
+      - quitar mi cita
+      - quiero anular mi reserva
+      - cancelar mi reserva
+      - borrar mi cita
+      - eliminar reserva
 
   - intent: seleccionar_cita
     examples: |
       - 1
       - 2
       - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
       - la 1
       - la 2
-      - la 3
-      - la 4
-      - la 5
-      - la 6
-      - la 7
-      - la 8
-      - la 9
-      - la 10
       - cita 1
       - cita 2
-      - cita 3
-      - cita 4
-      - cita 5
-      - cita 6
-      - cita 7
-      - cita 8
-      - cita 9
-      - cita 10
       - número 1
       - número 2
-      - número 3
-      - número 4
-      - número 5
-      - número 6
-      - número 7
-      - número 8
-      - número 9
-      - número 10
-      - el 1
-      - el 2
-      - el 3
-      - el 4
-      - el 5
-      - el 6
-      - el 7
-      - el 8
-      - el 9
-      - el 10
+      - quiero la primera
+      - la primera
+      - la segunda
+      - primera
+      - segunda
+      - elijo la 1
+      - elijo la 2
 
   - intent: consultar_horarios
     examples: |
@@ -159,9 +106,6 @@ nlu:
       - quiero ver tu horario
       - qué horarios tienes
       - ver huecos disponibles
-      - mañana temprano
-      - hoy a las 5
-      - el miércoles
 
   - intent: affirm
     examples: |
@@ -170,11 +114,6 @@ nlu:
       - correcto
       - claro
       - vale
-      - de acuerdo
-      - afirmo
-      - por supuesto
-      - totalmente
-      - ok
 
   - intent: deny
     examples: |
@@ -183,9 +122,6 @@ nlu:
       - en realidad no
       - no gracias
       - mejor no
-      - no quiero
-      - negativo
-      - no es necesario
 
   - intent: reservar_servicio
     examples: |
@@ -194,37 +130,29 @@ nlu:
       - quiero hacer una reserva
       - necesito una cita
       - quiero agendar
-      - quiero pedir cita
-      - reserva para mi
-      - quiero programar
-      - necesito cita
-      - quiero turno
-      - reserva cita
-      - quiero agendar cita
-      - quiero una cita
-      - me gustaría reservar
-      - puedo reservar
-      - reserva por favor
-      - necesito cita para
-      - quiero pedir turno
-      - me gustaría agendar
+      - quiero un servicio
+      - necesito un servicio
+      - quiero algo
+      - quisiera algo
+      - me gustaría algo
+      - hacerme algo
+      - vengo por algo
 
-  - intent: informar_fecha
+  - intent: inform
     examples: |
-      - mañana
-      - hoy
+      - mañana a las 10
+      - hoy a las 15:00
+      - el lunes a las 9
+      - para el martes a las 11
+      - el viernes por la tarde
       - pasado mañana
-      - el lunes
-      - el martes
-      - el miércoles
-      - el jueves
-      - el viernes
-      - el sábado
-      - el domingo
-      - esta semana
-      - la próxima semana
-      - en una semana
-      - dentro de 3 días
+      - mañana a las 10:45
+      - hoy las 11
+      - a las 10
+      - las 11
+      - a las 9:30
+      - 10:00
+      - 15:30
 
   - intent: consultar_servicios
     examples: |
@@ -233,11 +161,6 @@ nlu:
       - qué servicios tienen
       - qué tratamientos
       - qué ofrecen
-      - servicios disponibles
-      - qué puedo hacer aquí
-      - qué atienden
-      - qué especialidades
-      - qué tipos de servicio
 
   - intent: consultar_ubicacion
     examples: |
@@ -246,10 +169,6 @@ nlu:
       - dónde queda
       - cómo llegar
       - ubicación
-      - dónde se encuentra
-      - dirección
-      - dónde está el local
-      - cómo llegar aquí
 
   - intent: cambiar_horario
     examples: |
@@ -258,9 +177,16 @@ nlu:
       - cambiar fecha
       - cambiar turno
       - quiero cambiar la cita
-      - modificar reserva
-      - cambiar hora
+      - cambiar cita
+      - modificar mi cita
+      - quiero modificar mi cita
+      - cambiar la fecha de mi cita
       - quiero cambiar el horario
+      - reprogramar mi cita
+      - mover mi cita
+      - necesito cambiar la cita
+      - cambiar la hora
+      - cambiar mi turno
 
   - intent: info_general
     examples: |
@@ -269,9 +195,6 @@ nlu:
       - información general
       - qué hacen
       - sobre el negocio
-      - qué tipo de negocio
-      - descripción
-      - qué ofrecen en general
 
   - intent: pedir_mas_opciones
     examples: |
@@ -280,6 +203,3 @@ nlu:
       - otros horarios
       - más fechas
       - otras alternativas
-      - ver más
-      - más disponibilidad
-      - otras opciones

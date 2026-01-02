@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request
 from datetime import datetime, date, time
 from ..db import get_db_connection
 from ..logic import obtener_tramos_disponibles, verificar_solapamiento
-from ..db_utils import adapt_query
+
 
 citas_bp = Blueprint('citas', __name__)
 
@@ -33,7 +33,8 @@ def obtener_citas():
                 n.nombre as negocio_nombre, n.tipo_negocio,
                 s.nombre as servicio_nombre, 
                 s.precio,
-                u.nombre as cliente_nombre
+                u.nombre as cliente_nombre,
+                u.email as cliente_email
             FROM citas c
             JOIN negocios n ON c.negocio_id = n.id
             JOIN servicios s ON c.servicio_id = s.id
@@ -42,6 +43,9 @@ def obtener_citas():
         
         params = []
         conditions = []
+        
+        # Siempre excluir citas canceladas
+        conditions.append("c.estado != 'cancelada'")
 
         if cliente_id:
             conditions.append("c.cliente_id = %s")
@@ -51,8 +55,7 @@ def obtener_citas():
             conditions.append("c.negocio_id = %s")
             params.append(negocio_id)
         
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
+        query += " WHERE " + " AND ".join(conditions)
         
         query += " ORDER BY c.fecha_hora_cita DESC"
 
@@ -70,10 +73,12 @@ def crear_cita():
     negocio_id = data.get('negocio_id')
     servicio_id = data.get('servicio_id')
     fecha_hora_cita = data.get('fecha_hora_cita')
-    cliente_id = data.get('cliente_id', 2)
+    
+    # Aceptar usuario_id o cliente_id (retrocompatibilidad)
+    cliente_id = data.get('usuario_id') or data.get('cliente_id')
 
-    if not (negocio_id and servicio_id and fecha_hora_cita):
-        return jsonify({'error': 'Faltan datos obligatorios'}), 400
+    if not (negocio_id and servicio_id and fecha_hora_cita and cliente_id):
+        return jsonify({'error': 'Faltan datos obligatorios (negocio_id, servicio_id, fecha_hora_cita, usuario_id)'}), 400
 
     conn = get_db_connection()
     try:
@@ -102,11 +107,11 @@ def crear_cita():
         # Crear cita
         cursor = conn.cursor()
         cursor.execute(
-            adapt_query('''
+            '''
                 INSERT INTO citas (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion_minutos, estado) 
                 VALUES (%s, %s, %s, %s, %s, %s) 
                 RETURNING id
-            '''),
+            ''',
             (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion, 'confirmada')
         )
         conn.commit()
@@ -128,18 +133,19 @@ def consultar_disponibilidad():
     negocio_id = data.get('negocio_id')
     servicio_id = data.get('servicio_id')
     fecha_str = data.get('fecha')
+    cita_id_excluir = data.get('cita_id_excluir')  # Opcional: para excluir al editar
 
     if not (negocio_id and servicio_id and fecha_str):
         return jsonify({'error': 'Faltan datos (negocio_id, servicio_id, fecha)'}), 400
 
     conn = get_db_connection()
     try:
-        resultado = obtener_tramos_disponibles(negocio_id, servicio_id, fecha_str, conn)
+        resultado = obtener_tramos_disponibles(negocio_id, servicio_id, fecha_str, conn, cita_id_excluir)
         
         if 'error' in resultado:
             return jsonify(resultado), 400
         
-        return jsonify({'disponibles': resultado.get('disponibles', [])})
+        return jsonify({'disponibles': resultado.get('disponibles', []), 'mensaje': resultado.get('mensaje', '')})
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -153,8 +159,13 @@ def modificar_cita(cita_id):
     data = request.get_json()
     servicio_id = data.get('servicio_id')
     fecha_hora_cita = data.get('fecha_hora_cita')
+    usuario_id = data.get('usuario_id')  # Nuevo: permite cambiar el cliente
+    
+    print(f"📥 PUT /citas/{cita_id} - Data: {data}")
+    print(f"   servicio_id: {servicio_id}, fecha_hora_cita: {fecha_hora_cita}, usuario_id: {usuario_id}")
     
     if not (servicio_id and fecha_hora_cita):
+        print(f"❌ Faltan datos obligatorios")
         return jsonify({'error': 'Faltan datos obligatorios'}), 400
     
     conn = get_db_connection()
@@ -171,8 +182,8 @@ def modificar_cita(cita_id):
         
         negocio_id = cita['negocio_id']
         
-        # Validar disponibilidad
-        es_valida, mensaje = verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita, conn)
+        # Validar disponibilidad (excluir la cita actual de la verificación)
+        es_valida, mensaje = verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita, conn, cita_id_excluir=cita_id)
         
         if not es_valida:
             return jsonify({'error': mensaje}), 400
@@ -186,16 +197,26 @@ def modificar_cita(cita_id):
         if not servicio:
             return jsonify({'error': 'Servicio no válido'}), 400
 
-        # Actualizar cita
+        # Actualizar cita (incluir cliente_id si viene)
         cursor = conn.cursor()
-        cursor.execute(
-            adapt_query('''
-                UPDATE citas 
-                SET servicio_id = %s, fecha_hora_cita = %s, duracion_minutos = %s 
-                WHERE id = %s
-            '''),
-            (servicio_id, fecha_hora_cita, servicio['duracion_minutos'], cita_id)
-        )
+        if usuario_id:
+            cursor.execute(
+                '''
+                    UPDATE citas 
+                    SET servicio_id = %s, fecha_hora_cita = %s, duracion_minutos = %s, cliente_id = %s 
+                    WHERE id = %s
+                ''',
+                (servicio_id, fecha_hora_cita, servicio['duracion_minutos'], usuario_id, cita_id)
+            )
+        else:
+            cursor.execute(
+                '''
+                    UPDATE citas 
+                    SET servicio_id = %s, fecha_hora_cita = %s, duracion_minutos = %s 
+                    WHERE id = %s
+                ''',
+                (servicio_id, fecha_hora_cita, servicio['duracion_minutos'], cita_id)
+            )
         conn.commit()
         
         return jsonify({'message': 'Cita modificada exitosamente'}), 200
@@ -224,7 +245,7 @@ def cancelar_cita(cita_id):
         # Cambiar estado a cancelada
         cursor = conn.cursor()
         cursor.execute(
-            adapt_query('UPDATE citas SET estado = %s WHERE id = %s'),
+            'UPDATE citas SET estado = %s WHERE id = %s',
             ('cancelada', cita_id)
         )
         conn.commit()

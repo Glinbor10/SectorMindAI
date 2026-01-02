@@ -187,6 +187,54 @@ def test_post_citas_exitoso(client, usuario_cliente, propietario_con_negocio):
     assert 'exitosamente' in data['message'].lower()
 
 
+def test_post_citas_formato_iso_T(client, usuario_cliente, propietario_con_negocio):
+    """Acepta fecha con formato ISO 'YYYY-MM-DDTHH:MM' (sin segundos)."""
+    negocio_id = propietario_con_negocio['negocio_id']
+    servicio_id = propietario_con_negocio['servicio_id_1']
+
+    payload = {
+        'negocio_id': negocio_id,
+        'servicio_id': servicio_id,
+        'cliente_id': usuario_cliente,
+        'fecha_hora_cita': '2025-12-08T10:00'
+    }
+
+    response = client.post('/citas', data=json.dumps(payload), content_type='application/json')
+
+    assert response.status_code == 201
+    data = response.get_json()
+    assert 'id' in data
+
+
+def test_post_citas_con_usuario_id(client, propietario_con_negocio, db_conn):
+    """Se puede crear cita usando 'usuario_id' en lugar de 'cliente_id'."""
+    # Crear cliente
+    cursor = db_conn.cursor()
+    cursor.execute(
+        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Cliente UsuarioId', 'usuario_id@test.com', 'hash', 'cliente')
+    )
+    usuario_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    negocio_id = propietario_con_negocio['negocio_id']
+    servicio_id = propietario_con_negocio['servicio_id_1']
+
+    payload = {
+        'negocio_id': negocio_id,
+        'servicio_id': servicio_id,
+        'usuario_id': usuario_id,
+        'fecha_hora_cita': '2025-12-08T11:00'
+    }
+
+    response = client.post('/citas', data=json.dumps(payload), content_type='application/json')
+
+    assert response.status_code == 201
+    data = response.get_json()
+    assert 'id' in data
+
+
 def test_post_citas_sin_datos_obligatorios(client):
     """Test POST /citas sin datos obligatorios devuelve 400."""
     payload = {'negocio_id': 1}  # Faltan servicio_id y fecha_hora_cita

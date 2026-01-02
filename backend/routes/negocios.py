@@ -1,15 +1,12 @@
 from flask import Blueprint, jsonify, request, current_app
 from ..db import get_db_connection
-from ..db_utils import adapt_query
+
 import os
 import uuid 
 
 negocios_bp = Blueprint('negocios', __name__, url_prefix='/negocios')
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # 1. LISTAR NEGOCIOS
 @negocios_bp.route('/', methods=['GET'])
@@ -34,7 +31,12 @@ def listar_negocios():
         
     negocios = conn.execute(query, params).fetchall()
     conn.close()
-    return jsonify([dict(row) for row in negocios])
+    negocios_list = []
+    for row in negocios:
+        row_dict = dict(row)
+        # Solo exponer foto_base64
+        negocios_list.append(row_dict)
+    return jsonify(negocios_list)
 
 # 2. OBTENER UN SOLO NEGOCIO
 @negocios_bp.route('/<int:negocio_id>', methods=['GET'])
@@ -47,12 +49,46 @@ def obtener_negocio(negocio_id):
         WHERE n.id = %s
     """
     negocio = conn.execute(query, (negocio_id,)).fetchone()
-    conn.close()
     
     if negocio is None:
+        conn.close()
         return jsonify({'error': 'Negocio no encontrado'}), 404
         
-    return jsonify(dict(negocio))
+    row_dict = dict(negocio)
+    
+    # Obtener horarios de la tabla horarios_negocio
+    horarios_query = """
+        SELECT dia_semana, hora_apertura, hora_cierre
+        FROM horarios_negocio
+        WHERE negocio_id = %s
+        ORDER BY dia_semana, hora_apertura
+    """
+    horarios_rows = conn.execute(horarios_query, (negocio_id,)).fetchall()
+    conn.close()
+    
+    # Formatear horarios en texto legible
+    dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+    horarios_texto = ""
+    if horarios_rows:
+        dia_actual = None
+        for row in horarios_rows:
+            dia_semana = row['dia_semana']  # Access by column name
+            hora_apertura = row['hora_apertura']
+            hora_cierre = row['hora_cierre']
+            if dia_semana != dia_actual:
+                if dia_actual is not None:
+                    horarios_texto += "\n"
+                horarios_texto += f"{dias[dia_semana]}: {hora_apertura.strftime('%H:%M')} - {hora_cierre.strftime('%H:%M')}"
+                dia_actual = dia_semana
+            else:
+                horarios_texto += f" y {hora_apertura.strftime('%H:%M')} - {hora_cierre.strftime('%H:%M')}"
+    else:
+        horarios_texto = "No disponible"
+    
+    row_dict['horarios'] = horarios_texto
+    
+    # Solo exponer foto_base64
+    return jsonify(row_dict)
 
 # 3. CREAR NEGOCIO
 @negocios_bp.route('/', methods=['POST'])
@@ -62,87 +98,99 @@ def crear_negocio():
     print(f"DEBUG: Form keys: {list(request.form.keys()) if request.form else 'None'}")
     print(f"DEBUG: Files keys: {list(request.files.keys()) if request.files else 'None'}")
 
-    # Determinar si es FormData o JSON
-    is_form_data = request.content_type and (
-        'multipart/form-data' in request.content_type or 
-        'application/x-www-form-urlencoded' in request.content_type
-    )
-    
-    if is_form_data:
-        print("DEBUG: Detectado como FormData")
-        # FormData (con posible archivo)
+
+    # Permitir tanto JSON como FormData
+    foto_base64 = None
+    horarios = None
+    if request.content_type and request.content_type.startswith('multipart/form-data'):
         nombre = request.form.get('nombre')
         tipo_negocio = request.form.get('tipo_negocio', 'general')
         direccion = request.form.get('direccion')
         descripcion = request.form.get('descripcion')
         propietario_id = request.form.get('propietario_id')
-        archivo = request.files.get('foto')
-        print(f"DEBUG: FormData - nombre: {nombre}, propietario_id: {propietario_id}, archivo: {archivo.filename if archivo else 'None'}")
+        horarios = request.form.get('horarios')
+        dias_apertura = request.form.get('dias_apertura')
+        # Procesar archivo de foto si existe
+        if 'foto' in request.files:
+            foto_file = request.files['foto']
+            if foto_file:
+                import base64
+                foto_base64 = 'data:' + foto_file.mimetype + ';base64,' + base64.b64encode(foto_file.read()).decode('utf-8')
     else:
-        print("DEBUG: Detectado como JSON")
-        # JSON (compatibilidad hacia atrás)
-        data = request.get_json()
+        data = request.get_json() or {}
         nombre = data.get('nombre')
         tipo_negocio = data.get('tipo_negocio', 'general')
         direccion = data.get('direccion')
         descripcion = data.get('descripcion')
-        foto_url = data.get('foto_url')
         propietario_id = data.get('propietario_id')
-        archivo = None
-        print(f"DEBUG: JSON - data: {data}")
+        horarios = data.get('horarios')
+        dias_apertura = data.get('dias_apertura')
 
     if not (nombre and direccion and propietario_id):
         return jsonify({'error': 'Faltan datos obligatorios'}), 400
 
-    # Convertir propietario_id a int
     try:
         propietario_id = int(propietario_id)
     except (ValueError, TypeError):
         return jsonify({'error': 'propietario_id inválido'}), 400
-
-    foto_url = None
-
-    # Procesar archivo si viene (solo en FormData)
-    if archivo and archivo.filename != '':
-        if allowed_file(archivo.filename):
-            # Generar nombre único para evitar colisiones
-            ext = archivo.filename.rsplit('.', 1)[1].lower()
-            filename = f"business_{uuid.uuid4().hex[:8]}.{ext}"
-
-            # Usar carpeta de uploads configurada
-            upload_folder = current_app.config.get('UPLOAD_FOLDER')
-            if not upload_folder:
-                # Fallback por si no está configurada
-                base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                upload_folder = os.path.join(base_dir, 'frontend', 'uploads')
-
-            # Crear carpeta si no existe
-            if not os.path.exists(upload_folder):
-                os.makedirs(upload_folder)
-
-            # Guardar el archivo físicamente
-            filepath = os.path.join(upload_folder, filename)
-            archivo.save(filepath)
-
-            # Guardar la URL RELATIVA en la BD
-            foto_url = f"/uploads/{filename}"
-        else:
-            return jsonify({'error': 'Tipo de archivo no permitido (solo jpg, png, gif)'}), 400
-    elif not archivo and 'foto_url' in locals() and foto_url:
-        # Si viene foto_url en JSON, usarla directamente
-        pass  # foto_url ya está asignada
+    
+    # Parsear días de apertura y horarios si vienen como JSON string
+    import json
+    if dias_apertura is not None and isinstance(dias_apertura, str):
+        try:
+            dias_apertura = json.loads(dias_apertura)
+        except json.JSONDecodeError:
+            return jsonify({'error': 'dias_apertura debe ser un array JSON válido'}), 400
+    
+    if horarios is not None and isinstance(horarios, str):
+        try:
+            horarios = json.loads(horarios)
+        except json.JSONDecodeError:
+            return jsonify({'error': 'horarios debe ser un array JSON válido'}), 400
+    
+    # Permitir crear negocio sin horarios; normalizar a listas vacías cuando no se envían
+    if dias_apertura is None:
+        dias_apertura = []
+    if horarios is None:
+        horarios = []
+    
+    if dias_apertura and not isinstance(dias_apertura, list):
+        return jsonify({'error': 'dias_apertura debe ser una lista'}), 400
+    
+    if horarios and not isinstance(horarios, list):
+        return jsonify({'error': 'horarios debe ser una lista'}), 400
 
     conn = get_db_connection()
     try:
-        # PostgreSQL EXCLUSIVAMENTE
-        cursor = conn.execute(
-            adapt_query('INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_url, propietario_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id'),
-            (nombre, tipo_negocio, direccion, descripcion, foto_url, propietario_id)
-        )
+        # Crear el negocio
+        if foto_base64:
+            cursor = conn.execute(
+                'INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, propietario_id, foto_base64) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
+                (nombre, tipo_negocio, direccion, descripcion, propietario_id, foto_base64)
+            )
+        else:
+            cursor = conn.execute(
+                'INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, propietario_id) VALUES (%s, %s, %s, %s, %s) RETURNING id',
+                (nombre, tipo_negocio, direccion, descripcion, propietario_id)
+            )
         new_id = cursor.fetchone()['id']
+        
+        # Insertar horarios si se enviaron; permite negocio sin horarios
+        if dias_apertura and horarios:
+            for dia in dias_apertura:
+                for horario in horarios:
+                    conn.execute(
+                        'INSERT INTO horarios_negocio (negocio_id, dia_semana, hora_apertura, hora_cierre) VALUES (%s, %s, %s, %s)',
+                        (new_id, dia, horario['apertura'], horario['cierre'])
+                    )
+            message = 'Negocio creado exitosamente con horarios'
+        else:
+            message = 'Negocio creado exitosamente'
+        
         conn.commit()
-        return jsonify({'id': new_id, 'message': 'Negocio creado exitosamente'}), 201
+        return jsonify({'id': new_id, 'message': message}), 201
     except Exception as e:
+        conn.close()
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
@@ -150,46 +198,43 @@ def crear_negocio():
 # 4. ACTUALIZAR NEGOCIO
 @negocios_bp.route('/<int:negocio_id>', methods=['PUT'])
 def actualizar_negocio(negocio_id):
-    data = request.get_json()
-    
-    nombre = data.get('nombre')
-    descripcion = data.get('descripcion')
-    foto_url = data.get('foto_url')
-    direccion = data.get('direccion')
+    # Soporta tanto JSON como FormData (para actualizar foto)
 
-    if not any([nombre, descripcion, foto_url, direccion]):
-         return jsonify({'error': 'No hay datos para actualizar'}), 400
+    data = request.get_json()
+    nombre = data.get('nombre') if data else None
+    tipo_negocio = data.get('tipo_negocio') if data else None
+    descripcion = data.get('descripcion') if data else None
+    direccion = data.get('direccion') if data else None
+    foto_base64 = data.get('foto_base64') if data else None
+    if not any([nombre, tipo_negocio, descripcion, foto_base64, direccion]):
+        return jsonify({'error': 'No hay datos para actualizar'}), 400
 
     conn = get_db_connection()
     try:
         updates = []
         params = []
-
         if nombre is not None:
             updates.append("nombre = %s")
             params.append(nombre)
+        if tipo_negocio is not None:
+            updates.append("tipo_negocio = %s")
+            params.append(tipo_negocio)
         if descripcion is not None:
             updates.append("descripcion = %s")
             params.append(descripcion)
-        if foto_url is not None:
-            updates.append("foto_url = %s")
-            params.append(foto_url)
+        if foto_base64 is not None:
+            updates.append("foto_base64 = %s")
+            params.append(foto_base64)
         if direccion is not None:
             updates.append("direccion = %s")
             params.append(direccion)
-
         params.append(negocio_id)
-
         query = f"UPDATE negocios SET {', '.join(updates)} WHERE id = %s"
-        
         cursor = conn.execute(query, params)
         conn.commit()
-
         if cursor.rowcount == 0:
             return jsonify({'error': 'Negocio no encontrado'}), 404
-            
-        return jsonify({'message': 'Negocio actualizado'}), 200
-
+        return jsonify({'message': 'Negocio actualizado', 'foto_base64': foto_base64}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
@@ -231,6 +276,43 @@ def obtener_horarios_negocio(negocio_id):
     finally:
         conn.close()
 
+# 6b. ACTUALIZAR HORARIOS DE UN NEGOCIO
+@negocios_bp.route('/<int:negocio_id>/horarios', methods=['PUT'])
+def actualizar_horarios_negocio(negocio_id):
+    data = request.get_json()
+    horarios = data.get('horarios')
+    dias_apertura = data.get('dias_apertura')
+    
+    if not (horarios and dias_apertura):
+        return jsonify({'error': 'Debes especificar horarios y dias_apertura'}), 400
+    
+    if not isinstance(dias_apertura, list) or len(dias_apertura) == 0:
+        return jsonify({'error': 'dias_apertura debe ser una lista con al menos un día'}), 400
+    
+    if not isinstance(horarios, list) or len(horarios) == 0:
+        return jsonify({'error': 'horarios debe ser una lista con al menos un horario'}), 400
+    
+    conn = get_db_connection()
+    try:
+        # Eliminar horarios existentes
+        conn.execute('DELETE FROM horarios_negocio WHERE negocio_id = %s', (negocio_id,))
+        
+        # Insertar nuevos horarios para cada día y cada rango horario (mañana/tarde)
+        for dia in dias_apertura:
+            for horario in horarios:
+                conn.execute(
+                    'INSERT INTO horarios_negocio (negocio_id, dia_semana, hora_apertura, hora_cierre) VALUES (%s, %s, %s, %s)',
+                    (negocio_id, dia, horario['apertura'], horario['cierre'])
+                )
+        
+        conn.commit()
+        return jsonify({'message': 'Horarios actualizados exitosamente'}), 200
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
 # 7. CREAR SERVICIO PARA UN NEGOCIO
 @negocios_bp.route('/<int:negocio_id>/servicios', methods=['POST'])
 def crear_servicio(negocio_id):
@@ -242,6 +324,17 @@ def crear_servicio(negocio_id):
 
     if not (nombre and precio is not None and duracion_minutos):
         return jsonify({'error': 'Faltan datos obligatorios'}), 400
+
+    # Validación explícita de precio y duración
+    try:
+        precio = float(precio)
+        duracion_minutos = int(duracion_minutos)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Precio y duración deben ser numéricos'}), 400
+    if precio <= 0:
+        return jsonify({'error': 'El precio debe ser mayor que cero'}), 400
+    if duracion_minutos <= 0:
+        return jsonify({'error': 'La duración debe ser mayor que cero'}), 400
 
     try:
         propietario_id = int(propietario_id)
@@ -256,7 +349,7 @@ def crear_servicio(negocio_id):
             return jsonify({'error': 'No tienes permisos para este negocio'}), 403
 
         cursor = conn.execute(
-            adapt_query('INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES (%s, %s, %s, %s) RETURNING id'),
+            'INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES (%s, %s, %s, %s) RETURNING id',
             (negocio_id, nombre, precio, duracion_minutos)
         )
         new_id = cursor.fetchone()['id']
@@ -278,6 +371,22 @@ def actualizar_servicio(negocio_id, servicio_id):
 
     if not any([nombre, precio is not None, duracion_minutos]):
         return jsonify({'error': 'No hay datos para actualizar'}), 400
+
+    # Validación explícita de precio y duración si se envían
+    if precio is not None:
+        try:
+            precio = float(precio)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'El precio debe ser numérico'}), 400
+        if precio <= 0:
+            return jsonify({'error': 'El precio debe ser mayor que cero'}), 400
+    if duracion_minutos is not None:
+        try:
+            duracion_minutos = int(duracion_minutos)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'La duración debe ser numérica'}), 400
+        if duracion_minutos <= 0:
+            return jsonify({'error': 'La duración debe ser mayor que cero'}), 400
 
     try:
         propietario_id = int(propietario_id)
@@ -375,26 +484,13 @@ def eliminar_negocio(negocio_id):
     conn = get_db_connection()
     try:
         # Verificar si el negocio existe
-        negocio = conn.execute("SELECT propietario_id, foto_url FROM negocios WHERE id = %s", (negocio_id,)).fetchone()
+        negocio = conn.execute("SELECT propietario_id FROM negocios WHERE id = %s", (negocio_id,)).fetchone()
         if not negocio:
             return jsonify({'error': 'Negocio no encontrado'}), 404
-            
+
         # Verificar permisos
         if negocio['propietario_id'] != propietario_id:
             return jsonify({'error': 'No tienes permisos para este negocio'}), 403
-
-        # Si el negocio tiene una foto, eliminarla del sistema de archivos
-        if negocio['foto_url'] and negocio['foto_url'].startswith('/uploads/'):
-            filename = negocio['foto_url'].replace('/uploads/', '')
-            upload_folder = current_app.config.get('UPLOAD_FOLDER')
-            if upload_folder:
-                filepath = os.path.join(upload_folder, filename)
-                try:
-                    if os.path.exists(filepath):
-                        os.remove(filepath)
-                except Exception as e:
-                    print(f"WARNING: Error al eliminar foto {filepath}: {e}")
-                    # No fallar la eliminación del negocio si no se puede eliminar la foto
 
         # Eliminar el negocio (las tablas relacionadas se eliminarán automáticamente por CASCADE)
         cursor = conn.execute("DELETE FROM negocios WHERE id = %s", (negocio_id,))

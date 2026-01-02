@@ -1,8 +1,13 @@
 # backend/manage_db.py
 # filepath: backend/manage_db.py
 """
-Script maestro para gestión de base de datos PostgreSQL en Docker.
-Solo actúa sobre PostgreSQL. SQLite ha sido eliminado.
+Script maestro para gestión de bases de datos PostgreSQL en Docker.
+
+Ahora existen dos bases de datos independientes:
+    - sectormind_db: base de datos principal (desarrollo/producción)
+    - sectormind_test_db: base de datos exclusiva para tests
+
+Ambas comparten exactamente la misma estructura y esquema, pero sus datos pueden ser distintos. Esto permite ejecutar tests sin afectar los datos reales.
 """
 import psycopg2
 import psycopg2.extras
@@ -16,32 +21,52 @@ load_dotenv()
 
 # --- CONFIGURACIÓN ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UPLOADS_PATH = os.path.join(BASE_DIR, '..', 'frontend', 'uploads')
 
-# PostgreSQL EXCLUSIVAMENTE
+
+
+# Permite sobreescribir la base de datos por variable de entorno o argumento
+import sys
 DATABASE_URL = os.getenv('DATABASE_URL')
+if len(sys.argv) > 1 and sys.argv[1].startswith('postgresql'):
+    DATABASE_URL = sys.argv[1]
 if not DATABASE_URL:
-    raise ValueError("❌ ERROR: DATABASE_URL no definida. Revisa .env")
+    raise ValueError("❌ ERROR: No se ha definido ninguna DATABASE_URL.\n\nPuedes usar:\n  - La variable de entorno DATABASE_URL para la base de datos principal (sectormind_db)\n  - O pasar la URL de la base de datos de tests (sectormind_test_db) como argumento al script.\n\nAmbas bases de datos tienen la misma estructura, pero datos independientes.")
 
 API_URL = os.getenv('API_URL_INTERNAL', 'http://127.0.0.1:5000')
 
-print("🐘 GESTOR DE BD: PostgreSQL únicamente")
 
-# --- DATOS DE PRUEBA ---
+
+
+# --- FUNCIONES AUXILIARES ---
+
+def load_sample_photo_base64(filename):
+    """Carga una imagen de sample_photos y la devuelve como base64 data URL."""
+    import base64
+    path = os.path.join(BASE_DIR, 'sample_photos', filename)
+    if not os.path.exists(path):
+        return None
+    with open(path, 'rb') as f:
+        data = f.read()
+        ext = filename.split('.')[-1].lower()
+        mime = 'image/png' if ext == 'png' else 'image/jpeg'
+        return f"data:{mime};base64," + base64.b64encode(data).decode('utf-8')
 PROPIETARIO_DATA = {
     "nombre": "Pedro Propietario",
     "email": "propietario@sectormind.com",
     "password": "p",
     "rol": "propietario",
-    "foto_perfil_url": "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80"
+    # "foto_perfil_url" eliminado, solo se usa foto_perfil_base64
+    "foto_perfil_base64": load_sample_photo_base64('propietario.jpg')
 }
+
 
 CLIENTE_DATA = {
     "nombre": "Ursula Usuario",
     "email": "cliente@sectormind.com",
     "password": "c",
     "rol": "cliente",
-    "foto_perfil_url": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80"
+    # "foto_perfil_url" eliminado, solo se usa foto_perfil_base64
+    "foto_perfil_base64": load_sample_photo_base64('cliente.png')
 }
 
 HORARIO_PARTIDO = []
@@ -51,13 +76,15 @@ for dia in range(5):
         {"dia_semana": dia, "hora_apertura": "16:30:00", "hora_cierre": "20:00:00"}
     ])
 
+
+
 NEGOCIOS = [
     {
         "nombre": "Peluquería Estilo & Glamour",
         "tipo_negocio": "peluqueria",
         "direccion": "Av. de la Moda, 45, Madrid",
         "descripcion": "Especialistas en cambios de imagen radicales.",
-        "foto_url": "https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&w=800&q=80",
+        "foto_base64": load_sample_photo_base64('peluqueria.jpeg'),
         "horarios": HORARIO_PARTIDO,
         "servicios": [
             {"nombre": "Corte de Pelo", "precio": 25.00, "duracion_minutos": 30},
@@ -69,7 +96,7 @@ NEGOCIOS = [
         "tipo_negocio": "dentista",
         "direccion": "Calle de la Salud, 12, Barcelona",
         "descripcion": "Cuidamos tu sonrisa con tecnología moderna.",
-        "foto_url": "https://images.pexels.com/photos/3587352/pexels-photo-3587352.jpeg?w=800",
+        "foto_base64": load_sample_photo_base64('dentista.png'),
         "horarios": HORARIO_PARTIDO,
         "servicios": [
             {"nombre": "Limpieza", "precio": 50.00, "duracion_minutos": 30},
@@ -81,7 +108,7 @@ NEGOCIOS = [
         "tipo_negocio": "fisioterapia",
         "direccion": "Plaza del Deporte, s/n",
         "descripcion": "Recupérate de tus lesiones con expertos.",
-        "foto_url": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800",
+        "foto_base64": load_sample_photo_base64('fisioterapia.jpg'),
         "horarios": HORARIO_PARTIDO,
         "servicios": [
             {"nombre": "Masaje deportivo", "precio": 40.00, "duracion_minutos": 45},
@@ -91,23 +118,7 @@ NEGOCIOS = [
 ]
 
 
-def clean_uploads():
-    """🧹 Limpia la carpeta de uploads."""
-    print(f"\n1️⃣  LIMPIANDO CARPETA UPLOADS...")
-    if os.path.exists(UPLOADS_PATH):
-        for filename in os.listdir(UPLOADS_PATH):
-            file_path = os.path.join(UPLOADS_PATH, filename)
-            try:
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)
-            except Exception as e:
-                print(f"    ⚠️ Error borrando {file_path}: {e}")
-        print("    ✅ Carpeta 'frontend/uploads' vaciada.")
-    else:
-        os.makedirs(UPLOADS_PATH, exist_ok=True)
-        print("    ✅ Carpeta 'frontend/uploads' creada.")
+
 
 
 def init_db():
@@ -159,8 +170,8 @@ def populate_db():
         print(f"    👤 Insertando Propietario...")
         hashed_prop_password = generate_password_hash(PROPIETARIO_DATA['password'])
         cursor.execute(
-            "INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_url) VALUES (%s, %s, %s, %s, %s) RETURNING id",
-            (PROPIETARIO_DATA['nombre'], PROPIETARIO_DATA['email'], hashed_prop_password, PROPIETARIO_DATA['rol'], PROPIETARIO_DATA['foto_perfil_url'])
+            "INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_base64) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (PROPIETARIO_DATA['nombre'], PROPIETARIO_DATA['email'], hashed_prop_password, PROPIETARIO_DATA['rol'], PROPIETARIO_DATA['foto_perfil_base64'])
         )
         prop_id = cursor.fetchone()['id']
         print(f"       ✅ {PROPIETARIO_DATA['nombre']} (ID: {prop_id})")
@@ -169,8 +180,8 @@ def populate_db():
         print(f"    👤 Insertando Cliente...")
         hashed_client_password = generate_password_hash(CLIENTE_DATA['password'])
         cursor.execute(
-            "INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_url) VALUES (%s, %s, %s, %s, %s) RETURNING id",
-            (CLIENTE_DATA['nombre'], CLIENTE_DATA['email'], hashed_client_password, CLIENTE_DATA['rol'], CLIENTE_DATA['foto_perfil_url'])
+            "INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_base64) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (CLIENTE_DATA['nombre'], CLIENTE_DATA['email'], hashed_client_password, CLIENTE_DATA['rol'], CLIENTE_DATA['foto_perfil_base64'])
         )
         client_id = cursor.fetchone()['id']
         print(f"       ✅ {CLIENTE_DATA['nombre']} (ID: {client_id})")
@@ -181,8 +192,8 @@ def populate_db():
         
         for negocio in NEGOCIOS:
             cursor.execute(
-                "INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_url, propietario_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-                (negocio["nombre"], negocio["tipo_negocio"], negocio["direccion"], negocio.get("descripcion"), negocio.get("foto_url"), prop_id)
+                "INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_base64, propietario_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+                (negocio["nombre"], negocio["tipo_negocio"], negocio["direccion"], negocio.get("descripcion"), negocio.get("foto_base64"), prop_id)
             )
             new_id = cursor.fetchone()['id']
             created_negocios.append({"id": new_id, **negocio})
@@ -285,7 +296,7 @@ def main():
     print("🐘 GESTOR DE BASE DE DATOS - POSTGRESQL EXCLUSIVAMENTE")
     print("=" * 60)
     
-    clean_uploads()
+
     if init_db():
         populate_db()
         add_past_citas()

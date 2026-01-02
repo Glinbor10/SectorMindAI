@@ -219,20 +219,22 @@ def test_actualizar_negocio_descripcion(client, negocio_con_servicios):
 
 
 def test_actualizar_negocio_foto(client, negocio_con_servicios):
-    """Test PUT /negocios/<id> actualiza foto_url."""
+    # Test PUT /negocios/<id> actualiza foto_base64 (foto_url ya no existe)
     neg_id = negocio_con_servicios['negocio_id']
     
-    payload = {'foto_url': 'https://example.com/new-photo.jpg'}
-    
+    # Ahora se usa foto_base64
+    payload = {'foto_base64': 'data:image/png;base64,ZmFrZUJhc2U2NA=='}
+
     response = client.put(f'/negocios/{neg_id}',
                          data=json.dumps(payload),
                          content_type='application/json')
-    
+
     assert response.status_code == 200
-    
+
     # ✅ Verificar consultando
     get_response = client.get(f'/negocios/{neg_id}')
-    assert get_response.get_json()['foto_url'] == 'https://example.com/new-photo.jpg'
+    assert 'foto_base64' in get_response.get_json()
+    assert get_response.get_json()['foto_base64'].startswith('data:image/')
 
 
 def test_actualizar_negocio_direccion(client, negocio_con_servicios):
