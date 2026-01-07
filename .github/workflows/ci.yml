@@ -86,7 +86,7 @@ jobs:
 
     - name: Run Rasa Actions Tests (29 tests)
       run: |
-        PYTHONPATH=. pytest rasa_model/tests/test_actions.py -v
+        PYTHONPATH=. pytest rasa_model/tests/test_acciones.py -v
 
     - name: Rasa NLU Cross-Validation
       # Entrena un modelo ligero y lo prueba con cross-validation
