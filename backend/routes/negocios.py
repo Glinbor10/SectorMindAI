@@ -12,14 +12,41 @@ negocios_bp = Blueprint('negocios', __name__, url_prefix='/negocios')
 @negocios_bp.route('/', methods=['GET'])
 def listar_negocios():
     propietario_id = request.args.get('propietario_id')
+    user_lat = request.args.get('lat')  # Latitud del usuario
+    user_lon = request.args.get('lon')  # Longitud del usuario
     
     conn = get_db_connection()
-    query = """
-        SELECT n.*, u.nombre as propietario_nombre 
-        FROM negocios n 
-        JOIN usuarios u ON n.propietario_id = u.id
-    """
-    params = []
+    
+    # Construir query con cálculo de distancia si se proporcionan coordenadas del usuario
+    if user_lat and user_lon:
+        try:
+            user_lat = float(user_lat)
+            user_lon = float(user_lon)
+            
+            query = """
+                SELECT n.*, u.nombre as propietario_nombre,
+                CASE 
+                    WHEN n.latitud IS NOT NULL AND n.longitud IS NOT NULL
+                    THEN 6371 * acos(
+                        cos(radians(%s)) * cos(radians(n.latitud)) * 
+                        cos(radians(n.longitud) - radians(%s)) + 
+                        sin(radians(%s)) * sin(radians(n.latitud))
+                    )
+                    ELSE NULL
+                END as distancia_km
+                FROM negocios n 
+                JOIN usuarios u ON n.propietario_id = u.id
+            """
+            params = [user_lat, user_lon, user_lat]
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Coordenadas inválidas'}), 400
+    else:
+        query = """
+            SELECT n.*, u.nombre as propietario_nombre 
+            FROM negocios n 
+            JOIN usuarios u ON n.propietario_id = u.id
+        """
+        params = []
     
     if propietario_id:
         try:
@@ -28,7 +55,11 @@ def listar_negocios():
             return jsonify({'error': 'propietario_id inválido'}), 400
         query += " WHERE n.propietario_id = %s"
         params.append(propietario_id)
-        
+    
+    # Ordenar por distancia si está disponible
+    if user_lat and user_lon:
+        query += " ORDER BY distancia_km NULLS LAST"
+    
     negocios = conn.execute(query, params).fetchall()
     conn.close()
     negocios_list = []
@@ -102,6 +133,9 @@ def crear_negocio():
     # Permitir tanto JSON como FormData
     foto_base64 = None
     horarios = None
+    latitud = None
+    longitud = None
+    
     if request.content_type and request.content_type.startswith('multipart/form-data'):
         nombre = request.form.get('nombre')
         tipo_negocio = request.form.get('tipo_negocio', 'general')
@@ -110,6 +144,8 @@ def crear_negocio():
         propietario_id = request.form.get('propietario_id')
         horarios = request.form.get('horarios')
         dias_apertura = request.form.get('dias_apertura')
+        latitud = request.form.get('latitud')
+        longitud = request.form.get('longitud')
         # Procesar archivo de foto si existe
         if 'foto' in request.files:
             foto_file = request.files['foto']
@@ -125,6 +161,8 @@ def crear_negocio():
         propietario_id = data.get('propietario_id')
         horarios = data.get('horarios')
         dias_apertura = data.get('dias_apertura')
+        latitud = data.get('latitud')
+        longitud = data.get('longitud')
 
     if not (nombre and direccion and propietario_id):
         return jsonify({'error': 'Faltan datos obligatorios'}), 400
@@ -133,6 +171,23 @@ def crear_negocio():
         propietario_id = int(propietario_id)
     except (ValueError, TypeError):
         return jsonify({'error': 'propietario_id inválido'}), 400
+    
+    # Validar y convertir coordenadas si están presentes
+    if latitud is not None:
+        try:
+            latitud = float(latitud)
+            if latitud < -90 or latitud > 90:
+                return jsonify({'error': 'Latitud debe estar entre -90 y 90'}), 400
+        except (ValueError, TypeError):
+            latitud = None
+    
+    if longitud is not None:
+        try:
+            longitud = float(longitud)
+            if longitud < -180 or longitud > 180:
+                return jsonify({'error': 'Longitud debe estar entre -180 y 180'}), 400
+        except (ValueError, TypeError):
+            longitud = None
     
     # Parsear días de apertura y horarios si vienen como JSON string
     import json
@@ -162,11 +217,21 @@ def crear_negocio():
 
     conn = get_db_connection()
     try:
-        # Crear el negocio
-        if foto_base64:
+        # Crear el negocio con coordenadas
+        if foto_base64 and (latitud is not None and longitud is not None):
+            cursor = conn.execute(
+                'INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, propietario_id, foto_base64, latitud, longitud) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id',
+                (nombre, tipo_negocio, direccion, descripcion, propietario_id, foto_base64, latitud, longitud)
+            )
+        elif foto_base64:
             cursor = conn.execute(
                 'INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, propietario_id, foto_base64) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id',
                 (nombre, tipo_negocio, direccion, descripcion, propietario_id, foto_base64)
+            )
+        elif latitud is not None and longitud is not None:
+            cursor = conn.execute(
+                'INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, propietario_id, latitud, longitud) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id',
+                (nombre, tipo_negocio, direccion, descripcion, propietario_id, latitud, longitud)
             )
         else:
             cursor = conn.execute(
@@ -206,8 +271,28 @@ def actualizar_negocio(negocio_id):
     descripcion = data.get('descripcion') if data else None
     direccion = data.get('direccion') if data else None
     foto_base64 = data.get('foto_base64') if data else None
-    if not any([nombre, tipo_negocio, descripcion, foto_base64, direccion]):
+    latitud = data.get('latitud') if data else None
+    longitud = data.get('longitud') if data else None
+    
+    if not any([nombre, tipo_negocio, descripcion, foto_base64, direccion, latitud, longitud]):
         return jsonify({'error': 'No hay datos para actualizar'}), 400
+    
+    # Validar coordenadas si están presentes
+    if latitud is not None:
+        try:
+            latitud = float(latitud)
+            if latitud < -90 or latitud > 90:
+                return jsonify({'error': 'Latitud debe estar entre -90 y 90'}), 400
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Latitud inválida'}), 400
+    
+    if longitud is not None:
+        try:
+            longitud = float(longitud)
+            if longitud < -180 or longitud > 180:
+                return jsonify({'error': 'Longitud debe estar entre -180 y 180'}), 400
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Longitud inválida'}), 400
 
     conn = get_db_connection()
     try:
@@ -222,6 +307,12 @@ def actualizar_negocio(negocio_id):
         if descripcion is not None:
             updates.append("descripcion = %s")
             params.append(descripcion)
+        if latitud is not None:
+            updates.append("latitud = %s")
+            params.append(latitud)
+        if longitud is not None:
+            updates.append("longitud = %s")
+            params.append(longitud)
         if foto_base64 is not None:
             updates.append("foto_base64 = %s")
             params.append(foto_base64)

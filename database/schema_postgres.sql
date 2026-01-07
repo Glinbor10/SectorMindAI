@@ -22,8 +22,13 @@ CREATE TABLE IF NOT EXISTS negocios (
     descripcion TEXT,
     foto_base64 TEXT,
     propietario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    latitud DECIMAL(10, 8),  -- Coordenada de latitud (-90 a +90)
+    longitud DECIMAL(11, 8), -- Coordenada de longitud (-180 a +180)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Índice para búsquedas geográficas eficientes
+CREATE INDEX IF NOT EXISTS idx_negocios_ubicacion ON negocios(latitud, longitud);
 
 -- Tabla de servicios
 CREATE TABLE IF NOT EXISTS servicios (

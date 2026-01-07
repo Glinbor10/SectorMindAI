@@ -1,5 +1,5 @@
 ﻿
-# **Sector Mind AI (v0.5.0)**
+# **Sector Mind AI (v0.6.1)**
 ## 🐳 **¿Cómo funciona Docker en SectorMindAI?**
 
 SectorMindAI utiliza Docker y Docker Compose para orquestar todos los servicios necesarios (backend, base de datos, IA conversacional y acciones personalizadas) de forma profesional, reproducible y persistente.
@@ -47,15 +47,19 @@ Docker Compose y los scripts PowerShell permiten levantar, detener, testear y ma
 
 ## 📋 **Estado del Proyecto**
 
-El proyecto ha alcanzado la versión **v0.5.0 (Arquitectura modular + IA contextual + Frontend avanzado + Búsqueda de Clientes)**.
-Sistema de reservas con IA contextual desplegable en contenedores, 104 tests automatizados (92 backend + 12 Rasa), base de datos relacional de nivel empresarial, frontend con calendario interactivo y búsqueda de clientes por email.
+El proyecto ha alcanzado la versión **v0.6.1 (Geolocalización + Búsqueda por Proximidad + Interfaz Visual por Tipo)**.
+Sistema de reservas con IA contextual, geolocalización de negocios, búsqueda inteligente por distancia, interfaces visuales diferenciadas por tipo de negocio y 104+ tests automatizados desplegable en contenedores.
 
 
 ### 🎯 Funcionalidades Principales (Sistema Completo)
 - **IA Contextual por Tipo de Negocio:** Respuestas especializadas según contexto (dentista/peluquería/fisioterapia)
   - 🦷 **Dentista:** Urgencias dentales, protocolos de primeros auxilios, consejos específicos
-  - 💇 **Peluquería:** Emergencias de imagen, desastres de tinte, eventos importantes
-  - 🏥 **Fisioterapia:** Protocolo RICE, lesiones deportivas, dolor agudo
+  - ✂️ **Peluquería:** Emergencias de imagen, desastres de tinte, eventos importantes
+  - 🦴 **Fisioterapia:** Protocolo RICE, lesiones deportivas, dolor agudo
+- **Geolocalización de Negocios:** Búsqueda inteligente por proximidad con cálculo Haversine en tiempo real
+  - Forward & Reverse Geocoding con Nominatim (OpenStreetMap)
+  - Distancias en km ordenadas automáticamente
+  - Selección interactiva de ubicación con mapas Leaflet
 - **Reservas Automáticas End-to-End:** El agente IA completa reservas reales sin intervención manual
 - **IA Multimodal (Voz):** Reconocimiento de voz y síntesis (Web Speech API)
 - **Gestión de Archivos:** Sistema de subida de fotos de perfil con validaciones
@@ -65,6 +69,7 @@ Sistema de reservas con IA contextual desplegable en contenedores, 104 tests aut
 - **Frontend avanzado:** Calendario interactivo para crear y editar citas visualmente
 - **Búsqueda de Clientes por Email:** Autocomplete inteligente que muestra solo clientes (excluyendo propietarios), con fotos, nombres y emails
 - **Corrección de Timezone:** Formato local de fecha/hora sin conversión UTC (elimina desplazamientos de horario)
+- **Interfaz Visual por Tipo de Negocio:** Backgrounds y emoji personalizados para dentista, peluquería y fisioterapia
 
 ---
 

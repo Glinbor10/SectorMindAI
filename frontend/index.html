@@ -9,6 +9,9 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet para mapas interactivos -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
@@ -63,9 +66,18 @@
                 Reserva citas en tus negocios favoritos con nuestra IA conversacional.
             </p>
             <div class="max-w-md mx-auto relative group">
-                <div class="relative bg-white rounded-xl shadow flex items-center p-1 border border-slate-100">
+                <div class="relative bg-white rounded-xl shadow flex items-center p-1 border border-slate-100 mb-3">
                     <i data-lucide="search" class="ml-2 text-slate-400 w-4 h-4"></i>
                     <input type="text" id="search-input" placeholder="Buscar..." class="w-full p-2 outline-none text-slate-700 placeholder:text-slate-400 bg-transparent text-base">
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="relative bg-white rounded-xl shadow flex items-center p-1 border border-slate-100 flex-1">
+                        <i data-lucide="map-pin" class="ml-2 text-slate-400 w-4 h-4"></i>
+                        <input type="text" id="location-input" placeholder="Ej: Gran Vía 123, Madrid / Solo: Madrid" class="w-full p-2 outline-none text-slate-700 placeholder:text-slate-400 bg-transparent text-sm">
+                    </div>
+                    <button onclick="searchNearLocation()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-indigo-700 transition shadow flex items-center gap-2 text-sm whitespace-nowrap">
+                        <i data-lucide="navigation" class="w-4 h-4"></i> Buscar cerca
+                    </button>
                 </div>
             </div>
         </div>
@@ -137,9 +149,10 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1 ml-1">Rol <span class="text-red-500">*</span></label>
                     <select id="reg-rol" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                    <option value="cliente">Cliente (Quiero reservar)</option>
-                    <option value="propietario">Dueño de Negocio</option>
-                </select>
+                        <option value="cliente">Cliente (Quiero reservar)</option>
+                        <option value="propietario">Dueño de Negocio</option>
+                    </select>
+                </div>
                 <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700">Registrarse</button>
             </form>
         </div>
@@ -148,6 +161,43 @@
     <script>
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // Variables globales para coordenadas temporales
+        let currentCoords = null;
+
+        // Función para geocodificar dirección usando Nominatim (OpenStreetMap)
+        async function geocodificarDireccion(direccion) {
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(direccion)}&format=json&limit=1&addressdetails=1&accept-language=es`;
+                const res = await fetch(url, {
+                    headers: { 'User-Agent': 'SectorMindAI/1.0 (Contact: admin@sectormind.com)' }
+                });
+                const data = await res.json();
+                
+                if (data && data.length > 0) {
+                    const coords = {
+                        latitud: parseFloat(data[0].lat),
+                        longitud: parseFloat(data[0].lon)
+                    };
+                    
+                    // Mostrar estado de éxito
+                    document.getElementById('geocode-status').classList.remove('hidden');
+                    document.getElementById('geocode-error').classList.add('hidden');
+                    document.getElementById('coords-display').textContent = `${coords.latitud.toFixed(5)}, ${coords.longitud.toFixed(5)}`;
+                    lucide.createIcons();
+                    
+                    return coords;
+                }
+            } catch (err) {
+                console.warn('Error geocodificando:', err);
+            }
+            
+            // Mostrar error
+            document.getElementById('geocode-status').classList.add('hidden');
+            document.getElementById('geocode-error').classList.remove('hidden');
+            lucide.createIcons();
+            return null;
+        }
 
         async function handleLogin(e) {
             e.preventDefault();
@@ -239,18 +289,135 @@
             }
         }
 
-        async function loadBusinesses() {
+        async function loadBusinesses(lat = null, lon = null) {
             const grid = document.getElementById('business-grid');
             try {
-                const res = await fetch(`${API_URL}/negocios/`);
+                let url = `${API_URL}/negocios/`;
+                
+                // Solo agregar parámetros de ubicación si se proporcionan
+                if (lat !== null && lon !== null) {
+                    url += `?lat=${lat}&lon=${lon}`;
+                    console.log(`🔗 Buscando negocios cerca de: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+                } else {
+                    console.log("🔗 Cargando todos los negocios (sin filtro de ubicación)");
+                }
+                
+                const res = await fetch(url);
                 allNegocios = await res.json();
+                console.log("✅ Negocios cargados:", allNegocios.length);
+                
                 if(allNegocios.length === 0) {
                     grid.innerHTML = '<p class="text-center col-span-full text-slate-500">No hay negocios.</p>';
                     return;
                 }
                 generateFilters(allNegocios);
                 renderBusinessGrid(allNegocios);
-            } catch (err) { grid.innerHTML = '<p class="text-red-500 col-span-full">Error al conectar.</p>'; }
+            } catch (err) { 
+                console.error("❌ Error cargando negocios:", err);
+                grid.innerHTML = '<p class="text-red-500 col-span-full">Error al conectar.</p>'; 
+            }
+        }
+        
+        async function searchNearLocation() {
+            const locationInput = document.getElementById('location-input').value.trim();
+            
+            if (!locationInput) {
+                Swal.fire('Aviso', 'Por favor ingresa una ciudad o dirección', 'info');
+                return;
+            }
+            
+            Swal.fire({
+                title: 'Buscando ubicación...',
+                text: `Geocodificando: ${locationInput}`,
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            
+            try {
+                // Geocodificar la dirección ingresada
+                let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationInput)}&format=json&limit=3&accept-language=es`;
+                let res = await fetch(url, {
+                    headers: { 'User-Agent': 'SectorMindAI/1.0' }
+                });
+                let data = await res.json();
+                
+                // Si no encuentra nada, intentar con solo la última parte (ciudad)
+                if (!data || data.length === 0) {
+                    const parts = locationInput.split(',').map(p => p.trim());
+                    if (parts.length > 1) {
+                        const city = parts[parts.length - 1];
+                        console.log(`⚠️ Dirección completa no encontrada. Intentando solo con: ${city}`);
+                        
+                        Swal.update({
+                            title: 'Buscando ubicación...',
+                            text: `Probando con: ${city}`
+                        });
+                        
+                        url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)},España&format=json&limit=3&accept-language=es`;
+                        res = await fetch(url, {
+                            headers: { 'User-Agent': 'SectorMindAI/1.0' }
+                        });
+                        data = await res.json();
+                    }
+                }
+                
+                if (data && data.length > 0) {
+                    // Si hay múltiples resultados, mostrar opciones
+                    if (data.length > 1) {
+                        Swal.close();
+                        
+                        const options = data.slice(0, 3).map((result, idx) => 
+                            `<button onclick="selectLocation(${result.lat}, ${result.lon}, '${result.display_name.replace(/'/g, "\\'")}')" class="w-full text-left p-3 mb-2 border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition">${result.display_name}</button>`
+                        ).join('');
+                        
+                        Swal.fire({
+                            title: 'Selecciona una ubicación',
+                            html: `<div class="text-left">${options}</div>`,
+                            showConfirmButton: false,
+                            showCancelButton: true,
+                            cancelButtonText: 'Cancelar'
+                        });
+                    } else {
+                        const lat = parseFloat(data[0].lat);
+                        const lon = parseFloat(data[0].lon);
+                        
+                        Swal.close();
+                        await loadBusinesses(lat, lon);
+                        
+                        Swal.fire({
+                            title: '¡Búsqueda completada!',
+                            html: `<p>Mostrando negocios cerca de <strong>${data[0].display_name}</strong></p>`,
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                } else {
+                    Swal.fire({
+                        title: 'Ubicación no encontrada',
+                        html: '<p>No se pudo encontrar esa ubicación.</p><p class="text-sm text-slate-500 mt-2">💡 Intenta con:</p><ul class="text-left text-sm text-slate-600 mt-2 ml-4 list-disc"><li>Solo el nombre de la ciudad: "Madrid", "Sevilla"</li><li>Ciudad y provincia: "Estepa, Sevilla"</li><li>Dirección más genérica</li></ul>',
+                        icon: 'error',
+                        confirmButtonColor: '#4f46e5'
+                    });
+                }
+            } catch (err) {
+                console.error('Error al geocodificar:', err);
+                Swal.fire('Error', 'Error al buscar la ubicación', 'error');
+            }
+        }
+        
+        // Función auxiliar para seleccionar ubicación de múltiples resultados
+        async function selectLocation(lat, lon, displayName) {
+            Swal.close();
+            await loadBusinesses(lat, lon);
+            
+            Swal.fire({
+                title: '¡Búsqueda completada!',
+                html: `<p>Mostrando negocios cerca de <strong>${displayName}</strong></p>`,
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
         }
 
         async function loadMyBusinesses() {
@@ -272,10 +439,16 @@
                             sessionStorage.setItem('gestion_negocio_id', negocio.id);
                             window.location.href = '/gestion_negocio.html';
                         };
-                        const fotoSrc = negocio.foto_base64 || 'https://via.placeholder.com/400x200/6366f1/ffffff?text=' + encodeURIComponent(negocio.nombre);
+                        
+                        // Obtener estilo personalizado según tipo de negocio
+                        const style = getBusinessStyle(negocio.tipo_negocio || 'general');
+                        const photoSection = negocio.foto_base64 
+                            ? `<img src="${negocio.foto_base64}" alt="${negocio.nombre}" class="w-full h-full object-cover">`
+                            : `<div class="w-full h-full flex items-center justify-center ${style.bgColor}"><span class="text-5xl opacity-80">${style.emoji}</span></div>`;
+                        
                         card.innerHTML = `
                             <div class="h-48 overflow-hidden relative rounded-t-2xl">
-                                <img src="${fotoSrc}" alt="${negocio.nombre}" class="w-full h-full object-cover">
+                                ${photoSection}
                                 <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-indigo-600 shadow-sm capitalize">${negocio.tipo_negocio}</div>
                                 <button onclick="event.stopPropagation(); deleteBusiness(${negocio.id})" class="absolute top-4 left-4 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-sm transition" title="Eliminar negocio">
                                     <i data-lucide="trash" class="w-4 h-4"></i>
@@ -304,7 +477,7 @@
         function closeCreateBusinessModal() {
             document.getElementById('modal-create-business').classList.add('hidden');
             document.getElementById('business-name').value = '';
-            document.getElementById('business-type').value = 'general';
+            document.getElementById('business-type').value = 'dentista';
             document.getElementById('business-address').value = '';
             document.getElementById('business-description').value = '';
             document.getElementById('business-opening-morning').value = '';
@@ -324,12 +497,22 @@
         async function handleCreateBusiness(e) {
             e.preventDefault();
             
+            // Obtener coordenadas antes de enviar
+            const direccion = document.getElementById('business-address').value;
+            const coords = await geocodificarDireccion(direccion);
+            
             const formData = new FormData();
             formData.append('nombre', document.getElementById('business-name').value);
             formData.append('tipo_negocio', document.getElementById('business-type').value);
-            formData.append('direccion', document.getElementById('business-address').value);
+            formData.append('direccion', direccion);
             formData.append('descripcion', document.getElementById('business-description').value);
             formData.append('propietario_id', currentUser.id);
+            
+            // Agregar coordenadas si se obtuvieron
+            if (coords) {
+                formData.append('latitud', coords.latitud);
+                formData.append('longitud', coords.longitud);
+            }
             
             // Agregar horarios
             const openingMorning = document.getElementById('business-opening-morning').value;
@@ -464,6 +647,16 @@
             applyFilters();
         }
 
+        // 🎨 Función para obtener color y emoji según tipo de negocio
+        function getBusinessStyle(tipoNegocio) {
+            const styles = {
+                'dentista': { bgColor: 'bg-blue-100', textColor: 'text-blue-600', emoji: '🦷', color: '#dbeafe' },
+                'peluqueria': { bgColor: 'bg-pink-100', textColor: 'text-pink-600', emoji: '✂️', color: '#fce7f3' },
+                'fisioterapia': { bgColor: 'bg-green-100', textColor: 'text-green-600', emoji: '🦴', color: '#dcfce7' }
+            };
+            return styles[tipoNegocio.toLowerCase()] || styles['dentista'];
+        }
+
         function applyFilters() {
             const term = currentSearchTerm.toLowerCase();
             const category = currentCategory.toLowerCase();
@@ -486,7 +679,7 @@
             }
             negociosData.forEach(negocio => {
                 // Solo usar foto_base64, nunca foto_url
-                // Si no hay foto_base64, mostrar un dibujo/ilustración por defecto
+                // Si no hay foto_base64, mostrar emoji y color según tipo de negocio
                 const cardLink = document.createElement('a');
                 cardLink.className = "group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 cursor-pointer flex flex-col h-full fade-in block text-left";
 
@@ -500,13 +693,10 @@
                 if (negocio.foto_base64) {
                     fotoHtml = `<img src="${negocio.foto_base64}" alt="${negocio.nombre}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">`;
                 } else {
-                    // Fondo de color e icono SVG inline
-                    fotoHtml = `<div class='w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-400' style='height: 100%; min-height: 12rem;'>
-                        <svg width="64" height="64" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" class="opacity-60">
-                          <rect x="3" y="7" width="18" height="13" rx="3" stroke="currentColor" stroke-width="1.5" fill="#6366f1"/>
-                          <circle cx="8.5" cy="13.5" r="2.5" fill="#fff"/>
-                          <path d="M21 17l-4.5-4.5a2 2 0 0 0-2.8 0L3 21" stroke="#fff" stroke-width="1.5"/>
-                        </svg>
+                    // Obtener estilo personalizado según tipo de negocio
+                    const style = getBusinessStyle(negocio.tipo_negocio || 'general');
+                    fotoHtml = `<div class='w-full h-full flex items-center justify-center ${style.bgColor}' style='height: 100%; min-height: 12rem;'>
+                        <span class='text-6xl opacity-80'>${style.emoji}</span>
                     </div>`;
                 }
 
@@ -518,9 +708,12 @@
                     <div class="p-6 flex flex-col flex-grow">
                         <h3 class="text-xl font-bold text-slate-900 mb-2">${negocio.nombre}</h3>
                         <p class="text-slate-500 text-sm line-clamp-2 mb-4 flex-grow">${negocio.descripcion || 'Sin descripción.'}</p>
-                        <div class="flex items-center text-slate-400 text-xs pt-4 border-t border-slate-100 mt-auto">
-                            <i data-lucide="map-pin" class="w-4 h-4 mr-1"></i>
-                            <span>${negocio.direccion || 'Ubicación no especificada'}</span>
+                        <div class="flex items-center justify-between text-slate-400 text-xs pt-4 border-t border-slate-100 mt-auto">
+                            <div class="flex items-center">
+                                <i data-lucide="map-pin" class="w-4 h-4 mr-1"></i>
+                                <span>${negocio.direccion || 'Ubicación no especificada'}</span>
+                            </div>
+                            ${negocio.distancia_km !== null && negocio.distancia_km !== undefined ? `<span class="text-indigo-600 font-semibold ml-2">📍 ${negocio.distancia_km.toFixed(1)} km</span>` : ''}
                         </div>
                     </div>
                 `;
@@ -548,6 +741,177 @@
                 lucide.createIcons();
             }, 100);
         };
+
+        // 🗺️ FUNCIONES DE MAPA CON LEAFLET
+        let mapInstance = null;
+        let mapMarker = null;
+        let selectedLat = null;
+        let selectedLon = null;
+        let currentMapMode = null;
+
+        async function openMapModal(mode) {
+            currentMapMode = mode;
+            selectedLat = null;
+            selectedLon = null;
+            document.getElementById('map-modal').classList.remove('hidden');
+            
+            // Esperar a que el DOM se renderice
+            setTimeout(() => {
+                initializeMap();
+            }, 100);
+        }
+
+        function closeMapModal() {
+            document.getElementById('map-modal').classList.add('hidden');
+            if (mapInstance) {
+                mapInstance.remove();
+                mapInstance = null;
+            }
+        }
+
+        async function initializeMap() {
+            if (mapInstance) return;
+            
+            // Crear mapa
+            mapInstance = L.map('map-container').setView([40.4168, -3.7038], 13);
+            
+            // Agregar tiles de OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(mapInstance);
+            
+            // Intentar obtener ubicación actual del usuario
+            if (navigator.geolocation) {
+                Swal.fire({
+                    title: 'Obteniendo tu ubicación...',
+                    text: 'Para centrar el mapa más cerca de ti',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        
+                        Swal.close();
+                        mapInstance.setView([lat, lon], 13);
+                        console.log(`📍 Mapa centrado en ubicación actual: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+                    },
+                    (error) => {
+                        Swal.close();
+                        console.log('⚠️ No se pudo obtener ubicación, usando Madrid por defecto');
+                        // El mapa ya está centrado en Madrid
+                    },
+                    { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+                );
+            }
+            
+            // Evento para hacer click en el mapa
+            mapInstance.on('click', async (e) => {
+                const lat = e.latlng.lat;
+                const lon = e.latlng.lng;
+                
+                selectedLat = lat;
+                selectedLon = lon;
+                
+                // Remover marcador anterior
+                if (mapMarker) {
+                    mapInstance.removeLayer(mapMarker);
+                }
+                
+                // Agregar nuevo marcador
+                mapMarker = L.marker([lat, lon]).addTo(mapInstance);
+                
+                // Hacer reverse geocoding
+                try {
+                    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=es`;
+                    const res = await fetch(url, {
+                        headers: { 'User-Agent': 'SectorMindAI/1.0' }
+                    });
+                    const data = await res.json();
+                    
+                    if (data && data.address) {
+                        const addr = data.address;
+                        const street = addr.road || addr.street || addr.pedestrian || addr.path || '';
+                        const city = addr.city || addr.town || addr.village || addr.municipality || '';
+                        const parts = [];
+                        
+                        if (street) {
+                            if (addr.house_number) {
+                                parts.push(`${street} ${addr.house_number}`);
+                            } else {
+                                parts.push(street);
+                            }
+                        }
+                        if (city) parts.push(city);
+                        
+                        const cleanAddress = parts.join(', ') || data.display_name;
+                        document.getElementById('map-selected-address').innerHTML = `📍 <strong>${cleanAddress}</strong> (${lat.toFixed(5)}, ${lon.toFixed(5)})`;
+                    }
+                } catch (err) {
+                    console.error('Error en reverse geocoding:', err);
+                    document.getElementById('map-selected-address').innerHTML = `📍 <strong>Coordenadas: ${lat.toFixed(5)}, ${lon.toFixed(5)}</strong>`;
+                }
+            });
+        }
+
+        async function confirmMapSelection() {
+            if (selectedLat === null || selectedLon === null) {
+                Swal.fire('Aviso', 'Debes seleccionar una ubicación haciendo click en el mapa', 'warning');
+                return;
+            }
+            
+            // Hacer reverse geocoding para obtener dirección
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?lat=${selectedLat}&lon=${selectedLon}&format=json&accept-language=es`;
+                const res = await fetch(url, {
+                    headers: { 'User-Agent': 'SectorMindAI/1.0' }
+                });
+                const data = await res.json();
+                
+                if (data && data.address) {
+                    const addr = data.address;
+                    const street = addr.road || addr.street || addr.pedestrian || addr.path || '';
+                    const city = addr.city || addr.town || addr.village || addr.municipality || '';
+                    const parts = [];
+                    
+                    if (street) {
+                        if (addr.house_number) {
+                            parts.push(`${street} ${addr.house_number}`);
+                        } else {
+                            parts.push(street);
+                        }
+                    }
+                    if (city) parts.push(city);
+                    
+                    const cleanAddress = parts.join(', ') || data.display_name;
+                    
+                    // Llenar los campos según el modo
+                    if (currentMapMode === 'create') {
+                        document.getElementById('business-address').value = cleanAddress;
+                    } else if (currentMapMode === 'edit') {
+                        document.getElementById('edit-business-address').value = cleanAddress;
+                        document.getElementById('edit-geocode-status').classList.remove('hidden');
+                        document.getElementById('edit-geocode-error').classList.add('hidden');
+                        document.getElementById('edit-coords-display').textContent = `${selectedLat.toFixed(5)}, ${selectedLon.toFixed(5)}`;
+                    }
+                    
+                    closeMapModal();
+                    Swal.fire({
+                        title: '¡Ubicación confirmada!',
+                        html: `<p><strong>${cleanAddress}</strong></p><p class="text-xs text-slate-500 mt-2">Coordenadas: ${selectedLat.toFixed(5)}, ${selectedLon.toFixed(5)}</p>`,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                Swal.fire('Error', 'No se pudo obtener la dirección', 'error');
+            }
+        }
 
         // También inicializar iconos cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', () => {
@@ -582,13 +946,25 @@
                         <option value="dentista">Dentista</option>
                         <option value="peluqueria">Peluquería</option>
                         <option value="fisioterapia">Fisioterapia</option>
-                        <option value="general">General</option>
                     </select>
                 </div>
                 
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-2">Dirección <span class="text-red-500">*</span></label>
-                    <input type="text" id="business-address" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <div class="flex gap-2">
+                        <input type="text" id="business-address" required placeholder="Ej: Gran Vía 123, Madrid" class="flex-1 p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                        <button type="button" onclick="openMapModal('create')" title="Seleccionar en mapa" class="bg-indigo-100 text-indigo-600 hover:bg-indigo-200 px-3 py-2 rounded-xl transition">
+                            <i data-lucide="map" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div id="geocode-status" class="mt-2 text-xs text-slate-500 flex items-center gap-2 hidden">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
+                        <span>Ubicación validada (<span id="coords-display"></span>)</span>
+                    </div>
+                    <div id="geocode-error" class="mt-2 text-xs text-orange-600 flex items-center gap-2 hidden">
+                        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                        <span>No se pudo geocodificar. El negocio se creará sin coordenadas.</span>
+                    </div>
                 </div>
                 
                 <div>
@@ -678,6 +1054,31 @@
                     <i data-lucide="plus" class="w-5 h-5"></i> Crear Negocio
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Selector de Ubicación en Mapa -->
+    <div id="map-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+            <div class="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Selecciona la ubicación en el mapa</h3>
+                    <p class="text-xs text-slate-500 mt-1">Haz click en el mapa para marcar la ubicación del negocio</p>
+                </div>
+                <button onclick="closeMapModal()" class="text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div id="map-container" class="flex-grow" style="height: 500px;"></div>
+            
+            <div class="border-t border-slate-200 p-6 bg-slate-50 flex justify-between items-center">
+                <div id="map-selected-address" class="text-sm text-slate-700">📍 Haz click en el mapa para seleccionar una ubicación...</div>
+                <div class="flex gap-3">
+                    <button onclick="closeMapModal()" class="px-6 py-2 border border-slate-300 rounded-xl font-medium text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+                    <button onclick="confirmMapSelection()" class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition">Confirmar ubicación</button>
+                </div>
+            </div>
         </div>
     </div>
 </body>

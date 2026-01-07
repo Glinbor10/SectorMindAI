@@ -82,9 +82,11 @@ NEGOCIOS = [
     {
         "nombre": "Peluquería Estilo & Glamour",
         "tipo_negocio": "peluqueria",
-        "direccion": "Av. de la Moda, 45, Madrid",
+        "direccion": "Gran Vía, 45, Madrid",
         "descripcion": "Especialistas en cambios de imagen radicales.",
         "foto_base64": load_sample_photo_base64('peluqueria.jpeg'),
+        "latitud": 40.4180,
+        "longitud": -3.7020,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
             {"nombre": "Corte de Pelo", "precio": 25.00, "duracion_minutos": 30},
@@ -94,9 +96,11 @@ NEGOCIOS = [
     {
         "nombre": "Clínica Dental Smile",
         "tipo_negocio": "dentista",
-        "direccion": "Calle de la Salud, 12, Barcelona",
+        "direccion": "Paseo de Gracia, 15, Barcelona",
         "descripcion": "Cuidamos tu sonrisa con tecnología moderna.",
         "foto_base64": load_sample_photo_base64('dentista.png'),
+        "latitud": 41.3897,
+        "longitud": 2.1655,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
             {"nombre": "Limpieza", "precio": 50.00, "duracion_minutos": 30},
@@ -106,9 +110,11 @@ NEGOCIOS = [
     {
         "nombre": "FisioMente Centro",
         "tipo_negocio": "fisioterapia",
-        "direccion": "Plaza del Deporte, s/n",
+        "direccion": "Calle Colón, 8, Valencia",
         "descripcion": "Recupérate de tus lesiones con expertos.",
         "foto_base64": load_sample_photo_base64('fisioterapia.jpg'),
+        "latitud": 39.4698,
+        "longitud": -0.3745,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
             {"nombre": "Masaje deportivo", "precio": 40.00, "duracion_minutos": 45},
@@ -192,12 +198,12 @@ def populate_db():
         
         for negocio in NEGOCIOS:
             cursor.execute(
-                "INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_base64, propietario_id) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-                (negocio["nombre"], negocio["tipo_negocio"], negocio["direccion"], negocio.get("descripcion"), negocio.get("foto_base64"), prop_id)
+                "INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_base64, propietario_id, latitud, longitud) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                (negocio["nombre"], negocio["tipo_negocio"], negocio["direccion"], negocio.get("descripcion"), negocio.get("foto_base64"), prop_id, negocio.get("latitud"), negocio.get("longitud"))
             )
             new_id = cursor.fetchone()['id']
             created_negocios.append({"id": new_id, **negocio})
-            print(f"       ✅ {negocio['nombre']} (ID: {new_id})")
+            print(f"       ✅ {negocio['nombre']} (ID: {new_id}) - 📍 {negocio.get('latitud', 'N/A')}, {negocio.get('longitud', 'N/A')}")
         
         # --- INSERTAR HORARIOS Y SERVICIOS ---
         if created_negocios:

@@ -5,6 +5,231 @@ Todas las modificaciones notables en el proyecto Sector Mind AI se documentarán
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere al versionado semántico.
 
 
+## [v0.6.1] - 2026-01-06 (Interfaz Visual por Tipo de Negocio)
+
+### ✨ Añadido (Added)
+
+**Backgrounds y Emoji Personalizados por Tipo de Negocio (2026-01-06):**
+- **Asignación de Estilos Visuales por Categoría:**
+  - **Dentista** 🦷: Fondo azul claro (`bg-blue-100`, `#dbeafe`)
+  - **Peluquería** ✂️: Fondo rosa claro (`bg-pink-100`, `#fce7f3`)
+  - **Fisioterapia** 🦴: Fondo verde claro (`bg-green-100`, `#dcfce7`)
+  - Emoji escalado a `text-6xl` (grid) y 2rem (gestion) con opacidad 0.8
+
+- **Función Helper `getBusinessStyle()`:**
+  - Ubicación: `frontend/index.html` (línea 651) y `frontend/gestion_negocio.html` (línea 691)
+  - Mapeo de tipo_negocio → {bgColor, emoji, color, textColor}
+  - Fallback a 'dentista' si tipo_negocio no coincide (casos edge)
+  - Reutilizable para futuras expansiones de categorías
+
+- **Integración en Interfaz de Usuario:**
+  - **Grid de Negocios (Cliente):** Función `renderBusinessGrid()` ahora renderiza emoji+background si no hay `foto_base64`
+  - **Lista de Propietario:** Función `loadMyBusinesses()` ahora renderiza emoji+background si no hay `foto_base64`
+  - **Página de Gestión:** Función `loadBusinessData()` muestra emoji en thumbnail (w-16 h-16) si no hay foto
+
+### 🔧 Cambiado (Changed)
+
+- **Reducción de Categorías de Negocio:**
+  - Removida categoría "General" (demasiado genérica en MVP)
+  - Dropdown de creación/edición (`business-type`, `edit-business-type`) ahora solo contiene:
+    - Dentista
+    - Peluquería
+    - Fisioterapia
+  - Valor default cambiado de 'general' a 'dentista'
+  - Archivos afectados: `frontend/index.html`, `frontend/gestion_negocio.html`
+
+- **Mejora de Experiencia Visual:**
+  - Negocios sin foto ahora muestran identidad visual clara según tipo
+  - Sustitución de placeholder genérico SVG por emoji descriptivo
+  - Mejor diferenciación visual entre tipos de negocio en grillas
+
+
+## [v0.6.0] - 2026-01-06 (Geolocalización de Negocios y Búsqueda por Proximidad)
+
+### ✨ Añadido (Added)
+
+**Geolocalización de Negocios (2026-01-06):**
+- **Esquema de Base de Datos Extendido:** Adición de columnas geográficas a tabla `negocios`
+  - `latitud DECIMAL(10, 8)` - Rango: -90.0° a +90.0° (precisión de 7 decimales ≈ 1.1 cm)
+  - `longitud DECIMAL(11, 8)` - Rango: -180.0° a +180.0° (precisión de 7 decimales ≈ 1.1 cm)
+  - `CREATE INDEX idx_negocios_ubicacion ON negocios(latitud, longitud)` para optimización de queries
+  - Archivos: `database/schema_postgres.sql`, `backend/migrations/003_add_geolocalizacion.sql`
+
+- **API REST con Cálculo de Distancia:**
+  - **Endpoint GET `/negocios/?lat=X&lon=Y`** - Nuevo parámetro de query para ubicación del usuario
+    - Calcula distancia Haversine en tiempo real: `SELECT *, 6371 * acos(...) as distancia_km`
+    - Ordena automáticamente por proximidad: `ORDER BY distancia_km NULLS LAST`
+    - Retorna campo `distancia_km` en respuesta JSON para cada negocio
+    - Soporta fallback: sin parámetros devuelve todos los negocios (sin distancia)
+  - **Endpoint POST `/negocios`** - Validación de coordenadas en creación
+    - Extrae `latitud` y `longitud` del payload (JSON o FormData)
+    - Valida rangos: -90 ≤ lat ≤ 90, -180 ≤ lon ≤ 180
+    - Retorna error 400 si coordenadas inválidas
+    - Opcional: coordenadas pueden omitirse (negocio se crea sin ubicación)
+  - **Endpoint PUT `/negocios/<id>`** - Actualización de coordenadas
+    - Permite modificar `latitud` y `longitud` de negocios existentes
+    - Misma validación de rangos que en POST
+  - Archivos: `backend/routes/negocios.py` (refactorización completa)
+
+- **Geocodificación con Nominatim (OpenStreetMap):**
+  - **Forward Geocoding:** Función `geocodificarDireccion()` convierte dirección → coordenadas
+    - Envía búsqueda a API Nominatim: `GET https://nominatim.openstreetmap.org/search`
+    - Parámetros: `q=<dirección>&format=json&limit=1`
+    - User-Agent requerido para respetar políticas de rate limiting
+    - Respeta límite de ~1 request/segundo de Nominatim
+  - **Reverse Geocoding:** Función `useMyLocation()` convierte coordenadas → dirección
+    - Envía coordenadas a Nominatim reverse: `GET .../reverse?format=json&lat=X&lon=Y`
+    - Extrae `address.road`, `address.house_number`, `address.city` de respuesta
+    - Formatea dirección legible automáticamente
+  - Archivos: `frontend/index.html`, `frontend/gestion_negocio.html`
+
+- **Interfaz de Usuario para Geolocalización:**
+  - **En Creación de Negocio:** 3 métodos para ingresar ubicación
+    1. **Input Manual:** Escribir dirección en campo de texto
+    2. **Botón "Usar mi ubicación" (📍):** Icono pin en formulario que activa GPS
+       - Solicita permiso de geolocalización del navegador (con timeout de 30 segundos)
+       - Muestra UI "⏳ Esperando permiso de ubicación..." durante espera
+       - Llama automáticamente a reverse geocoding para mostrar dirección legible
+    3. **Botón "Actualizar coordenadas":** Re-geocodifica dirección si fue editada
+  - **En Edición de Negocio:** Funciones paralelas `useMyLocationEdit()` y `geocodificarDireccionEdit()`
+  - **Feedback Visual:**
+    - ✅ Éxito (verde): "📍 40.41685, -3.70379" con coordenadas mostradas
+    - ⚠️ Advertencia (naranja): "Negocio se creará sin coordenadas si falla geocodificación"
+    - ❌ Error (rojo): "No se encontraron coordenadas para esa dirección"
+  - Archivos: `frontend/index.html`, `frontend/gestion_negocio.html` (UI updates)
+
+- **Visualización de Distancia en Listado:**
+  - **Tarjetas de Negocio Mejoradas:** Nueva línea en renderizado
+    - Muestra: `📍 ${distancia_km.toFixed(1)} km` cuando geolocalización está habilitada
+    - Oculta distancia si usuario denegó permiso de ubicación
+  - Archivo: `frontend/index.html` - Función `renderBusinessGrid()`
+
+- **Datos de Prueba con Coordenadas Reales:**
+  - Script `backend/manage_db.py` actualizado con 3 negocios en ciudades españolas reales:
+    1. **Peluquería Estilo & Glamour** - Madrid (40.4168, -3.7038)
+    2. **Clínica Dental Smile** - Barcelona (41.3874, 2.1686)
+    3. **FisioMente Centro** - Valencia (39.4699, -0.3763)
+  - Output al ejecutar: `✅ Peluquería Estilo & Glamour (ID: 1) - 📍 40.4168, -3.7038`
+  - Archivo: `backend/manage_db.py` (array NEGOCIOS y query INSERT)
+
+- **Suite de Tests para Geolocalización:**
+  - **6 Tests Nuevos en `backend/tests/test_geolocalizacion.py`:**
+    - `test_crear_negocio_con_coordenadas` - Verifica persistencia de lat/lon en BD
+    - `test_crear_negocio_sin_coordenadas` - Negocio creado exitosamente con coords NULL
+    - `test_listar_negocios_con_distancia` - Calcula y ordena por distancia correctamente
+      - Crea 3 negocios (Madrid, Barcelona, Valencia)
+      - Consulta desde ubicación del usuario (Madrid)
+      - Valida orden: Negocio A (0 km) → B (302 km) → C (505 km)
+      - Verifica cálculo Haversine: Madrid→Valencia ≈ 302 km, Madrid→Barcelona ≈ 505 km
+    - `test_actualizar_coordenadas_negocio` - PUT endpoint actualiza lat/lon
+    - `test_listar_negocios_sin_ubicacion_usuario` - Fallback sin params lat/lon
+    - `test_coordenadas_invalidas` - Valida rechazo de coords fuera de rango
+  - **Fixtures Mejorados:** @pytest.fixture `test_user()` usa UUID para emails únicos
+    - Previene error "El email ya está registrado" en ejecuciones rápidas
+    - Registra usuario como cliente, login automático
+  - Tests ejecutados vía Docker: `docker compose exec backend pytest backend/tests/test_geolocalizacion.py -v`
+  - **Resultado: 6 tests passing (100%) en 1.20 segundos**
+  - Archivo: `backend/tests/test_geolocalizacion.py` (nuevo)
+
+### 🔧 Cambiado (Changed)
+
+- **Backend Routes - `negocios.py` Refactorizado:**
+  - Función `listar_negocios()` ahora acepta parámetros `?lat=X&lon=Y` opcionales
+  - Fórmula Haversine en SQL para cálculo de distancia: `6371 * acos(cos(radians(lat)) * ...)`
+  - Validación de rangos de coordenadas en `crear_negocio()` y `actualizar_negocio()`
+  - Manejo de coordenadas NULL en queries con `NULLS LAST`
+  
+- **Frontend - `index.html` Mejoras Significativas:**
+  - Función `loadBusinesses()` ahora es async y solicita geolocalización automáticamente
+  - Promesa de geolocalización con timeout de 30 segundos
+  - Renderizado de UI "⏳ Esperando permiso de ubicación..." durante espera
+  - Construcción dinámica de URL: `/negocios/?lat=X&lon=Y` si permiso otorgado
+  - Fallback seguro si usuario deniega permiso
+
+- **Frontend - `gestion_negocio.html` Nuevas Funciones:**
+  - Funciones de geocodificación parallelas: `geocodificarDireccionEdit()`, `useMyLocationEdit()`
+  - Modal de creación/edición ahora soporta entry de coordenadas
+
+- **Docker y DevOps:**
+  - **Fix de Line Endings:** `docker-entrypoint.sh` convertido de CRLF a LF
+    - Problema: "exec /app/docker-entrypoint.sh: no such file or directory"
+    - Solución: PowerShell script para conversión: `(Get-Content ... -Raw) -replace "`r`n", "`n"`
+    - Docker image rebuilda sin cache: `docker-compose build backend --no-cache`
+  - **Volumen de Migraciones:** Backend container ahora tiene acceso a scripts de migración
+
+- **Tests - Fixtures Robustos:**
+  - `conftest.py` actualizado: fixtures ahora usan `uuid.uuid4()` para emails únicos
+  - Previene colisiones en test rápidos (antes usaba `time.time()`)
+
+- **Documentación:**
+  - Nuevo archivo `docs/GEOLOCALIZACION.md` con arquitectura técnica completa
+    - Flujo de usuario (propietario → geocodificación → BD)
+    - Flujo de búsqueda (cliente → GPS → Haversine → ordenamiento)
+    - Opciones de entrada (manual, GPS, reverse geocoding)
+    - Feedback visual (success/error/warning states)
+
+### 🐛 Corregido (Fixed)
+
+- **Bug: Permiso de Geolocalización No Solicitado**
+  - Problema: `loadBusinesses()` no llamaba a `navigator.geolocation.getCurrentPosition()`
+  - Solución: Refactorización a async/await con Promise explícita
+  - Resultado: Navegador ahora solicita permiso correctamente al cargar la página
+
+- **Bug: Timeout Insuficiente**
+  - Problema: 5 segundos no eran suficientes para que usuario responda a permiso
+  - Solución: Incrementado a 30 segundos con UI feedback: "⏳ Esperando permiso..."
+  - Resultado: Usuario tiene tiempo suficiente para otorgar/denegar permiso
+
+- **Bug: Distancias No Mostradas**
+  - Problema: Aún con coordenadas en BD, `renderBusinessGrid()` no mostraba distancia
+  - Solución: Agregado cálculo de distancia Haversine en `listar_negocios()` endpoint
+  - Resultado: Cada negocio ahora incluye `distancia_km` en respuesta JSON
+
+- **Bug: Docker Backend No Iniciaba**
+  - Problema: `docker-entrypoint.sh` tenía line endings Windows (CRLF)
+  - Solución: Convertido a Unix line endings (LF) via PowerShell
+  - Comando: `(Get-Content -Path ./docker-entrypoint.sh -Raw) -replace "`r`n", "`n" | Set-Content -Path ./docker-entrypoint.sh -NoNewline`
+  - Resultado: Backend container ahora inicia correctamente
+
+- **Bug: Tests Registrando Mismo Email**
+  - Problema: Fixtures con `time.time()` generaban colisiones en tests rápidos
+  - Solución: Cambio a `uuid.uuid4()` para garantizar unicidad
+  - Resultado: Tests corren consecutivamente sin "El email ya está registrado"
+
+- **Bug: Validación de Coordenadas Ausente**
+  - Problema: Backend aceptaba lat/lon fuera de rango geográfico válido
+  - Solución: Validación en `crear_negocio()` y `actualizar_negocio()`:
+    - `-90 ≤ latitud ≤ 90`
+    - `-180 ≤ longitud ≤ 180`
+  - Resultado: Coordenadas inválidas rechazadas con error HTTP 400
+
+### 🧪 Testeado (Tests)
+
+**Backend Geolocation Test Suite:**
+- Suite: **6 tests new + 110 existing = 116 total tests (100% passing)**
+- **Nuevos Tests:**
+  - ✅ `test_crear_negocio_con_coordenadas` - POST con coords
+  - ✅ `test_crear_negocio_sin_coordenadas` - POST sin coords (NULL allowed)
+  - ✅ `test_listar_negocios_con_distancia` - GET con ?lat=X&lon=Y ordering
+  - ✅ `test_actualizar_coordenadas_negocio` - PUT actualiza lat/lon
+  - ✅ `test_listar_negocios_sin_ubicacion_usuario` - Fallback sin params
+  - ✅ `test_coordenadas_invalidas` - Validación de rangos
+
+**Test Data Validation:**
+- ✅ 3 negocios españoles con coordenadas reales verificadas
+- ✅ Distancias calculadas: Madrid→Valencia 302.56 km (vs real ~302 km), Madrid→Barcelona 505.10 km (vs real ~505 km)
+- ✅ Reverse geocoding: GPS 40.4168, -3.7038 → "Calle Gran Vía, Madrid"
+
+**Rasa Tests (Unchanged):**
+- ✅ 12 Rasa action tests - All passing
+- Tests aún en `rasa_model/tests/test_acciones.py`
+
+**Full CI/CD Pipeline:**
+- ✅ `powershell -ExecutionPolicy Bypass -File ./scripts/run_tests.ps1`
+- Result: **116 Backend + 12 Rasa = 128 Total Tests - 100% Passing** ✅
+
+---
+
 ## [v0.5.0] - 2025-12-20 hasta 2026-01-02 (Refactorización Rasa, Flujo Propietario y Búsqueda de Clientes)
 
 ### ✨ Añadido (Added)
