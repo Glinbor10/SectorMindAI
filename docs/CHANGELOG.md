@@ -5,6 +5,58 @@ Todas las modificaciones notables en el proyecto Sector Mind AI se documentarán
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere al versionado semántico.
 
 
+## [v0.7.0] - 2026-01-08 (Interfaz de Usuario Adaptativa por Rol)
+
+### ✨ Añadido (Added)
+
+**Sistema de Conmutación de Vistas Basado en Rol de Usuario (2026-01-08):**
+- **Vistas Separadas Cliente vs Propietario:**
+  - **Vista Cliente:** Cabecera, búsqueda, grid de negocios destacados + Chat AI Discovery (derecha)
+  - **Vista Propietario:** Solo "Tus Negocios" con tarjetas de gestión, sin chat ni búsqueda
+  - Conmutación instantánea sin recargar página al iniciar/cerrar sesión
+  - Lógica centralizando en función `window.updateRoleViews()`
+  - Archivos afectados: `frontend/index.html`, `frontend/app.js`
+
+- **Mejoras en Mensajería y Accesibilidad:**
+  - **Nuevo Slogan:** "Accesible y fácil, pensado para mayores." (antes: "Tecnología sencilla, para todos.")
+  - **Descripción Actualizada:** "Reserva citas o encuentra el mejor negocio con ayuda de la IA, sin complicaciones."
+  - Enfoque mejorado en facilidad de uso para usuarios de mayor edad
+
+**Carga Dinámica de Negocios por Rol (2026-01-08):**
+- **Para Clientes:** Función `loadBusinesses()` carga grid de negocios destacados
+- **Para Propietarios:** Función `loadMyBusinesses()` carga grid de negocios propios al cambiar rol
+- Integración automática en `window.updateRoleViews()` 
+- Eliminación de duplicación de lógica de autenticación en múltiples scripts
+
+### 🔧 Cambiado (Changed)
+
+**Refactorización de Autenticación (2026-01-08):**
+- **Funciones de Auth Propias en index.html:**
+  - `handleLogin()`, `handleRegister()`, `saveUserSessionIndex()`, `logout()`, `updateUIIndex()`
+  - Eliminada dependencia de `app.js` en `index.html` (evita conflictos de variables globales)
+  - Cada página ahora gestiona independientemente su autenticación
+  - `app.js` sigue siendo usado solo en páginas de detalle de negocio
+
+- **Manejo de currentUser Global:**
+  - Variable `currentUser` ahora declarada solo en `app.js` (para otras páginas)
+  - En `index.html`, se declara localmente para evitar conflictos de scope
+  - Sincronización via `localStorage` ('sector_mind_user')
+
+- **Estructura HTML Simplificada:**
+  - Contenedor principal ahora alterna entre dos vistas simples:
+    - `<div id="cliente-view">` (contiene header + search + grid + discovery chat)
+    - `<div id="propietario-view">` (contiene solo "Tus Negocios")
+  - Eliminadas capas innecesarias de grid (antes `lg:col-span-5`, `lg:col-span-12`)
+  - Reducción de complejidad CSS/Tailwind
+
+### 🐛 Arreglado (Fixed)
+
+- **Carga de Negocios en Propietarios:** Función `loadMyBusinesses()` ahora se ejecuta automáticamente al cambiar rol
+- **Sincronización de Sesión:** `saveUserSessionIndex()` ahora llama a `updateRoleViews()` inmediatamente
+- **Evento de Carga:** `window.onload` ahora ejecuta `loadBusinesses()` además de `initDiscoveryChat()`
+- **Logout Completo:** Función `logout()` ahora llama a `updateRoleViews()` para limpiar vista correctamente
+
+
 ## [v0.6.1] - 2026-01-06 (Interfaz Visual por Tipo de Negocio)
 
 ### ✨ Añadido (Added)
@@ -45,6 +97,58 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 
 ## [v0.6.0] - 2026-01-06 (Geolocalización de Negocios y Búsqueda por Proximidad)
+
+### ✨ Añadido (Added)
+
+**Geolocalización de Negocios (2026-01-06):**
+- **Esquema de Base de Datos Extendido:** Adición de columnas geográficas a tabla `negocios`
+  - `latitud DECIMAL(10, 8)` - Rango: -90.0° a +90.0° (precisión de 7 decimales ≈ 1.1 cm)
+  - `longitud DECIMAL(11, 8)` - Rango: -180.0° a +180.0° (precisión de 7 decimales ≈ 1.1 cm)
+  - `CREATE INDEX idx_negocios_ubicacion ON negocios(latitud, longitud)` para optimización de queries
+  - Archivos: `database/schema_postgres.sql`, `backend/migrations/003_add_geolocalizacion.sql`
+
+- **API REST con Cálculo de Distancia:**
+  - **Endpoint GET `/negocios/?lat=X&lon=Y`** - Nuevo parámetro de query para ubicación del usuario
+    - Calcula distancia Haversine en tiempo real: `SELECT *, 6371 * acos(...) as distancia_km`
+    - Ordena automáticamente por proximidad: `ORDER BY distancia_km NULLS LAST`
+    - Retorna campo `distancia_km` en respuesta JSON para cada negocio
+    - Soporta fallback: sin parámetros devuelve todos los negocios (sin distancia)
+  - **Endpoint POST `/negocios`** - Validación de coordenadas en creación
+    - Extrae `latitud` y `longitud` del payload (JSON o FormData)
+    - Valida rangos: -90 ≤ lat ≤ 90, -180 ≤ lon ≤ 180
+    - Retorna error 400 si coordenadas inválidas
+    - Opcional: coordenadas pueden omitirse (negocio se crea sin ubicación)
+  - **Endpoint PUT `/negocios/<id>`** - Actualización de coordenadas
+    - Permite modificar `latitud` y `longitud` de negocios existentes
+    - Misma validación de rangos que en POST
+  - Archivos: `backend/routes/negocios.py` (refactorización completa)
+
+- **Geocodificación con Nominatim (OpenStreetMap):**
+  - **Forward Geocoding:** Función `geocodificarDireccion()` convierte dirección → coordenadas
+    - Envía búsqueda a API Nominatim: `GET https://nominatim.openstreetmap.org/search`
+    - Parámetros: `q=<dirección>&format=json&limit=1`
+    - User-Agent requerido para respetar políticas de rate limiting
+    - Respeta límite de ~1 request/segundo de Nominatim
+  - **Reverse Geocoding:** Función `useMyLocation()` convierte coordenadas → dirección
+    - Envía coordenadas a Nominatim reverse: `GET .../reverse?format=json&lat=X&lon=Y`
+    - Extrae `address.road`, `address.house_number`, `address.city` de respuesta
+    - Formatea dirección legible automáticamente
+  - Archivos: `frontend/index.html`, `frontend/gestion_negocio.html`
+
+- **Interfaz de Usuario para Geolocalización:**
+  - **En Creación de Negocio:** 3 métodos para ingresar ubicación
+    1. **Input Manual:** Escribir dirección en campo de texto
+    2. **Botón "Usar mi ubicación" (📍):** Icono pin en formulario que activa GPS
+       - Solicita permiso de geolocalización del navegador (con timeout de 30 segundos)
+       - Muestra UI "⏳ Esperando permiso de ubicación..." durante espera
+       - Llama automáticamente a reverse geocoding para mostrar dirección legible
+    3. **Botón "Actualizar coordenadas":** Re-geocodifica dirección si fue editada
+  - **En Edición de Negocio:** Funciones paralelas `useMyLocationEdit()` y `geocodificarDireccionEdit()`
+  - **Feedback Visual:**
+    - ✅ Éxito (verde): "📍 40.41685, -3.70379" con coordenadas mostradas
+    - ⚠️ Advertencia (naranja): "Negocio se creará sin coordenadas si falla geocodificación"
+    - ❌ Error (rojo): "No se encontraron coordenadas para esa dirección"
+  - Archivos: `frontend/index.html`, `frontend/gestion_negocio.html` (UI updates)
 
 ### ✨ Añadido (Added)
 

@@ -68,7 +68,11 @@ async function handleRegister(e) {
 function saveUserSession(userData) {
     localStorage.setItem('sector_mind_user', JSON.stringify(userData));
     currentUser = userData;
-    updateUI(); 
+    updateUI();
+    // Si estamos en index.html, actualizar vistas según rol
+    if (typeof window.updateRoleViews === 'function') {
+        setTimeout(() => window.updateRoleViews(), 0);
+    }
 }
 
 // --- INIT ---
@@ -163,7 +167,11 @@ async function waitForRasaToBeReady(nombreNegocio) {
         if (!isReady) await new Promise(r => setTimeout(r, 2000));
     }
 
-    await sendToRasa(`/greet{"negocio": "${nombreNegocio}"}`, true);
+    // Incluir negocio_id en el greet para que Rasa pueda extraerlo
+    const negocioId = businessData ? businessData.id : null;
+    const greetMsg = `/greet{"negocio": "${nombreNegocio}", "negocio_id": ${negocioId}}`;
+    console.log(`📨 Enviando greet a Rasa: ${greetMsg}`);
+    await sendToRasa(greetMsg, true);
     
     if(loader) loader.classList.add('hidden');
     addMsg('bot', `¡Hola! Soy el agente de IA de ${nombreNegocio}, ¿en qué puedo ayudarte?`);
@@ -282,6 +290,11 @@ async function handleChatSubmit(e) {
 
 async function sendToRasa(msg, hidden = false, typingElementId = null) {
     try {
+        // Si falta negocio_id y estamos en detalle.html, garantizar que esté disponible
+        if (!businessData || !businessData.id) {
+            console.warn('⚠️ businessData no disponible en sendToRasa:', businessData);
+        }
+        
         // Construir payload con metadatos para Rasa
         const payload = { 
             sender: currentUser ? currentUser.id.toString() : "anonimo", 

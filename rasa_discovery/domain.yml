@@ -1,0 +1,44 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - informar_ubicacion
+  - buscar_negocio
+  - afirmar
+  - negar
+  - nlu_fallback
+
+entities:
+  - ubicacion_texto
+
+slots:
+  ubicacion_texto:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_text
+        intent: informar_ubicacion
+      - type: custom
+  confirmando_ubicacion:
+    type: bool
+    influence_conversation: true
+    mappings:
+      - type: custom
+
+responses:
+  utter_ask_ubicacion_inicial:
+    - text: "👋 ¿Desde dónde sales para tu cita? Así te recomiendo negocios cerca."
+  utter_saludo_con_ubicacion:
+    - text: "✅ Ubicación guardada. Dime qué necesitas (peluquería, dentista, fisio...) y te muestro opciones cerca."
+  utter_goodbye:
+    - text: "¡Hasta pronto! Vuelve cuando necesites encontrar un negocio."
+  utter_fallback:
+    - text: "No entendí tu búsqueda. Dime qué tipo de negocio buscas (ej: peluquería, dentista, fisio...) o tu ubicación."
+
+actions:
+  - action_discovery_buscar_negocios
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

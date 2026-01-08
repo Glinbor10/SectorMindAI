@@ -1,0 +1,86 @@
+version: "3.1"
+
+nlu:
+- intent: greet
+  examples: |
+    - hola
+    - buenas
+    - qué tal
+    - hey
+    - buenos días
+    - buenas tardes
+    - holi
+    - ey
+
+- intent: goodbye
+  examples: |
+    - adiós
+    - hasta luego
+    - nos vemos
+
+- intent: informar_ubicacion
+  examples: |
+    - estoy en Gran Vía 123 Madrid
+    - mi ubicación es Calle Mayor 10
+    - [Gran Vía Madrid](ubicacion_texto)
+    - [Calle Alcalá 50](ubicacion_texto)
+    - vivo en [Madrid centro](ubicacion_texto)
+    - me encuentro en [Barcelona](ubicacion_texto)
+    - [Sevilla](ubicacion_texto)
+    - [Estepa](ubicacion_texto)
+    - [Valencia](ubicacion_texto)
+    - [Bilbao](ubicacion_texto)
+    - [Málaga](ubicacion_texto)
+
+- intent: buscar_negocio
+  examples: |
+    - busco peluquería
+    - necesito dentista
+    - quiero cortarme el pelo
+    - dónde puedo cortarme el pelo
+    - fisioterapia
+    - busco un sitio para cortarme el pelo
+    - necesito ir al dentista
+    - dónde hay dentistas
+    - busco fisio
+    - masaje
+    - necesito un masaje
+    - quiero arreglarme el pelo
+    - necesito limpiarme los dientes
+    - todos
+    - muéstrame todos
+    - mostrar todos los negocios
+    - cualquier tipo de negocio
+    - todos los tipos
+    - ver todos cerca
+
+- intent: afirmar
+  examples: |
+    - sí
+    - si
+    - vale
+    - ok
+    - claro
+    - correcto
+    - bueno
+    - perfecto
+    - dale
+    - ándale
+    - de acuerdo
+    - está bien
+
+- intent: negar
+  examples: |
+    - no
+    - nó
+    - incorrecto
+    - mal
+    - error
+    - para nada
+    - no es correcto
+    - está mal
+
+- intent: nlu_fallback
+  examples: |
+    - blablabla
+    - asdfgh

@@ -79,6 +79,41 @@ services:
       - backend
     restart: unless-stopped
 
+  rasa-discovery:
+    image: rasa/rasa:3.6.2
+    container_name: sector_mind_rasa_discovery
+    working_dir: /app/project
+    env_file:
+      - .env
+    command: ["run", "--enable-api", "--cors", "*", "--model", "models"]
+    ports:
+      - "5006:5005"
+    volumes:
+      - ./rasa_discovery:/app/project
+      - ./rasa_discovery/endpoints.docker.yml:/app/project/endpoints.yml:ro
+    depends_on:
+      - rasa-discovery-actions
+      - backend
+    restart: unless-stopped
+
+  rasa-discovery-actions:
+    build:
+      context: ./rasa_discovery
+      dockerfile: Dockerfile.actions
+    container_name: sector_mind_rasa_discovery_actions
+    working_dir: /app
+    env_file:
+      - .env
+    ports:
+      - "5056:5055"
+    environment:
+      - API_URL=${API_URL}
+    volumes:
+      - ./rasa_discovery/actions:/app/actions
+    depends_on:
+      - backend
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local

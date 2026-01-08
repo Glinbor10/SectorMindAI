@@ -104,37 +104,6 @@
 
 ---
 
-### **v0.6.0 - Geolocalización de Negocios y Búsqueda por Proximidad**
-**Fecha:** Enero, 2026
-
-**Logros:**
-- ✅ Sistema de geolocalización completo: base de datos, backend, frontend
-- ✅ Fórmula Haversine para cálculo de distancia en tiempo real
-- ✅ Integración con Nominatim (OpenStreetMap) para geocodificación
-- ✅ Geolocalización del navegador con solicitud de permisos (30 segundos timeout)
-- ✅ Visualización de distancias en tarjetas de negocios
-- ✅ 3 métodos de entrada de ubicación (manual, GPS, reverse geocoding)
-- ✅ Suite de 6 tests de geolocalización (100% passing)
-- ✅ Test data con 3 negocios reales españoles (Madrid, Barcelona, Valencia)
-- ✅ Documentación técnica en `docs/GEOLOCALIZACION.md`
-
-**Retos Resueltos:**
-1. **Permiso de Geolocalización:** Implementación correcta de `navigator.geolocation` con UI feedback (⏳ esperando)
-2. **Precision de Coordenadas:** DECIMAL(10,8) y DECIMAL(11,8) para ~1.1 cm de precisión geográfica
-3. **Line Endings en Docker:** Conversión CRLF→LF en `docker-entrypoint.sh`
-4. **Fixtures Únicos en Tests:** Cambio de `time.time()` a `uuid.uuid4()` para evitar colisiones
-5. **Rate Limiting Nominatim:** User-Agent requerido y respeto de límite ~1 req/segundo
-
-**Métricas:**
-- 116 tests totales: 100% passing (110 backend + 6 geo + 12 Rasa)
-- Distancia Madrid→Valencia: 302.56 km (Haversine vs ~302 km real)
-- Distancia Madrid→Barcelona: 505.10 km (Haversine vs ~505 km real)
-- 3 ciudades españolas con coordenadas reales validadas
-- 0 bugs en Docker post-fix line endings
-- Producción estable ✅
-
----
-
 ### **v0.5.0 - Refactorización Rasa, Búsqueda de Clientes y UX de Citas desde web de Propietario**
 **Fecha:** Enero 2, 2026 ← **ESTADO ACTUAL**
 
@@ -201,19 +170,69 @@
 - 0 falsos positivos en búsqueda de clientes
 - Producción estable ✅
 
+---
+
+### **v0.6.0 - Geolocalización de Negocios y Búsqueda por Proximidad**
+**Fecha:** Enero, 2026
+
+**Logros:**
+- ✅ Sistema de geolocalización completo: base de datos, backend, frontend
+- ✅ Fórmula Haversine para cálculo de distancia en tiempo real
+- ✅ Integración con Nominatim (OpenStreetMap) para geocodificación
+- ✅ Geolocalización del navegador con solicitud de permisos (30 segundos timeout)
+- ✅ Visualización de distancias en tarjetas de negocios
+- ✅ 3 métodos de entrada de ubicación (manual, GPS, reverse geocoding)
+- ✅ Suite de 6 tests de geolocalización (100% passing)
+- ✅ Test data con 3 negocios reales españoles (Madrid, Barcelona, Valencia)
+- ✅ Documentación técnica en `docs/GEOLOCALIZACION.md`
+
+**Retos Resueltos:**
+1. **Permiso de Geolocalización:** Implementación correcta de `navigator.geolocation` con UI feedback (⏳ esperando)
+2. **Precision de Coordenadas:** DECIMAL(10,8) y DECIMAL(11,8) para ~1.1 cm de precisión geográfica
+3. **Line Endings en Docker:** Conversión CRLF→LF en `docker-entrypoint.sh`
+4. **Fixtures Únicos en Tests:** Cambio de `time.time()` a `uuid.uuid4()` para evitar colisiones
+5. **Rate Limiting Nominatim:** User-Agent requerido y respeto de límite ~1 req/segundo
+
+**Métricas:**
+- 116 tests totales: 100% passing (110 backend + 6 geo + 12 Rasa)
+- Distancia Madrid→Valencia: 302.56 km (Haversine vs ~302 km real)
+- Distancia Madrid→Barcelona: 505.10 km (Haversine vs ~505 km real)
+- 3 ciudades españolas con coordenadas reales validadas
+- 0 bugs en Docker post-fix line endings
+- Producción estable ✅
 
 ---
 
-## 💻 Flujo Actual de Desarrollo (v0.5.0)
+### **v0.7.0 - Interfaz Adaptativa por Rol y Chat Discovery**
+**Fecha:** Enero 8, 2026
 
-### Flujo de trabajo como propietario
+**Logros:**
+- ✅ Dos vistas separadas según rol:
+   - **Cliente:** Header + búsqueda + grid de negocios + chat Discovery (Rasa Discovery, puerto 5006)
+   - **Propietario:** Panel "Tus Negocios" sin chat ni búsqueda
+- ✅ Conmutación instantánea sin recargar página al iniciar/cerrar sesión
+- ✅ Refactor de autenticación en `index.html` (sin dependencia de `app.js`)
+- ✅ Carga dinámica según rol: `loadBusinesses()` (cliente) y `loadMyBusinesses()` (propietario)
+- ✅ Nuevo slogan orientado a accesibilidad: "Accesible y fácil, pensado para mayores."
+- ✅ Separación de modelos Rasa:
+   - **Rasa Discovery (nuevo):** Descubrimiento de negocios por ubicación/tipo (5006)
+   - **Rasa Model (existente):** Gestión de citas completas (5005)
 
-1. Inicia sesión como propietario.
-2. Gestiona servicios, horarios y clientes desde la plataforma.
-3. Accede a la gestión de citas y visualiza el historial de clientes.
-4. El bot de IA responde a preguntas sobre el negocio, servicios y urgencias específicas.
-5. Las reservas y consultas se gestionan de forma centralizada usando Rasa y metadatos.
+**Retos Resueltos:**
+1) Conflicto de variable `currentUser` entre `index.html` y `app.js` → scopes separados y sincronización por `localStorage`.
+2) Cambio de rol sin recarga → `window.updateRoleViews()` y `saveUserSessionIndex()` actualizan UI al instante.
+3) Carga de negocios del propietario → `loadMyBusinesses()` se ejecuta al activar modo propietario.
+4) Logout limpia vistas y estado → se vuelven a mostrar elementos de cliente.
+
+**Métricas:**
+- 116 tests totales (backend + geolocalización + Rasa Model): 100% passing.
+- Cambio de rol < 50 ms percibido.
+- 0 conflictos de variables globales tras refactor.
+
+
 ---
+
+
 
 ## 🚀 Roadmap General
 
@@ -226,7 +245,7 @@
 | **v0.4.0** |  Dic 20, 2025 | Profesionalización Docker |
 | **v0.5.0** | Dic/Ene, 2026 | Refactorización Rasa + Flujo Propietario |
 | **v0.6.0** | Ene 6, 2026 | Geolocalización de Negocios ✅ |
-| **v0.7.0** | (previsto) Feb, 2026 | Filtro por Radio y Mapa Interactivo |
+| **v0.7.0** | Ene 8, 2026 | Interfaz Adaptativa + Rasa Discovery ✅ |
 | **v1.0.0** | (previsto) Feb/Mar, 2026 | SaaS Multi-Tenant |
 
 ---
@@ -240,9 +259,9 @@ Cada release debe cumplir:
 
 ---
 
-**Actualizado:** 6 Enero 2026
-**Versión Actual:** v0.6.0 (Geolocalización de Negocios)  
-**Estado:** ✅ Geolocalización completada, 116 tests passing
+**Actualizado:** 8 Enero 2026
+**Versión Actual:** v0.7.0 (Interfaz Adaptativa + Rasa Discovery)  
+**Estado:** ✅ 116 tests passing (backend + geo + Rasa Model)
   - 24 intents iniciales (distribuidos entre dentista, peluquería, fisioterapia)
   - Extracción de entities (servicios, fechas, tipos de urgencia)
 - **Rasa Actions Custom:** 7 acciones personalizadas ("urgencias" que necesiten contexto) de cata tipo de negocio para conectar NLU con lógica de negocio
