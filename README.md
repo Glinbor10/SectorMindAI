@@ -281,7 +281,13 @@ git clone https://github.com/tu-usuario/SectorMindAI.git
 cd SectorMindAI
 ```
 
-2. **Verificar Docker**
+2. **Configurar variables de entorno**
+```bash
+cp .env.example .env
+# Edita .env con tus credenciales si es necesario
+```
+
+3. **Verificar Docker**
 ```bash
 docker --version
 docker compose --version
@@ -303,7 +309,13 @@ http://localhost:5000
 
 Si prefieres no usar Docker:
 
-1. **Crear entorno virtual**
+1. **Configurar variables de entorno**
+```bash
+cp .env.example .env
+# Edita .env con tus credenciales locales
+```
+
+2. **Crear entorno virtual**
 ```bash
 python -m venv .venv
 # Windows
@@ -312,7 +324,7 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-2. **Instalar dependencias**
+3. **Instalar dependencias**
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
