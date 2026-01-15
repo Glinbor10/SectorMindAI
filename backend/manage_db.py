@@ -79,6 +79,7 @@ for dia in range(5):
 
 
 NEGOCIOS = [
+    # Peluquerias
     {
         "nombre": "Peluquería Estilo & Glamour",
         "tipo_negocio": "peluqueria",
@@ -94,6 +95,133 @@ NEGOCIOS = [
         ]
     },
     {
+        "nombre": "Salón Bella Vista",
+        "tipo_negocio": "peluqueria",
+        "direccion": "Calle Mayor, 2, Barcelona",
+        "descripcion": "Tu estilo, nuestra pasión.",
+        "foto_base64": load_sample_photo_base64('peluqueria.jpeg'),
+        "latitud": 41.3851,
+        "longitud": 2.1734,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Corte de Pelo", "precio": 26.00, "duracion_minutos": 30},
+            {"nombre": "Tinte", "precio": 62.00, "duracion_minutos": 90}
+        ]
+    },
+    {
+        "nombre": "Estética y Belleza",
+        "tipo_negocio": "peluqueria",
+        "direccion": "Calle Mayor, 3, Valencia",
+        "descripcion": "Belleza y cuidado capilar profesional.",
+        "foto_base64": load_sample_photo_base64('peluqueria.jpeg'),
+        "latitud": 39.4699,
+        "longitud": -0.3763,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Corte de Pelo", "precio": 27.00, "duracion_minutos": 30},
+            {"nombre": "Tinte", "precio": 64.00, "duracion_minutos": 90}
+        ]
+    },
+    {
+        "nombre": "Corte y Color",
+        "tipo_negocio": "peluqueria",
+        "direccion": "Calle Mayor, 4, Sevilla",
+        "descripcion": "Innovación en peluquería.",
+        "foto_base64": load_sample_photo_base64('peluqueria.jpeg'),
+        "latitud": 37.3891,
+        "longitud": -5.9845,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Corte de Pelo", "precio": 28.00, "duracion_minutos": 30},
+            {"nombre": "Tinte", "precio": 66.00, "duracion_minutos": 90}
+        ]
+    },
+    {
+        "nombre": "Glamour Hair",
+        "tipo_negocio": "peluqueria",
+        "direccion": "Calle Mayor, 5, Bilbao",
+        "descripcion": "Estilo único para cada cliente.",
+        "foto_base64": load_sample_photo_base64('peluqueria.jpeg'),
+        "latitud": 43.2630,
+        "longitud": -2.9350,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Corte de Pelo", "precio": 29.00, "duracion_minutos": 30},
+            {"nombre": "Tinte", "precio": 68.00, "duracion_minutos": 90}
+        ]
+    },
+    {
+        "nombre": "Pelo Perfecto",
+        "tipo_negocio": "peluqueria",
+        "direccion": "Calle Mayor, 6, Malaga",
+        "descripcion": "Cortes modernos y tendencias.",
+        "foto_base64": load_sample_photo_base64('peluqueria.jpeg'),
+        "latitud": 36.7213,
+        "longitud": -4.4214,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Corte de Pelo", "precio": 30.00, "duracion_minutos": 30},
+            {"nombre": "Tinte", "precio": 70.00, "duracion_minutos": 90}
+        ]
+    },
+    {
+        "nombre": "Salón Moderno",
+        "tipo_negocio": "peluqueria",
+        "direccion": "Calle Mayor, 7, Zaragoza",
+        "descripcion": "Experiencia en color y forma.",
+        "foto_base64": load_sample_photo_base64('peluqueria.jpeg'),
+        "latitud": 41.6488,
+        "longitud": -0.8891,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Corte de Pelo", "precio": 31.00, "duracion_minutos": 30},
+            {"nombre": "Tinte", "precio": 72.00, "duracion_minutos": 90}
+        ]
+    },
+    {
+        "nombre": "Belleza Urbana",
+        "tipo_negocio": "peluqueria",
+        "direccion": "Calle Mayor, 8, Granada",
+        "descripcion": "Salón con atención personalizada.",
+        "foto_base64": load_sample_photo_base64('peluqueria.jpeg'),
+        "latitud": 37.1773,
+        "longitud": -3.5986,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Corte de Pelo", "precio": 32.00, "duracion_minutos": 30},
+            {"nombre": "Tinte", "precio": 74.00, "duracion_minutos": 90}
+        ]
+    },
+    {
+        "nombre": "Estilo Personal",
+        "tipo_negocio": "peluqueria",
+        "direccion": "Calle Mayor, 9, Murcia",
+        "descripcion": "Belleza que transforma.",
+        "foto_base64": load_sample_photo_base64('peluqueria.jpeg'),
+        "latitud": 37.9922,
+        "longitud": -1.1307,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Corte de Pelo", "precio": 33.00, "duracion_minutos": 30},
+            {"nombre": "Tinte", "precio": 76.00, "duracion_minutos": 90}
+        ]
+    },
+    {
+        "nombre": "Cabello Creativo",
+        "tipo_negocio": "peluqueria",
+        "direccion": "Calle Mayor, 10, Alicante",
+        "descripcion": "Profesionales del cabello.",
+        "foto_base64": load_sample_photo_base64('peluqueria.jpeg'),
+        "latitud": 38.3452,
+        "longitud": -0.4810,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Corte de Pelo", "precio": 34.00, "duracion_minutos": 30},
+            {"nombre": "Tinte", "precio": 78.00, "duracion_minutos": 90}
+        ]
+    },
+    # Dentistas
+    {
         "nombre": "Clínica Dental Smile",
         "tipo_negocio": "dentista",
         "direccion": "Paseo de Gracia, 15, Barcelona",
@@ -108,6 +236,133 @@ NEGOCIOS = [
         ]
     },
     {
+        "nombre": "Centro Odontológico Perfecto",
+        "tipo_negocio": "dentista",
+        "direccion": "Calle Mayor, 12, Palma de Mallorca",
+        "descripcion": "Odontología de vanguardia.",
+        "foto_base64": load_sample_photo_base64('dentista.png'),
+        "latitud": 39.5696,
+        "longitud": 2.6502,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Limpieza", "precio": 51.00, "duracion_minutos": 30},
+            {"nombre": "Endodoncia", "precio": 205.00, "duracion_minutos": 60}
+        ]
+    },
+    {
+        "nombre": "Dental Care",
+        "tipo_negocio": "dentista",
+        "direccion": "Calle Mayor, 13, Las Palmas de Gran Canaria",
+        "descripcion": "Salud dental para toda la familia.",
+        "foto_base64": load_sample_photo_base64('dentista.png'),
+        "latitud": 28.1235,
+        "longitud": -15.4363,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Limpieza", "precio": 52.00, "duracion_minutos": 30},
+            {"nombre": "Endodoncia", "precio": 210.00, "duracion_minutos": 60}
+        ]
+    },
+    {
+        "nombre": "Sonrisa Saludable",
+        "tipo_negocio": "dentista",
+        "direccion": "Calle Mayor, 14, Santander",
+        "descripcion": "Expertos en tratamientos dentales.",
+        "foto_base64": load_sample_photo_base64('dentista.png'),
+        "latitud": 43.4623,
+        "longitud": -3.8099,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Limpieza", "precio": 53.00, "duracion_minutos": 30},
+            {"nombre": "Endodoncia", "precio": 215.00, "duracion_minutos": 60}
+        ]
+    },
+    {
+        "nombre": "Clínica Dental Blanca",
+        "tipo_negocio": "dentista",
+        "direccion": "Calle Mayor, 15, Salamanca",
+        "descripcion": "Sonrisas perfectas.",
+        "foto_base64": load_sample_photo_base64('dentista.png'),
+        "latitud": 40.9701,
+        "longitud": -5.6635,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Limpieza", "precio": 54.00, "duracion_minutos": 30},
+            {"nombre": "Endodoncia", "precio": 220.00, "duracion_minutos": 60}
+        ]
+    },
+    {
+        "nombre": "Odontología Avanzada",
+        "tipo_negocio": "dentista",
+        "direccion": "Calle Mayor, 16, Oviedo",
+        "descripcion": "Cuidado integral de la boca.",
+        "foto_base64": load_sample_photo_base64('dentista.png'),
+        "latitud": 43.3619,
+        "longitud": -5.8494,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Limpieza", "precio": 55.00, "duracion_minutos": 30},
+            {"nombre": "Endodoncia", "precio": 225.00, "duracion_minutos": 60}
+        ]
+    },
+    {
+        "nombre": "Dental Plus",
+        "tipo_negocio": "dentista",
+        "direccion": "Calle Mayor, 17, Pamplona",
+        "descripcion": "Tecnología avanzada en odontología.",
+        "foto_base64": load_sample_photo_base64('dentista.png'),
+        "latitud": 42.8125,
+        "longitud": -1.6458,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Limpieza", "precio": 56.00, "duracion_minutos": 30},
+            {"nombre": "Endodoncia", "precio": 230.00, "duracion_minutos": 60}
+        ]
+    },
+    {
+        "nombre": "Centro Dental Moderno",
+        "tipo_negocio": "dentista",
+        "direccion": "Calle Mayor, 18, San Sebastian",
+        "descripcion": "Profesionales comprometidos con tu salud.",
+        "foto_base64": load_sample_photo_base64('dentista.png'),
+        "latitud": 43.3183,
+        "longitud": -1.9812,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Limpieza", "precio": 57.00, "duracion_minutos": 30},
+            {"nombre": "Endodoncia", "precio": 235.00, "duracion_minutos": 60}
+        ]
+    },
+    {
+        "nombre": "Sonrisas Brillantes",
+        "tipo_negocio": "dentista",
+        "direccion": "Calle Mayor, 19, Cordoba",
+        "descripcion": "Tratamientos dentales de calidad.",
+        "foto_base64": load_sample_photo_base64('dentista.png'),
+        "latitud": 37.8882,
+        "longitud": -4.7794,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Limpieza", "precio": 58.00, "duracion_minutos": 30},
+            {"nombre": "Endodoncia", "precio": 240.00, "duracion_minutos": 60}
+        ]
+    },
+    {
+        "nombre": "Clínica Dental Integral",
+        "tipo_negocio": "dentista",
+        "direccion": "Calle Mayor, 20, Vigo",
+        "descripcion": "Tu dentista de confianza.",
+        "foto_base64": load_sample_photo_base64('dentista.png'),
+        "latitud": 42.2406,
+        "longitud": -8.7207,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Limpieza", "precio": 59.00, "duracion_minutos": 30},
+            {"nombre": "Endodoncia", "precio": 245.00, "duracion_minutos": 60}
+        ]
+    },
+    # Fisioterapia
+    {
         "nombre": "FisioMente Centro",
         "tipo_negocio": "fisioterapia",
         "direccion": "Calle Colón, 8, Valencia",
@@ -119,6 +374,132 @@ NEGOCIOS = [
         "servicios": [
             {"nombre": "Masaje deportivo", "precio": 40.00, "duracion_minutos": 45},
             {"nombre": "Punción seca", "precio": 45.00, "duracion_minutos": 30}
+        ]
+    },
+    {
+        "nombre": "Centro de Fisioterapia Salud",
+        "tipo_negocio": "fisioterapia",
+        "direccion": "Calle Mayor, 22, A Coruna",
+        "descripcion": "Fisioterapia especializada.",
+        "foto_base64": load_sample_photo_base64('fisioterapia.jpg'),
+        "latitud": 43.3623,
+        "longitud": -8.4115,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Masaje deportivo", "precio": 41.00, "duracion_minutos": 45},
+            {"nombre": "Punción seca", "precio": 46.00, "duracion_minutos": 30}
+        ]
+    },
+    {
+        "nombre": "FisioActiva",
+        "tipo_negocio": "fisioterapia",
+        "direccion": "Calle Mayor, 23, Vitoria-Gasteiz",
+        "descripcion": "Recuperación y bienestar físico.",
+        "foto_base64": load_sample_photo_base64('fisioterapia.jpg'),
+        "latitud": 42.8467,
+        "longitud": -2.6716,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Masaje deportivo", "precio": 42.00, "duracion_minutos": 45},
+            {"nombre": "Punción seca", "precio": 47.00, "duracion_minutos": 30}
+        ]
+    },
+    {
+        "nombre": "Recupera Fisio",
+        "tipo_negocio": "fisioterapia",
+        "direccion": "Calle Mayor, 24, Leon",
+        "descripcion": "Tratamientos personalizados.",
+        "foto_base64": load_sample_photo_base64('fisioterapia.jpg'),
+        "latitud": 42.5987,
+        "longitud": -5.5671,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Masaje deportivo", "precio": 43.00, "duracion_minutos": 45},
+            {"nombre": "Punción seca", "precio": 48.00, "duracion_minutos": 30}
+        ]
+    },
+    {
+        "nombre": "Centro FisioVital",
+        "tipo_negocio": "fisioterapia",
+        "direccion": "Calle Mayor, 25, Badajoz",
+        "descripcion": "Especialistas en rehabilitación.",
+        "foto_base64": load_sample_photo_base64('fisioterapia.jpg'),
+        "latitud": 38.8780,
+        "longitud": -6.9707,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Masaje deportivo", "precio": 44.00, "duracion_minutos": 45},
+            {"nombre": "Punción seca", "precio": 49.00, "duracion_minutos": 30}
+        ]
+    },
+    {
+        "nombre": "FisioTerapia Plus",
+        "tipo_negocio": "fisioterapia",
+        "direccion": "Calle Mayor, 26, Jaen",
+        "descripcion": "Mejora tu movilidad.",
+        "foto_base64": load_sample_photo_base64('fisioterapia.jpg'),
+        "latitud": 37.7796,
+        "longitud": -3.7849,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Masaje deportivo", "precio": 45.00, "duracion_minutos": 45},
+            {"nombre": "Punción seca", "precio": 50.00, "duracion_minutos": 30}
+        ]
+    },
+    {
+        "nombre": "Salud y Movimiento",
+        "tipo_negocio": "fisioterapia",
+        "direccion": "Calle Mayor, 27, Castellon de la Plana",
+        "descripcion": "Cuidado fisioterapéutico profesional.",
+        "foto_base64": load_sample_photo_base64('fisioterapia.jpg'),
+        "latitud": 39.9864,
+        "longitud": -0.0513,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Masaje deportivo", "precio": 46.00, "duracion_minutos": 45},
+            {"nombre": "Punción seca", "precio": 51.00, "duracion_minutos": 30}
+        ]
+    },
+    {
+        "nombre": "FisioRelaj",
+        "tipo_negocio": "fisioterapia",
+        "direccion": "Calle Mayor, 28, Almeria",
+        "descripcion": "Recupera tu forma física.",
+        "foto_base64": load_sample_photo_base64('fisioterapia.jpg'),
+        "latitud": 36.8340,
+        "longitud": -2.4637,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Masaje deportivo", "precio": 47.00, "duracion_minutos": 45},
+            {"nombre": "Punción seca", "precio": 52.00, "duracion_minutos": 30}
+        ]
+    },
+    {
+        "nombre": "Centro FisioBalance",
+        "tipo_negocio": "fisioterapia",
+        "direccion": "Calle Mayor, 29, Toledo",
+        "descripcion": "Fisioterapia integral.",
+        "foto_base64": load_sample_photo_base64('fisioterapia.jpg'),
+        "latitud": 39.8628,
+        "longitud": -4.0273,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Masaje deportivo", "precio": 48.00, "duracion_minutos": 45},
+            {"nombre": "Punción seca", "precio": 53.00, "duracion_minutos": 30}
+        ]
+    },
+    {
+        "nombre": "FisioSalud Integral",
+        "tipo_negocio": "fisioterapia",
+        "direccion": "Calle Mayor, 30, Segovia",
+        "descripcion": "Expertos en terapia física.",
+        "foto_base64": load_sample_photo_base64('fisioterapia.jpg'),
+        "latitud": 40.9429,
+        "longitud": -4.1088,
+        "horarios": HORARIO_PARTIDO,
+        "servicios": [
+            {"nombre": "Masaje deportivo", "precio": 49.00, "duracion_minutos": 45},
+            {"nombre": "Punción seca", "precio": 54.00, "duracion_minutos": 30}
         ]
     }
 ]
