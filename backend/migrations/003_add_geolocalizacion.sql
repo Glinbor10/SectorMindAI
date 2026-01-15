@@ -25,5 +25,3 @@ COMMENT ON COLUMN negocios.longitud IS 'Longitud en formato decimal (-180 a +180
 
 -- UPDATE negocios SET latitud = 39.4699, longitud = -0.3763 
 -- WHERE direccion ILIKE '%valencia%' AND latitud IS NULL;
-
-COMMIT;
