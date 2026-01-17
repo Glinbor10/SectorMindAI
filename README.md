@@ -1,5 +1,5 @@
 ﻿
-# **Sector Mind AI (v0.7.0)**
+# **Sector Mind AI (v0.7.2)**
 ## 🐳 **¿Cómo funciona Docker en SectorMindAI?**
 
 SectorMindAI utiliza Docker y Docker Compose para orquestar todos los servicios necesarios (backend, base de datos, dos asistentes Rasa y sus servidores de acciones) de forma profesional, reproducible y persistente.
@@ -49,8 +49,8 @@ Docker Compose y los scripts PowerShell permiten levantar, detener, testear y ma
 
 ## 📋 **Estado del Proyecto**
 
-El proyecto ha alcanzado la versión **v0.7.0 (Doble asistente Rasa + UI por rol + descubrimiento desde la home)**.
-Sistema de reservas con IA contextual, geolocalización de negocios, búsqueda inteligente por distancia, dos modelos Rasa (Discovery 5006 y Model 5005), tarjetas de negocio clicables desde la home y 100+ tests automatizados desplegable en contenedores.
+El proyecto ha alcanzado la versión **v0.7.2 (Bot de descubrimiento mejorado + filtrado de citas por negocio + redirección automática)**.
+Sistema de reservas con IA contextual, geolocalización de negocios, búsqueda inteligente por distancia, dos modelos Rasa (Discovery 5006 y Model 5005), tarjetas de negocio clicables desde la home, selección enumerada de negocios con redirección automática, detección de disponibilidad para mañana y filtrado de citas por contexto de negocio, con 100+ tests automatizados desplegable en contenedores.
 
 
 ### 🎯 Funcionalidades Principales (Sistema Completo)

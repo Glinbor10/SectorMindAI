@@ -1,11 +1,11 @@
 
-# 🧠 Arquitectura del Asistente Conversacional (Rasa) - Sector Mind AI (v0.7.0)
+# 🧠 Arquitectura del Asistente Conversacional (Rasa) - Sector Mind AI (v0.7.2)
 
-Este documento resume la arquitectura Rasa en v0.7.0. Para la descripción completa de la nueva separación de modelos (Rasa Discovery + Rasa Model) consulta [RASA_v0.7.md](RASA_v0.7.md).
+Este documento resume la arquitectura Rasa en v0.7.2. Para la descripción completa de la nueva separación de modelos (Rasa Discovery + Rasa Model) consulta [RASA_v0.7.md](RASA_v0.7.md).
 
-## Resumen v0.7.0 (Modelos Actuales)
-- **Rasa Discovery (nuevo, puerto 5006):** Descubrimiento de negocios por ubicación y tipo de servicio. Integra geocodificación, búsqueda por proximidad y tarjetas clicables que redirigen a `detalle.html?id={id}`.
-- **Rasa Model (existente, puerto 5005):** Gestión completa de citas (reservar, cambiar, cancelar, consultar) para un negocio concreto.
+## Resumen v0.7.2 (Modelos Actuales)
+- **Rasa Discovery (mejorado, puerto 5006):** Descubrimiento de negocios por ubicación y tipo de servicio con selección enumerada, redirección automática, detección de disponibilidad para mañana y geocodificación mejorada.
+- **Rasa Model (existente, puerto 5005):** Gestión completa de citas (reservar, cambiar, cancelar, consultar) para un negocio concreto con filtrado de citas por contexto de negocio.
 - **Frontend:**
   - `index.html` usa Rasa Discovery (chat lateral sticky).
   - `detalle.html` usa Rasa Model (chat principal).
@@ -13,7 +13,7 @@ Este documento resume la arquitectura Rasa en v0.7.0. Para la descripción compl
 
 ---
 
-## 1. Rasa Discovery (v0.7.0)
+## 1. Rasa Discovery (v0.7.2)
 
 **Propósito:** Ayudar a clientes a encontrar negocios cercanos según ubicación y tipo de servicio.
 
@@ -53,7 +53,7 @@ docker compose run --rm rasa-discovery rasa train
 
 ---
 
-## 2. Rasa Model (v0.7.0, baseline v0.5.x)
+## 2. Rasa Model (v0.7.2, baseline v0.5.x)
 
 **Propósito:** Gestionar reservas, cambios y cancelaciones de citas para un negocio concreto.
 

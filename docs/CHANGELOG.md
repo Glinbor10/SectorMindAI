@@ -5,6 +5,49 @@ Todas las modificaciones notables en el proyecto Sector Mind AI se documentarán
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere al versionado semántico.
 
 
+## [v0.7.2] - 2026-01-17 (Mejoras Críticas en Bot de Descubrimiento Rasa)
+
+### ✨ Añadido (Added)
+
+**Detección Mejorada de Disponibilidad para Mañana (2026-01-17):**
+- **Soporte para "Mañana":** El bot ahora detecta correctamente expresiones como "mañana", "manana", "tomorrow"
+- **Filtrado Inteligente:** Nueva función `_filtrar_con_hueco_manana()` que filtra negocios con disponibilidad para el día siguiente
+- **Archivo afectado:** `rasa_discovery/actions/discovery.py`
+
+**Selección Enumerada de Negocios con Redirección Automática (2026-01-17):**
+- **Numeración de Resultados:** Los negocios se muestran enumerados del 1 al 5
+- **Redirección Automática:** Al seleccionar un número (ej: "el 1"), redirige automáticamente a la página de detalle
+- **Patrón [REDIRECT:...]:** Nuevo formato de respuesta que el frontend detecta para navegación automática
+- **Archivos afectados:** `rasa_discovery/actions/discovery.py`, `frontend/index.html`
+
+### 🔧 Cambiado (Changed)
+
+**Simplificación de Selección de Ubicación (2026-01-17):**
+- **Auto-selección del Primer Resultado:** Eliminada la selección múltiple de ubicaciones, ahora auto-selecciona el mejor resultado
+- **Mejora de UX:** Reduce fricción en el flujo de búsqueda eliminando pasos innecesarios
+- **Archivo afectado:** `rasa_discovery/actions/discovery.py`
+
+**Límite de Resultados de Negocios (2026-01-17):**
+- **Máximo 5 Negocios:** Reducido de 10 a 5 resultados para mejorar la claridad y velocidad de respuesta
+- **Archivo afectado:** `rasa_discovery/actions/discovery.py`
+
+### 🐛 Arreglado (Fixed)
+
+**Filtrado de Citas por Negocio Específico (2026-01-17):**
+- **Citas Filtradas por Contexto:** El comando "mis citas" en un negocio específico ahora muestra solo las citas de ese negocio
+- **Parámetro negocio_id:** Agregado filtrado por `negocio_id` en la consulta de citas del agente de negocio
+- **Archivo afectado:** `rasa_model/actions/consultas.py`
+
+**Corrección de Errores de Ubicación (2026-01-17):**
+- **Detección de Saludos Mejorada:** Función `_es_saludo_simple()` y `_es_saludo_fuzzy()` evitan que saludos se guarden como ubicaciones
+- **Sistema de Puntuación de Geocoding:** Prioriza ciudades sobre provincias con sistema de scoring de 4 niveles
+- **Archivo afectado:** `rasa_discovery/actions/discovery.py`
+
+**Error UnboundLocalError con import re (2026-01-17):**
+- **Importación Duplicada:** Eliminada importación duplicada de `re` que causaba UnboundLocalError
+- **Archivo afectado:** `rasa_discovery/actions/discovery.py`
+
+
 ## [v0.7.1] - 2026-01-15 (Mejoras en Datos de Muestra y Configuración)
 
 ### ✨ Añadido (Added)
