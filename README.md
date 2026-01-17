@@ -228,11 +228,14 @@ Desde VS Code: `Run Task` → **🧪 TESTS**
 
 O desde PowerShell:
 ```powershell
-.\run_tests.ps1                # Ambas suites (104 tests)
-.\run_tests.ps1 -BackendOnly   # Solo backend (75 tests)
-.\run_tests.ps1 -RasaOnly      # Solo Rasa (29 tests)
+.\run_tests.ps1                # Tests unitarios (rápido, ~10-15 seg)
+.\run_tests.ps1 -Integration   # Tests de integración con APIs externas (lento, ~30-40 seg, requiere internet)
+.\run_tests.ps1 -BackendOnly   # Solo backend
+.\run_tests.ps1 -RasaOnly      # Solo Rasa
 .\run_tests.ps1 -Coverage      # Con reporte HTML
 ```
+
+**Nota sobre tests de integración:** Los tests con `-Integration` validan APIs externas reales (Nominatim/OpenStreetMap) y requieren conexión a internet. Por defecto se excluyen para ejecutar tests rápidos.
 
 #### **Paso 4: Detener Infraestructura**
 Desde VS Code: `Run Task` → **🛑 STOP**
@@ -393,11 +396,17 @@ Login Cliente:     cliente@sectormind.com / u
 
 El proyecto cuenta con **104 tests automatizados** (92 backend + 12 Rasa) que validan toda la funcionalidad dentro de Docker:
 
-### **Ejecutar TODOS los tests (Recomendado):**
+### **Ejecutar tests unitarios (Recomendado, rápido):**
 ```bash
 .\run_tests.ps1
 ```
 Resultado: `[OK] Total: 104 tests passed (92 backend + 12 Rasa)`
+
+### **Ejecutar tests de integración (APIs externas):**
+```bash
+.\run_tests.ps1 -Integration
+```
+**⚠️ Requiere:** Conexión a internet activa. Valida APIs externas como Nominatim (OpenStreetMap) para geocodificación. Duración: ~30-40 segundos (respeta rate limits de 1 req/seg).
 
 ### **Con reporte de cobertura:**
 ```bash
@@ -409,6 +418,7 @@ Resultado: `[OK] Total: 104 tests passed (92 backend + 12 Rasa)`
 .\run_tests.ps1 -BackendOnly   # 92 tests del API
 .\run_tests.ps1 -RasaOnly      # 12 tests de IA
 .\run_tests.ps1 -Verbose       # Con output detallado
+.\run_tests.ps1 -BackendOnly -Integration  # Solo integración del backend
 ```
 
 ### **Cobertura de Tests:**
@@ -416,15 +426,26 @@ Resultado: `[OK] Total: 104 tests passed (92 backend + 12 Rasa)`
 | Módulo | Tests | Estado |
 |--------|-------|--------|
 | **Backend API** | 92 | ✅ 100% Passing |
+| **Backend Integración** | 22 | ✅ Nominatim/OSM |
 | **Rasa Actions** | 12 | ✅ 100% Passing |
-| **Total** | 104 | ✅ 100% Passing |
+| **Total** | 126 | ✅ 100% Passing |
 
-**Nota:** Los tests de stories están deshabilitados (solo unitarios). Los tests se ejecutan dentro del contenedor backend con BD PostgreSQL dedicada. Cada test es independiente y limpia su estado automáticamente.
+**Nota:** 
+- Los tests unitarios usan la BD PostgreSQL en Docker y son independientes (cada test limpia su estado).
+- Los tests de integración (`-Integration`) validan la comunicación real con APIs externas (Nominatim para geocodificación).
+- Por defecto, los tests de integración están excluidos para ejecución rápida. Úsalos cuando necesites validar conectividad externa.
+- Los tests de stories de Rasa están deshabilitados (solo unitarios activos).
 
 **Tests Nuevos (v0.5.0 - Enero 2, 2026):**
 - ✅ `test_buscar_usuarios_filtra_por_rol_cliente` - Verifica filtro de búsqueda solo clientes
 - ✅ `test_post_citas_formato_iso_T` - Valida formato `YYYY-MM-DDTHH:MM` sin segundos
 - ✅ `test_post_citas_con_usuario_id` - Valida alias `usuario_id` para `cliente_id`
+
+**Tests de Integración (v0.7.2 - Enero 17, 2026):**
+- ✅ 22 tests de integración con API Nominatim (OpenStreetMap)
+- ✅ Geocodificación de ciudades españolas (Madrid, Barcelona, Sevilla, etc.)
+- ✅ Manejo de errores, timeouts y rate limiting
+- ✅ Validación de precisión de coordenadas y consistencia de respuestas
 
 ---
 

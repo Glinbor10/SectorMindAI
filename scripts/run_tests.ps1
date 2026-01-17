@@ -3,10 +3,18 @@ param(
 	[switch]$Verbose,
 	[switch]$Coverage,
 	[switch]$BackendOnly,
-	[switch]$RasaOnly
+	[switch]$RasaOnly,
+	[switch]$Integration
 )
 
 Write-Host "[TEST] Iniciando tests..." -ForegroundColor Cyan
+
+if ($Integration) {
+	Write-Host "[TEST] Modo: Tests de Integración con APIs Externas" -ForegroundColor Magenta
+	Write-Host "[WARN] Estos tests requieren conexión a internet y pueden tardar ~30-40 segundos" -ForegroundColor Yellow
+} else {
+	Write-Host "[TEST] Modo: Tests Unitarios (sin integración)" -ForegroundColor Magenta
+}
 
 $TEST_DB_URL = "postgresql://sectormind:password@db:5432/sectormind_test_db"
 
@@ -62,7 +70,14 @@ $backendRes = $null
 $rasaRes = $null
 
 if ($runBackend) {
-	$pytestCmd = "python -m pytest backend/tests/ -v"
+	if ($Integration) {
+		# Ejecutar SOLO tests de integración con APIs externas
+		Write-Host "[INFO] Ejecutando tests de integración (requieren internet)..." -ForegroundColor Yellow
+		$pytestCmd = "python -m pytest backend/tests/ -m integration -v"
+	} else {
+		# Ejecutar tests normales (EXCLUYENDO integración)
+		$pytestCmd = "python -m pytest backend/tests/ -m 'not integration' -v"
+	}
 	if ($TestFile) { $pytestCmd += " $TestFile" }
 	$backendRes = Execute-FilteredTests -title "BACKEND" -command $pytestCmd -envVar "DATABASE_URL=$TEST_DB_URL"
 }
@@ -82,7 +97,11 @@ if ($runRasa) {
 
 # ====== RESUMEN FINAL ======
 Write-Host "`n========================================" -ForegroundColor Yellow
-Write-Host "         REPORTE DE RESULTADOS" -ForegroundColor Yellow
+if ($Integration) {
+	Write-Host "   REPORTE - TESTS DE INTEGRACION" -ForegroundColor Yellow
+} else {
+	Write-Host "         REPORTE DE RESULTADOS" -ForegroundColor Yellow
+}
 Write-Host "========================================" -ForegroundColor Yellow
 
 if ($null -ne $backendRes) {
