@@ -232,6 +232,29 @@
 
 ---
 
+### **v0.7.1 - Mejoras en Datos de Muestra y Configuración**
+**Fecha:** Enero 15, 2026
+
+**Logros:**
+- ✅ Expansión de datos de muestra: Múltiples entradas para peluquerías, fisioterapias y dentistas
+- ✅ Archivo `.env.example` con todas las variables de entorno necesarias
+- ✅ README.md actualizado con instrucciones completas de configuración
+- ✅ Limpieza de migraciones SQL: Filtrado de statements vacíos y comentarios
+- ✅ Mayor robustez en la ejecución de archivos de migración
+
+**Retos Resueltos:**
+1) Datos de muestra limitados → Expansión de `manage_db.py` con 27+ negocios adicionales
+2) Configuración compleja → `.env.example` y README actualizado con guía paso a paso
+3) Migraciones frágiles → `migrate.py` mejorado para manejar SQL con múltiples statements
+
+**Métricas:**
+- 30 negocios de muestra (10 por tipo principal)
+- 0 errores en migraciones post-limpieza
+- Configuración simplificada para nuevos desarrolladores
+
+
+---
+
 
 
 ## 🚀 Roadmap General
@@ -246,6 +269,7 @@
 | **v0.5.0** | Dic/Ene, 2026 | Refactorización Rasa + Flujo Propietario |
 | **v0.6.0** | Ene 6, 2026 | Geolocalización de Negocios ✅ |
 | **v0.7.0** | Ene 8, 2026 | Interfaz Adaptativa + Rasa Discovery ✅ |
+| **v0.7.1** | Ene 15, 2026 | Datos de Muestra + Configuración ✅ |
 | **v1.0.0** | (previsto) Feb/Mar, 2026 | SaaS Multi-Tenant |
 
 ---

@@ -5,6 +5,28 @@ Todas las modificaciones notables en el proyecto Sector Mind AI se documentarán
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere al versionado semántico.
 
 
+## [v0.7.1] - 2026-01-15 (Mejoras en Datos de Muestra y Configuración)
+
+### ✨ Añadido (Added)
+
+**Expansión de Datos de Muestra (2026-01-15):**
+- **Negocios de Muestra Expandidos:** Agregadas múltiples entradas para peluquerías, fisioterapias y dentistas en la lista de NEGOCIOS
+- **Diversidad de Servicios:** Mayor variedad de servicios y tipos de negocio para testing y demostración
+- **Archivo afectado:** `backend/manage_db.py`
+
+**Configuración Mejorada (2026-01-15):**
+- **Variables de Entorno de Ejemplo:** Agregado archivo `.env.example` con todas las variables necesarias
+- **Instrucciones de Configuración:** Actualizado README.md con guía completa de configuración e instalación
+- **Archivos afectados:** `.env.example`, `README.md`
+
+### 🔧 Cambiado (Changed)
+
+**Limpieza de Migraciones SQL (2026-01-15):**
+- **Ejecución de Migraciones Mejorada:** Filtrado de statements vacíos y comentarios en la ejecución de SQL
+- **Robustez Mejorada:** Manejo más seguro de archivos de migración con múltiples statements
+- **Archivo afectado:** `backend/migrate.py`
+
+
 ## [v0.7.0] - 2026-01-08 (Interfaz de Usuario Adaptativa por Rol)
 
 ### ✨ Añadido (Added)
