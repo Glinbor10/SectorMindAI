@@ -26,4 +26,4 @@ rules:
   - rule: Fallback
     steps:
       - intent: nlu_fallback
-      - action: utter_fallback
+      - action: action_discovery_buscar_negocios

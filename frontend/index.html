@@ -496,7 +496,7 @@
                     if (t) t.remove();
                 }
                 if (!Array.isArray(data) || data.length === 0) {
-                    handleDiscoveryBotResponse('No pude procesar la consulta ahora mismo. ¿Puedes reformularla?');
+                    handleDiscoveryBotResponse('¿Puedes ser más específico? Escribe tu ciudad y provincia (ej: Córdoba, Andalucía) o una dirección más detallada.');
                     return;
                 }
                 data.forEach(r => { if (r.text) handleDiscoveryBotResponse(r.text); });
@@ -1209,6 +1209,13 @@
 
         // Modificar handleBotResponse para incluir voz en discovery
         function handleDiscoveryBotResponse(text) {
+            // Detectar si es una redirección automática
+            if (text.startsWith('[REDIRECT:')) {
+                const url = text.substring(10, text.length - 1); // Extraer URL entre [REDIRECT: y ]
+                window.location.href = url;
+                return;
+            }
+            
             addDiscoveryMsg('bot', text);
             if (discoveryIsVoiceMode) {
                 const voiceResBox = document.getElementById('discovery-voice-response-box');

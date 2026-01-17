@@ -33,134 +33,191 @@ class ActionDiscoveryBuscarNegocios(Action):
         tracker: Tracker,
         domain: Dict[str, Any],
     ) -> List[Dict[str, Any]]:
-        intent = tracker.get_intent_of_latest_message()
-        mensaje = tracker.latest_message.get("text", "").lower().strip()
+        try:
+            intent = tracker.get_intent_of_latest_message()
+            mensaje = tracker.latest_message.get("text", "").lower().strip()
 
-        # Obtener slots
-        slot_ubicacion = tracker.get_slot("ubicacion_texto")
-        meta = tracker.latest_message.get("metadata") or {}
-        ubicacion_texto = slot_ubicacion or meta.get("ubicacion_texto")
-        ubicacion_actual = ubicacion_texto
+            # Saludos o petición de cambio de ubicación: limpiar slot y pedir ubicación
+            if (intent == "greet" or self._es_saludo_simple(mensaje) or self._es_saludo_fuzzy(mensaje) 
+                or self._quiere_cambiar_ubicacion(mensaje)):
+                dispatcher.utter_message(
+                    text="📍 ¿Desde dónde sales para tu cita? Así te recomiendo negocios cerca."
+                )
+                return [SlotSet("ubicacion_texto", None)]
 
-        # Heurística rápida: pueblo/ciudad corta sin ubicación previa
-        if not ubicacion_actual and mensaje and len(mensaje.split()) <= 3 and intent not in ["afirmar", "negar"]:
-            try:
-                posible = self._geocodificar(mensaje)
-                if posible:
-                    dispatcher.utter_message(
-                        text=f"📍 Ubicación guardada: {mensaje.title()}. Ahora dime qué necesitas (peluquería, dentista, fisio...) y busco cerca."
-                    )
-                    return [SlotSet("ubicacion_texto", mensaje)]
-            except Exception:
-                pass
+            # Obtener slots (prefiere slot; usa metadata solo si no hay slot)
+            slot_ubicacion = tracker.get_slot("ubicacion_texto")
+            opciones_negocio = tracker.get_slot("opciones_negocio")
+            meta = tracker.latest_message.get("metadata") or {}
+            meta_ubicacion = meta.get("ubicacion_texto") if meta else None
+            ubicacion_actual = slot_ubicacion or meta_ubicacion
 
-        # Captura explícita de ubicación: mostrar mapa pero guardar directo (sin confirmación)
-        if intent == "informar_ubicacion":
+            # Si hay negocios listados y el usuario responde con un número, abrir detalle
+            if opciones_negocio and isinstance(opciones_negocio, list):
+                try:
+                    # Buscar número en el mensaje (ej: "1", "el 1", "la 1", "número 1")
+                    match = re.search(r'\b(\d{1,2})\b', mensaje)
+                    if match:
+                        idx = int(match.group(1)) - 1
+                        if 0 <= idx < len(opciones_negocio):
+                            seleccionado = opciones_negocio[idx]
+                            negocio_id = seleccionado.get("id")
+                            link = f"detalle.html?id={negocio_id}" if negocio_id is not None else "detalle.html"
+                            # Usar etiqueta especial para que el frontend redirija automáticamente
+                            dispatcher.utter_message(
+                                text=f"[REDIRECT:{link}]"
+                            )
+                            return [
+                                SlotSet("opciones_negocio", None),
+                                SlotSet("ubicacion_texto", ubicacion_actual or slot_ubicacion),
+                            ]
+                except Exception:
+                    pass
+
+            # Captura de ubicación explícita o mensaje que parece ubicación
+            # NO geocodificar si hay opciones de negocio pendientes (evitar confusión)
             full_text = tracker.latest_message.get("text", "").strip()
-            if full_text:
-                geo = self._geocodificar_detallado(full_text)
-                if geo:
-                    # Si el texto original es diferente del display de Nominatim, mostrar ambos
-                    display_completo = full_text if full_text.lower() != geo['display'].lower() else geo['display']
+            if (intent == "informar_ubicacion" or self._mensaje_parece_ubicacion(mensaje, intent)) and not opciones_negocio:
+                if full_text:
+                    try:
+                        geo_resultados = self._geocodificar_con_opciones(full_text)
+                        
+                        # Si hay múltiples opciones, tomar la primera (más relevante)
+                        if isinstance(geo_resultados, list) and len(geo_resultados) > 0:
+                            geo_resultados = geo_resultados[0]
+                        
+                        # Si se encontró resultado, guardarlo directamente
+                        if isinstance(geo_resultados, dict):
+                            display_guardado = geo_resultados["display"]
+                            dispatcher.utter_message(
+                                text=(
+                                    f"📍 Ubicación guardada: **{display_guardado}**\n"
+                                    f"🗺️ Vista previa: {geo_resultados['display']}\n"
+                                    f"[MAP:{geo_resultados['lat']},{geo_resultados['lon']}]\n"
+                                    "Ahora dime qué necesitas (**peluquería**, **dentista**, **fisio**, etc.)."
+                                )
+                            )
+                            ubicacion_actual = display_guardado
+                            return [
+                                SlotSet("ubicacion_texto", display_guardado)
+                            ]
+                    except Exception as e:
+                        print(f"⚠️ Error en geocodificación: {e}")
+
                     dispatcher.utter_message(
-                        text=(
-                            f"📍 Ubicación guardada: **{display_completo}**\n"
-                            f"🗺️ Vista previa: {geo['display']}\n"
-                            f"[MAP:{geo['lat']},{geo['lon']}]\n"
-                            "Ahora dime qué necesitas (**peluquería**, **dentista**, **fisio**, etc.)."
-                        )
+                        text="❌ No pude localizar esa ubicación. ¿Puedes ser más específico? Escribe tu **ciudad y provincia** (ej: Córdoba, Andalucía) o una **dirección completa** (calle, número, ciudad)."
                     )
-                    return [SlotSet("ubicacion_texto", full_text)]
+                    return [SlotSet("ubicacion_texto", None)]
+
+            # Si busca negocio pero no hay ubicación, pedirla siempre
+            if not ubicacion_actual:
+                dispatcher.utter_message(
+                    text="📍 ¿Desde dónde sales para tu cita? Así te recomiendo negocios cerca."
+                )
+                return [SlotSet("ubicacion_texto", None)]
+
+            # Geocodificar ubicación (intento directo y luego limpiando frases tipo "estoy en ...")
+            lat_lon = self._geocodificar(ubicacion_actual)
+            if not lat_lon:
+                ubicacion_limpia = self._limpiar_ubicacion(ubicacion_actual)
+                if ubicacion_limpia != ubicacion_actual:
+                    lat_lon = self._geocodificar(ubicacion_limpia)
+
+            if not lat_lon:
                 dispatcher.utter_message(
                     text="❌ No pude localizar esa **dirección**. Prueba con **calle**, **número** y **ciudad**."
                 )
-                return []
-            return []
+                return [SlotSet("ubicacion_texto", None)]
 
-        # Si busca negocio pero no hay ubicación
-        if not ubicacion_actual:
-            dispatcher.utter_message(
-                text="📍 ¿Desde dónde sales para tu cita? Así te recomiendo negocios cerca."
+            # Detectar tipo de negocio del mensaje
+            tipo_detectado = self._detectar_tipo_negocio(mensaje)
+
+            # Detectar si busca disponibilidad hoy / urgente
+            busca_hoy = any(
+                palabra in mensaje
+                for palabra in ["hoy", "ahora", "disponible", "hueco", "cita", "urgente", "urgencia", "pronto"]
             )
-            return []
-
-        # Geocodificar ubicación (intento directo y luego limpiando frases tipo "estoy en ...")
-        lat_lon = self._geocodificar(ubicacion_actual)
-        if not lat_lon:
-            ubicacion_limpia = self._limpiar_ubicacion(ubicacion_actual)
-            if ubicacion_limpia != ubicacion_actual:
-                lat_lon = self._geocodificar(ubicacion_limpia)
-
-        if not lat_lon:
-            dispatcher.utter_message(
-                text="❌ No pude localizar esa **dirección**. Prueba con **calle**, **número** y **ciudad**."
+            
+            # Detectar si busca disponibilidad mañana
+            busca_manana = any(
+                palabra in mensaje
+                for palabra in ["mañana", "manana", "tomorrow"]
             )
-            return []
 
-        # Detectar tipo de negocio del mensaje
-        tipo_detectado = self._detectar_tipo_negocio(mensaje)
-
-        # Detectar si busca disponibilidad hoy / urgente
-        busca_hoy = any(
-            palabra in mensaje
-            for palabra in ["hoy", "ahora", "disponible", "hueco", "cita", "urgente", "urgencia", "pronto"]
-        )
-
-        try:
-            negocios = self._fetch_negocios(lat_lon)
-        except Exception:
-            dispatcher.utter_message(text="⚠️ No pude conectarme al **buscador** ahora mismo. Inténtalo de nuevo en unos segundos.")
-            return []
-
-        # Limitar a distancia prudente y ordenar por cercanía
-        negocios = self._filtrar_por_distancia(negocios, max_km=50)
-
-        # Filtrar por tipo si se detectó (coincidencia flexible)
-        if tipo_detectado:
-            negocios = [n for n in negocios if self._match_tipo(n.get("tipo_negocio"), tipo_detectado)]
-
-        if not negocios:
-            if tipo_detectado:
-                dispatcher.utter_message(text=f"🔎 No encontré negocios de tipo **{tipo_detectado}** cerca de tu **ubicación**.")
-            else:
-                dispatcher.utter_message(text="🔎 No encontré **negocios** cerca de tu **ubicación**.")
-            return [SlotSet("ubicacion_texto", ubicacion_actual)]
-
-        # Filtrar por disponibilidad hoy si lo requiere
-        if busca_hoy:
-            negocios, detalles = self._filtrar_con_hueco_hoy(negocios)
-        else:
-            detalles = {}
-
-        if not negocios:
-            dispatcher.utter_message(text="⏱️ No hay **huecos hoy** en tu zona. Puedo buscar **mañana** si lo prefieres.")
-            return [SlotSet("ubicacion_texto", ubicacion_actual)]
-
-        max_items = 10
-        # Detectar números en dígitos
-        dig = re.search(r"\b(\d{1,2})\b", mensaje)
-        if dig:
             try:
-                solicitado = int(dig.group(1))
-                if solicitado >= 1:
-                    max_items = min(solicitado, 10)
+                negocios = self._fetch_negocios(lat_lon)
             except Exception:
-                pass
-        else:
-            # Detectar números en palabras básicas (es) hasta diez
-            palabras_num = {
-                "uno": 1, "una": 1, "dos": 2, "tres": 3, "cuatro": 4,
-                "cinco": 5, "seis": 6, "siete": 7, "ocho": 8,
-                "nueve": 9, "diez": 10
-            }
-            for w, val in palabras_num.items():
-                if f" {w} " in f" {mensaje} ":
-                    max_items = min(val, 10)
-                    break
+                dispatcher.utter_message(text="⚠️ No pude conectarme al **buscador** ahora mismo. Inténtalo de nuevo en unos segundos.")
+                return []
 
-        mensaje = self._formatear_respuesta(negocios[:max_items], detalles, busca_hoy, tipo_detectado)
-        dispatcher.utter_message(text=mensaje)
-        return [SlotSet("ubicacion_texto", ubicacion_actual)]
+            # Limitar a distancia prudente y ordenar por cercanía
+            negocios = self._filtrar_por_distancia(negocios, max_km=50)
+
+            # Filtrar por tipo si se detectó (coincidencia flexible)
+            if tipo_detectado:
+                negocios = [n for n in negocios if self._match_tipo(n.get("tipo_negocio"), tipo_detectado)]
+
+            if not negocios:
+                if tipo_detectado:
+                    dispatcher.utter_message(text=f"🔎 No encontré negocios de tipo **{tipo_detectado}** cerca de tu **ubicación**.")
+                else:
+                    dispatcher.utter_message(text="🔎 No encontré **negocios** cerca de tu **ubicación**.")
+                return [SlotSet("ubicacion_texto", ubicacion_actual)]
+
+            # Filtrar por disponibilidad según el día solicitado
+            if busca_manana:
+                negocios, detalles = self._filtrar_con_hueco_manana(negocios)
+            elif busca_hoy:
+                negocios, detalles = self._filtrar_con_hueco_hoy(negocios)
+            else:
+                detalles = {}
+
+            if not negocios:
+                if busca_manana:
+                    dispatcher.utter_message(text="⏱️ No hay **huecos mañana** en tu zona. ¿Quieres ver todos los negocios disponibles?")
+                elif busca_hoy:
+                    dispatcher.utter_message(text="⏱️ No hay **huecos hoy** en tu zona. Puedo buscar **mañana** si lo prefieres.")
+                return [SlotSet("ubicacion_texto", ubicacion_actual)]
+
+            max_items = 5
+            # Detectar números en dígitos
+            dig = re.search(r"\b(\d{1,2})\b", mensaje)
+            if dig:
+                try:
+                    solicitado = int(dig.group(1))
+                    if solicitado >= 1:
+                        max_items = min(solicitado, 5)
+                except Exception:
+                    pass
+            else:
+                # Detectar números en palabras básicas (es) hasta cinco
+                palabras_num = {
+                    "uno": 1, "una": 1, "dos": 2, "tres": 3, "cuatro": 4,
+                    "cinco": 5
+                }
+                for w, val in palabras_num.items():
+                    if f" {w} " in f" {mensaje} ":
+                        max_items = min(val, 5)
+                        break
+
+            mensaje = self._formatear_respuesta(negocios[:max_items], detalles, busca_hoy or busca_manana, tipo_detectado)
+            lista_opciones = [
+                {"id": n.get("id"), "nombre": n.get("nombre", "Negocio")} for n in negocios[:max_items]
+            ]
+            dispatcher.utter_message(text=mensaje)
+            return [
+                SlotSet("ubicacion_texto", ubicacion_actual),
+                SlotSet("opciones_negocio", lista_opciones),
+            ]
+        
+        except Exception as e:
+            print(f"❌ Error en action_discovery_buscar_negocios: {e}")
+            import traceback
+            traceback.print_exc()
+            dispatcher.utter_message(
+                text="⚠️ Hubo un problema. Por favor, intenta de nuevo o escribe tu ubicación de otra forma."
+            )
+            return [SlotSet("ubicacion_texto", None)]
 
     def _detectar_tipo_negocio(self, mensaje: str) -> Optional[str]:
         """Detecta el tipo de negocio usando fuzzy matching y keywords."""
@@ -262,24 +319,153 @@ class ActionDiscoveryBuscarNegocios(Action):
                 data = res.json()
                 
                 if data:
-                    # Priorizar resultado en España
-                    elegido = None
-                    for item in data:
-                        if str(item.get("display_name", "")).lower().find("españa") != -1:
-                            elegido = item
-                            break
-                    if not elegido:
-                        elegido = data[0]
-                    
-                    return {
-                        "lat": float(elegido["lat"]),
-                        "lon": float(elegido["lon"]),
-                        "display": elegido.get("display_name", direccion),
-                    }
+                    elegido = self._seleccionar_geocodificado(data, direccion)
+                    if elegido:
+                        return {
+                            "lat": float(elegido["lat"]),
+                            "lon": float(elegido["lon"]),
+                            "display": elegido.get("display_name", direccion),
+                        }
             except Exception:
                 continue
         
         return None
+
+    def _geocodificar_con_opciones(self, direccion: str) -> any:
+        """Geocodifica y retorna opciones si hay múltiples resultados buenos, o un solo resultado si es único."""
+        estrategias = [
+            direccion,
+            self._limpiar_ubicacion(direccion),
+        ]
+        
+        palabras = direccion.split()
+        
+        # Para "cordoba capital", probar "cordoba" primero antes que "capital"
+        if len(palabras) == 2:
+            estrategias.append(palabras[0])  # Primera palabra
+            estrategias.append(palabras[1])  # Segunda palabra
+        elif len(palabras) > 2:
+            estrategias.append(palabras[0])  # Primera palabra
+            sin_primera = ' '.join(palabras[1:])
+            estrategias.append(sin_primera)
+            estrategias.append(' '.join(palabras[-3:]))
+            estrategias.append(' '.join(palabras[-2:]))
+            estrategias.append(palabras[-1])
+        
+        estrategias = list(dict.fromkeys(estrategias))
+        
+        for estrategia in estrategias:
+            if not estrategia.strip():
+                continue
+            try:
+                url = "https://nominatim.openstreetmap.org/search"
+                params = {
+                    "q": estrategia,
+                    "format": "json",
+                    "limit": 10,
+                    "countrycodes": "ES",
+                    "accept-language": "es",
+                    "addressdetails": 1,
+                }
+                headers = {"User-Agent": "SectorMindAI/1.0"}
+                res = requests.get(url, params=params, headers=headers, timeout=8)
+                data = res.json()
+                
+                if data:
+                    # Filtrar y puntuar resultados de España
+                    candidatos_puntuados = []
+                    for item in data:
+                        display = str(item.get("display_name", "")).lower()
+                        addr = item.get("address") or {}
+                        es_es = "españa" in display or (addr.get("country_code") or "").lower() == "es"
+                        
+                        if not es_es:
+                            continue
+                        
+                        # Aplicar scoring como en _seleccionar_geocodificado
+                        es_ciudad = any(addr.get(k) for k in ["city", "town", "village", "municipality", "hamlet"])
+                        es_provincia = any(addr.get(k) for k in ["state", "province"])
+                        es_localidad = 2 if es_ciudad else (1 if es_provincia else 0)
+                        importancia = float(item.get("importance") or 0)
+                        
+                        score = (1 if es_es else 0, es_localidad, 1 if importancia > 0.5 else 0, importancia)
+                        
+                        candidatos_puntuados.append({
+                            "lat": float(item["lat"]),
+                            "lon": float(item["lon"]),
+                            "display": item.get("display_name", direccion),
+                            "score": score,
+                            "es_ciudad": es_ciudad,
+                            "importancia": importancia
+                        })
+                    
+                    # Ordenar por score (mayor a menor)
+                    candidatos_puntuados.sort(key=lambda x: x["score"], reverse=True)
+                    
+                    # Filtrar preferiblemente ciudades con alta importancia, pero si no hay, tomar los mejores
+                    candidatos_excelentes = [
+                        c for c in candidatos_puntuados 
+                        if c["es_ciudad"] and c["importancia"] >= 0.5
+                    ]
+                    
+                    candidatos_buenos = [
+                        c for c in candidatos_puntuados 
+                        if c["es_ciudad"] or c["importancia"] >= 0.4
+                    ]
+                    
+                    # Preferir excelentes si existen, sino buenos, sino top 5
+                    lista_final = candidatos_excelentes[:5] if candidatos_excelentes else (candidatos_buenos[:5] if candidatos_buenos else candidatos_puntuados[:5])
+                    
+                    if len(lista_final) > 1:
+                        # Retornar múltiples opciones (sin el campo score)
+                        return [{k: v for k, v in c.items() if k not in ["score", "es_ciudad", "importancia"]} 
+                                for c in lista_final]
+                    elif len(lista_final) == 1:
+                        c = lista_final[0]
+                        return {
+                            "lat": c["lat"],
+                            "lon": c["lon"],
+                            "display": c["display"]
+                        }
+            except Exception:
+                continue
+        
+        return None
+
+    def _seleccionar_geocodificado(self, candidatos: List[Dict[str, Any]], direccion: str) -> Optional[Dict[str, Any]]:
+        """Elige el mejor resultado priorizando España, localidades y lugares más poblados."""
+        mejor = None
+        mejor_score: Tuple[int, int, int, float] = (-1, -1, -1, -1.0)
+
+        for item in candidatos:
+            display = str(item.get("display_name", "")).lower()
+            addr = item.get("address") or {}
+            es_es = "españa" in display or (addr.get("country_code") or "").lower() == "es"
+            
+            # Priorizar ciudad/pueblo sobre provincia/estado
+            es_ciudad = any(addr.get(k) for k in ["city", "town", "village", "municipality", "hamlet"])
+            es_provincia = any(addr.get(k) for k in ["state", "province"])
+            es_localidad = 2 if es_ciudad else (1 if es_provincia else 0)
+            
+            importancia = float(item.get("importance") or 0)
+
+            score = (1 if es_es else 0, es_localidad, 1 if importancia > 0.5 else 0, importancia)
+            if score > mejor_score:
+                mejor_score = score
+                mejor = item
+
+        # Si el mejor es de España, aceptarlo incluso con baja importancia
+        if mejor:
+            addr = mejor.get("address") or {}
+            es_es = "españa" in str(mejor.get("display_name", "")).lower() or (addr.get("country_code") or "").lower() == "es"
+            if not es_es:
+                importancia = float(mejor.get("importance") or 0)
+                if importancia < 0.25:
+                    return None
+
+        if not mejor and candidatos:
+            mejor = candidatos[0]
+        return mejor
 
     def _limpiar_ubicacion(self, texto: str) -> str:
         """Limpia texto de ubicación removiendo saludos y prefijos comunes."""
@@ -291,6 +477,85 @@ class ActionDiscoveryBuscarNegocios(Action):
         t = re.sub(r"^(en|en la|en el|en los|en las)\s+", "", t, flags=re.IGNORECASE)
         t = t.strip(",. ")
         return t or texto
+
+    def _map_url(self, lat: float, lon: float) -> str:
+        return (
+            f"https://maps.openstreetmap.org/?mlat={lat}&mlon={lon}&zoom=16&layers=M"
+        )
+
+    def _es_saludo_simple(self, mensaje: str) -> bool:
+        if not mensaje:
+            return False
+        norm = mensaje.strip().lower()
+        saludos = [
+            "hola",
+            "holi",
+            "buenas",
+            "buenos dias",
+            "buenos días",
+            "buenas tardes",
+            "buenas noches",
+            "hey",
+            "que tal",
+            "qué tal",
+        ]
+        return any(norm == s or norm.startswith(f"{s} ") for s in saludos)
+
+    def _es_saludo_fuzzy(self, mensaje: str) -> bool:
+        if not mensaje:
+            return False
+        norm = mensaje.strip().lower()
+        saludos = [
+            "hola",
+            "holaa",
+            "holi",
+            "buenas",
+            "hey",
+        ]
+        try:
+            return any(fuzz.partial_ratio(norm, s) >= 85 for s in saludos)
+        except Exception:
+            return False
+
+    def _quiere_cambiar_ubicacion(self, mensaje: str) -> bool:
+        """Detecta si el usuario quiere cambiar o corregir la ubicación."""
+        if not mensaje:
+            return False
+        norm = mensaje.strip().lower()
+        palabras_cambio = [
+            "no", "esa no", "no es", "otra", "cambiar", "cambio",
+            "otra ubicacion", "otra ubicación", "no esa", "mal",
+            "incorrecto", "incorrecta", "equivocada", "equivocado"
+        ]
+        return any(palabra in norm for palabra in palabras_cambio)
+
+    def _mensaje_parece_ubicacion(self, mensaje: str, intent: Optional[str] = None) -> bool:
+        """Heurística conservadora para decidir si el texto es probablemente una ubicación."""
+        if not mensaje:
+            return False
+        if self._es_saludo_simple(mensaje) or self._es_saludo_fuzzy(mensaje):
+            return False
+        if intent == "greet":
+            return False
+
+        mensaje = mensaje.strip().lower()
+        palabras = mensaje.split()
+        if len(palabras) == 0 or len(palabras) > 6:
+            return False
+
+        # Si contiene keywords claras de servicios, no lo tratamos como ubicación
+        for kws in TIPO_KEYWORDS.values():
+            for kw in kws:
+                if kw in mensaje:
+                    return False
+
+        if re.search(r"\d", mensaje):
+            return True  # Direcciones con números
+        if any(pref in mensaje for pref in ["calle", "c/", "avenida", "av ", "av.", "plaza", "pza", "cl.", "desde", "en"]):
+            return True
+
+        # Palabra/s cortas sin keywords ni saludo: intentar geocodificar (ciudades, pueblos)
+        return True
     def _map_url(self, lat: float, lon: float) -> str:
         return (
             f"https://maps.openstreetmap.org/?mlat={lat}&mlon={lon}&zoom=16&layers=M"
@@ -350,6 +615,44 @@ class ActionDiscoveryBuscarNegocios(Action):
         )
         return con_hueco, detalles
 
+    def _filtrar_con_hueco_manana(
+        self, negocios: List[Dict[str, Any]]
+    ) -> Tuple[List[Dict[str, Any]], Dict[int, Dict[str, Any]]]:
+        """Filtra negocios con huecos disponibles mañana."""
+        ahora = self._now_local()
+        manana = ahora + timedelta(days=1)
+        fecha = manana.strftime("%Y-%m-%d")
+        con_hueco = []
+        detalles: Dict[int, Dict[str, Any]] = {}
+        for negocio in negocios:
+            servicios = self._fetch_servicios(negocio["id"])
+            for servicio in servicios:
+                dispo = self._fetch_disponibilidad(negocio["id"], servicio["id"], fecha)
+                slots = dispo.get("disponibles", []) if dispo else []
+                if not slots:
+                    continue
+
+                # Tomar el primer slot del día
+                slot_texto_valido = slots[0]
+                slot_dt_valida = self._parse_slot_time(slot_texto_valido)
+
+                if slot_texto_valido:
+                    con_hueco.append(negocio)
+                    detalles[negocio["id"]] = {
+                        "servicio": servicio.get("nombre"),
+                        "slot": slot_texto_valido,
+                        "slot_dt": slot_dt_valida,
+                    }
+                    break
+        # Ordenar por hora más próxima y luego distancia
+        con_hueco.sort(
+            key=lambda n: (
+                detalles.get(n["id"], {}).get("slot_dt") or datetime.max,
+                n.get("distancia_km") or 1e9,
+            )
+        )
+        return con_hueco, detalles
+
     def _fetch_servicios(self, negocio_id: int) -> List[Dict[str, Any]]:
         res = requests.get(f"{API_URL}/negocios/{negocio_id}/servicios", timeout=8)
         if res.status_code != 200:
@@ -384,7 +687,7 @@ class ActionDiscoveryBuscarNegocios(Action):
         intro = f"⏱️ Disponibilidad hoy{tipo_str}:" if busca_hoy else f"🔎 Negocios{tipo_str} **cerca de ti**:"
         
         lineas = []
-        for n in negocios:
+        for idx, n in enumerate(negocios, start=1):
             distancia = n.get("distancia_km")
             etiqueta_dist = f" \u00b7 📍 {distancia:.1f} km" if distancia is not None else ""
             tipo_txt = (n.get('tipo_negocio') or '').capitalize()
@@ -404,7 +707,7 @@ class ActionDiscoveryBuscarNegocios(Action):
             
             linea = f"""[BUSINESS_CARD]
 {foto_html}
-<a href="detalle.html?id={negocio_id}" style="text-decoration:none; color:#4f46e5; font-weight:bold;">{icono} {nombre}</a> ({tipo_txt}){etiqueta_dist}"""
+**{idx}.** <a href="detalle.html?id={negocio_id}" style="text-decoration:none; color:#4f46e5; font-weight:bold;">{icono} {nombre}</a> ({tipo_txt}){etiqueta_dist}"""
             
             if busca_hoy and n.get("id") in detalles:
                 slot = detalles[n["id"]]["slot"]

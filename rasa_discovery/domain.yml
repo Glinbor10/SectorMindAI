@@ -25,6 +25,11 @@ slots:
     influence_conversation: true
     mappings:
       - type: custom
+  opciones_negocio:
+    type: any
+    influence_conversation: false
+    mappings:
+      - type: custom
 
 responses:
   utter_ask_ubicacion_inicial:
@@ -34,7 +39,7 @@ responses:
   utter_goodbye:
     - text: "¡Hasta pronto! Vuelve cuando necesites encontrar un negocio."
   utter_fallback:
-    - text: "No entendí tu búsqueda. Dime qué tipo de negocio buscas (ej: peluquería, dentista, fisio...) o tu ubicación."
+    - text: "¿Puedes ser más específico? Escribe tu **ciudad y provincia** (ej: Córdoba, Andalucía) o el **tipo de negocio** que buscas (peluquería, dentista, fisio...)."
 
 actions:
   - action_discovery_buscar_negocios

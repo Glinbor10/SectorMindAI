@@ -24,10 +24,16 @@ class ActionConsultarCitasUsuario(Action):
             dispatcher.utter_message(text="Por favor, inicia sesión primero.")
             return []
 
+        negocio_id = tracker.get_slot("negocio_id")
+
         try:
+            params = {"cliente_id": cliente_id}
+            if negocio_id:
+                params["negocio_id"] = negocio_id
+            
             response = requests.get(
                 f"{API_URL}/citas",
-                params={"cliente_id": cliente_id},
+                params=params,
                 timeout=5
             )
             
