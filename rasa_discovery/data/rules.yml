@@ -18,6 +18,16 @@ rules:
       - intent: informar_ubicacion
       - action: action_discovery_buscar_negocios
 
+  - rule: Confirmar ubicación afirmativa
+    steps:
+      - intent: afirmar
+      - action: action_discovery_buscar_negocios
+
+  - rule: Confirmar ubicación negativa
+    steps:
+      - intent: negar
+      - action: action_discovery_buscar_negocios
+
   - rule: Buscar negocio
     steps:
       - intent: buscar_negocio

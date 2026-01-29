@@ -20,8 +20,14 @@ slots:
       - type: from_text
         intent: informar_ubicacion
       - type: custom
-  confirmando_ubicacion:
+  ubicacion_pendiente_confirmar:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+  esperando_confirmacion_ubicacion:
     type: bool
+    initial_value: false
     influence_conversation: true
     mappings:
       - type: custom
@@ -34,6 +40,10 @@ slots:
 responses:
   utter_ask_ubicacion_inicial:
     - text: "👋 ¿Desde dónde sales para tu cita? Así te recomiendo negocios cerca."
+  utter_confirmar_ubicacion:
+    - text: "📍 He encontrado: **{ubicacion_display}**\n\n¿Es correcta esta ubicación? (Responde **sí** o **no**)"
+  utter_pedir_ubicacion_mas_precisa:
+    - text: "📍 Por favor, dame tu ubicación de forma más precisa: **Calle, número, municipio, ciudad** (Ejemplo: 'Calle Betis 25, Estepa, Sevilla')"
   utter_saludo_con_ubicacion:
     - text: "✅ Ubicación guardada. Dime qué necesitas (peluquería, dentista, fisio...) y te muestro opciones cerca."
   utter_goodbye:
