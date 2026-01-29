@@ -90,8 +90,7 @@ NEGOCIOS = [
         "longitud": -3.7020,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Corte de Pelo", "precio": 25.00, "duracion_minutos": 30},
-            {"nombre": "Tinte", "precio": 60.00, "duracion_minutos": 90}
+            {"nombre": "Corte de Pelo", "precio": 25.00, "duracion_minutos": 30}
         ]
     },
     {
@@ -104,8 +103,9 @@ NEGOCIOS = [
         "longitud": 2.1734,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Corte de Pelo", "precio": 26.00, "duracion_minutos": 30},
-            {"nombre": "Tinte", "precio": 62.00, "duracion_minutos": 90}
+            {"nombre": "Peinado de Novia", "precio": 120.00, "duracion_minutos": 120},
+            {"nombre": "Tratamiento Capilar", "precio": 45.00, "duracion_minutos": 60},
+            {"nombre": "Corte de Pelo", "precio": 25.00, "duracion_minutos": 30}
         ]
     },
     {
@@ -118,8 +118,10 @@ NEGOCIOS = [
         "longitud": -0.3763,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Corte de Pelo", "precio": 27.00, "duracion_minutos": 30},
-            {"nombre": "Tinte", "precio": 64.00, "duracion_minutos": 90}
+            {"nombre": "Extensiones de Pelo", "precio": 150.00, "duracion_minutos": 90},
+            {"nombre": "Coloración Permanente", "precio": 80.00, "duracion_minutos": 120},
+            {"nombre": "Tinte", "precio": 60.00, "duracion_minutos": 90},
+            {"nombre": "Lavado y Secado", "precio": 20.00, "duracion_minutos": 30}
         ]
     },
     {
@@ -132,8 +134,8 @@ NEGOCIOS = [
         "longitud": -5.9845,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Corte de Pelo", "precio": 28.00, "duracion_minutos": 30},
-            {"nombre": "Tinte", "precio": 66.00, "duracion_minutos": 90}
+            {"nombre": "Lavado y Secado", "precio": 20.00, "duracion_minutos": 30},
+            {"nombre": "Maquillaje Profesional", "precio": 50.00, "duracion_minutos": 45}
         ]
     },
     {
@@ -146,8 +148,9 @@ NEGOCIOS = [
         "longitud": -2.9350,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Corte de Pelo", "precio": 29.00, "duracion_minutos": 30},
-            {"nombre": "Tinte", "precio": 68.00, "duracion_minutos": 90}
+            {"nombre": "Depilación Facial", "precio": 25.00, "duracion_minutos": 20},
+            {"nombre": "Manicura y Pedicura", "precio": 35.00, "duracion_minutos": 60},
+            {"nombre": "Tratamiento Capilar", "precio": 45.00, "duracion_minutos": 60}
         ]
     },
     {
@@ -160,8 +163,8 @@ NEGOCIOS = [
         "longitud": -4.4214,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Corte de Pelo", "precio": 30.00, "duracion_minutos": 30},
-            {"nombre": "Tinte", "precio": 70.00, "duracion_minutos": 90}
+            {"nombre": "Corte y Barba", "precio": 30.00, "duracion_minutos": 45},
+            {"nombre": "Tratamiento Anticaída", "precio": 55.00, "duracion_minutos": 60}
         ]
     },
     {
@@ -174,8 +177,10 @@ NEGOCIOS = [
         "longitud": -0.8891,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Corte de Pelo", "precio": 31.00, "duracion_minutos": 30},
-            {"nombre": "Tinte", "precio": 72.00, "duracion_minutos": 90}
+            {"nombre": "Alisado Permanente", "precio": 100.00, "duracion_minutos": 120},
+            {"nombre": "Corte Infantil", "precio": 15.00, "duracion_minutos": 20},
+            {"nombre": "Ondulación", "precio": 40.00, "duracion_minutos": 60},
+            {"nombre": "Recogidos", "precio": 35.00, "duracion_minutos": 45}
         ]
     },
     {
@@ -188,8 +193,8 @@ NEGOCIOS = [
         "longitud": -3.5986,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Corte de Pelo", "precio": 32.00, "duracion_minutos": 30},
-            {"nombre": "Tinte", "precio": 74.00, "duracion_minutos": 90}
+            {"nombre": "Ondulación", "precio": 40.00, "duracion_minutos": 60},
+            {"nombre": "Recogidos", "precio": 35.00, "duracion_minutos": 45}
         ]
     },
     {
@@ -202,8 +207,9 @@ NEGOCIOS = [
         "longitud": -1.1307,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Corte de Pelo", "precio": 33.00, "duracion_minutos": 30},
-            {"nombre": "Tinte", "precio": 76.00, "duracion_minutos": 90}
+            {"nombre": "Mechas", "precio": 90.00, "duracion_minutos": 150},
+            {"nombre": "Corte Senior", "precio": 20.00, "duracion_minutos": 30},
+            {"nombre": "Corte de Pelo", "precio": 25.00, "duracion_minutos": 30}
         ]
     },
     {
@@ -216,8 +222,8 @@ NEGOCIOS = [
         "longitud": -0.4810,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Corte de Pelo", "precio": 34.00, "duracion_minutos": 30},
-            {"nombre": "Tinte", "precio": 78.00, "duracion_minutos": 90}
+            {"nombre": "Balayage", "precio": 110.00, "duracion_minutos": 180},
+            {"nombre": "Nutrición Capilar", "precio": 65.00, "duracion_minutos": 75}
         ]
     },
     # Dentistas
@@ -231,8 +237,7 @@ NEGOCIOS = [
         "longitud": 2.1655,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Limpieza", "precio": 50.00, "duracion_minutos": 30},
-            {"nombre": "Endodoncia", "precio": 200.00, "duracion_minutos": 60}
+            {"nombre": "Limpieza Dental", "precio": 50.00, "duracion_minutos": 30}
         ]
     },
     {
@@ -245,8 +250,9 @@ NEGOCIOS = [
         "longitud": 2.6502,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Limpieza", "precio": 51.00, "duracion_minutos": 30},
-            {"nombre": "Endodoncia", "precio": 205.00, "duracion_minutos": 60}
+            {"nombre": "Extracción Dental", "precio": 80.00, "duracion_minutos": 45},
+            {"nombre": "Implante Dental", "precio": 1200.00, "duracion_minutos": 120},
+            {"nombre": "Limpieza Dental", "precio": 50.00, "duracion_minutos": 30}
         ]
     },
     {
@@ -259,8 +265,8 @@ NEGOCIOS = [
         "longitud": -15.4363,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Limpieza", "precio": 52.00, "duracion_minutos": 30},
-            {"nombre": "Endodoncia", "precio": 210.00, "duracion_minutos": 60}
+            {"nombre": "Ortodoncia", "precio": 3000.00, "duracion_minutos": 90},
+            {"nombre": "Blanqueamiento Dental", "precio": 150.00, "duracion_minutos": 60}
         ]
     },
     {
@@ -273,8 +279,10 @@ NEGOCIOS = [
         "longitud": -3.8099,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Limpieza", "precio": 53.00, "duracion_minutos": 30},
-            {"nombre": "Endodoncia", "precio": 215.00, "duracion_minutos": 60}
+            {"nombre": "Carillas Dentales", "precio": 400.00, "duracion_minutos": 90},
+            {"nombre": "Periodoncia", "precio": 120.00, "duracion_minutos": 45},
+            {"nombre": "Ortodoncia", "precio": 3000.00, "duracion_minutos": 90},
+            {"nombre": "Blanqueamiento Dental", "precio": 150.00, "duracion_minutos": 60}
         ]
     },
     {
@@ -287,8 +295,8 @@ NEGOCIOS = [
         "longitud": -5.6635,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Limpieza", "precio": 54.00, "duracion_minutos": 30},
-            {"nombre": "Endodoncia", "precio": 220.00, "duracion_minutos": 60}
+            {"nombre": "Radiografía Dental", "precio": 25.00, "duracion_minutos": 15},
+            {"nombre": "Tratamiento de Caries", "precio": 70.00, "duracion_minutos": 30}
         ]
     },
     {
@@ -301,8 +309,7 @@ NEGOCIOS = [
         "longitud": -5.8494,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Limpieza", "precio": 55.00, "duracion_minutos": 30},
-            {"nombre": "Endodoncia", "precio": 225.00, "duracion_minutos": 60}
+            {"nombre": "Limpieza Dental Profunda", "precio": 75.00, "duracion_minutos": 45}
         ]
     },
     {
@@ -315,8 +322,8 @@ NEGOCIOS = [
         "longitud": -1.6458,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Limpieza", "precio": 56.00, "duracion_minutos": 30},
-            {"nombre": "Endodoncia", "precio": 230.00, "duracion_minutos": 60}
+            {"nombre": "Prótesis Dental", "precio": 800.00, "duracion_minutos": 120},
+            {"nombre": "Cirugía Oral", "precio": 300.00, "duracion_minutos": 60}
         ]
     },
     {
@@ -330,7 +337,8 @@ NEGOCIOS = [
         "horarios": HORARIO_PARTIDO,
         "servicios": [
             {"nombre": "Limpieza", "precio": 57.00, "duracion_minutos": 30},
-            {"nombre": "Endodoncia", "precio": 235.00, "duracion_minutos": 60}
+            {"nombre": "Endodoncia", "precio": 235.00, "duracion_minutos": 60},
+            {"nombre": "Tratamiento de Caries", "precio": 70.00, "duracion_minutos": 30}
         ]
     },
     {
@@ -343,8 +351,8 @@ NEGOCIOS = [
         "longitud": -4.7794,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Limpieza", "precio": 58.00, "duracion_minutos": 30},
-            {"nombre": "Endodoncia", "precio": 240.00, "duracion_minutos": 60}
+            {"nombre": "Odontopediatría", "precio": 60.00, "duracion_minutos": 30},
+            {"nombre": "Selladores Dentales", "precio": 40.00, "duracion_minutos": 20}
         ]
     },
     {
@@ -357,8 +365,10 @@ NEGOCIOS = [
         "longitud": -8.7207,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Limpieza", "precio": 59.00, "duracion_minutos": 30},
-            {"nombre": "Endodoncia", "precio": 245.00, "duracion_minutos": 60}
+            {"nombre": "Rehabilitación Oral", "precio": 500.00, "duracion_minutos": 90},
+            {"nombre": "Tratamiento de Bruxismo", "precio": 100.00, "duracion_minutos": 45},
+            {"nombre": "Radiografía Dental", "precio": 25.00, "duracion_minutos": 15},
+            {"nombre": "Prótesis Dental", "precio": 800.00, "duracion_minutos": 120}
         ]
     },
     # Fisioterapia
@@ -372,8 +382,7 @@ NEGOCIOS = [
         "longitud": -0.3745,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Masaje deportivo", "precio": 40.00, "duracion_minutos": 45},
-            {"nombre": "Punción seca", "precio": 45.00, "duracion_minutos": 30}
+            {"nombre": "Masaje deportivo", "precio": 40.00, "duracion_minutos": 45}
         ]
     },
     {
@@ -386,8 +395,9 @@ NEGOCIOS = [
         "longitud": -8.4115,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Masaje deportivo", "precio": 41.00, "duracion_minutos": 45},
-            {"nombre": "Punción seca", "precio": 46.00, "duracion_minutos": 30}
+            {"nombre": "Osteopatía", "precio": 55.00, "duracion_minutos": 60},
+            {"nombre": "Kinesioterapia", "precio": 35.00, "duracion_minutos": 45},
+            {"nombre": "Masaje deportivo", "precio": 40.00, "duracion_minutos": 45}
         ]
     },
     {
@@ -400,8 +410,8 @@ NEGOCIOS = [
         "longitud": -2.6716,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Masaje deportivo", "precio": 42.00, "duracion_minutos": 45},
-            {"nombre": "Punción seca", "precio": 47.00, "duracion_minutos": 30}
+            {"nombre": "Terapia Manual", "precio": 45.00, "duracion_minutos": 50},
+            {"nombre": "Electroterapia", "precio": 30.00, "duracion_minutos": 25}
         ]
     },
     {
@@ -414,8 +424,10 @@ NEGOCIOS = [
         "longitud": -5.5671,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Masaje deportivo", "precio": 43.00, "duracion_minutos": 45},
-            {"nombre": "Punción seca", "precio": 48.00, "duracion_minutos": 30}
+            {"nombre": "Ultrasonidos", "precio": 25.00, "duracion_minutos": 20},
+            {"nombre": "Rehabilitación Deportiva", "precio": 50.00, "duracion_minutos": 60},
+            {"nombre": "Terapia Manual", "precio": 45.00, "duracion_minutos": 50},
+            {"nombre": "Electroterapia", "precio": 30.00, "duracion_minutos": 25}
         ]
     },
     {
@@ -428,8 +440,8 @@ NEGOCIOS = [
         "longitud": -6.9707,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Masaje deportivo", "precio": 44.00, "duracion_minutos": 45},
-            {"nombre": "Punción seca", "precio": 49.00, "duracion_minutos": 30}
+            {"nombre": "Pilates Terapéutico", "precio": 35.00, "duracion_minutos": 55},
+            {"nombre": "Acupuntura", "precio": 40.00, "duracion_minutos": 45}
         ]
     },
     {
@@ -442,8 +454,7 @@ NEGOCIOS = [
         "longitud": -3.7849,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Masaje deportivo", "precio": 45.00, "duracion_minutos": 45},
-            {"nombre": "Punción seca", "precio": 50.00, "duracion_minutos": 30}
+            {"nombre": "Fisioterapia Respiratoria", "precio": 45.00, "duracion_minutos": 40}
         ]
     },
     {
@@ -456,8 +467,8 @@ NEGOCIOS = [
         "longitud": -0.0513,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Masaje deportivo", "precio": 46.00, "duracion_minutos": 45},
-            {"nombre": "Punción seca", "precio": 51.00, "duracion_minutos": 30}
+            {"nombre": "Drenaje Linfático", "precio": 50.00, "duracion_minutos": 60},
+            {"nombre": "Ejercicios Terapéuticos", "precio": 35.00, "duracion_minutos": 45}
         ]
     },
     {
@@ -470,8 +481,9 @@ NEGOCIOS = [
         "longitud": -2.4637,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Masaje deportivo", "precio": 47.00, "duracion_minutos": 45},
-            {"nombre": "Punción seca", "precio": 52.00, "duracion_minutos": 30}
+            {"nombre": "Masaje Relajante", "precio": 42.00, "duracion_minutos": 50},
+            {"nombre": "Técnicas Miofasciales", "precio": 48.00, "duracion_minutos": 55},
+            {"nombre": "Pilates Terapéutico", "precio": 35.00, "duracion_minutos": 55}
         ]
     },
     {
@@ -484,8 +496,8 @@ NEGOCIOS = [
         "longitud": -4.0273,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Masaje deportivo", "precio": 48.00, "duracion_minutos": 45},
-            {"nombre": "Punción seca", "precio": 53.00, "duracion_minutos": 30}
+            {"nombre": "Fisioterapia Neurológica", "precio": 55.00, "duracion_minutos": 60},
+            {"nombre": "Reeducación Postural", "precio": 40.00, "duracion_minutos": 50}
         ]
     },
     {
@@ -498,8 +510,10 @@ NEGOCIOS = [
         "longitud": -4.1088,
         "horarios": HORARIO_PARTIDO,
         "servicios": [
-            {"nombre": "Masaje deportivo", "precio": 49.00, "duracion_minutos": 45},
-            {"nombre": "Punción seca", "precio": 54.00, "duracion_minutos": 30}
+            {"nombre": "Fisioterapia Pediátrica", "precio": 45.00, "duracion_minutos": 45},
+            {"nombre": "Tratamiento de Dolores Crónicos", "precio": 50.00, "duracion_minutos": 55},
+            {"nombre": "Drenaje Linfático", "precio": 50.00, "duracion_minutos": 60},
+            {"nombre": "Acupuntura", "precio": 40.00, "duracion_minutos": 45}
         ]
     }
 ]

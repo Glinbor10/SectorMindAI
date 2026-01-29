@@ -1,3 +1,35 @@
+
+## [v0.7.5] - 2026-01-29 (Diversificación de Servicios en Datos de Muestra)
+
+### ✨ Añadido (Added)
+
+**Variación en Número de Servicios por Negocio (2026-01-29):**
+- Los negocios de muestra ahora tienen diferente número de servicios (1-4) en lugar de todos tener exactamente 2.
+- **Peluquerías:** Varían entre 1, 2, 3 y 4 servicios por negocio.
+- **Dentistas:** Varían entre 1, 2, 3 y 4 servicios por negocio.
+- **Fisioterapias:** Varían entre 1, 2, 3 y 4 servicios por negocio.
+- **Archivo afectado:** `backend/manage_db.py`
+
+**Servicios Únicos por Tipo de Negocio (2026-01-29):**
+- Eliminada la repetición de servicios idénticos entre negocios del mismo tipo.
+- Cada negocio ahora ofrece servicios diferenciados para mejor testing y realismo.
+- **Archivo afectado:** `backend/manage_db.py`
+
+### 🐛 Arreglado (Fixed)
+
+- Datos de muestra más realistas para testing del bot de Rasa.
+- Mejor diferenciación visual y funcional entre negocios similares.
+
+---
+
+## [v0.7.4] - 2026-01-29 (Fallback inteligente en Rasa Model)
+
+### ✨ Añadido (Added)
+
+**Fallback Inteligente en Rasa Model (2026-01-29):**
+- El agente ahora detecta si el usuario menciona directamente el nombre de un servicio del negocio antes de mostrar el mensaje de "no he entendido".
+- Si el usuario escribe el nombre de un servicio (ej: "endodoncia"), lo selecciona automáticamente aunque el intent no lo haya detectado.
+- **Archivo afectado:** `rasa_model/actions/actions.py`
 # Historial de Cambios (Changelog)
 
 Todas las modificaciones notables en el proyecto Sector Mind AI se documentarán en este archivo.
