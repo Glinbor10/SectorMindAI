@@ -5,6 +5,28 @@ Todas las modificaciones notables en el proyecto Sector Mind AI se documentarán
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere al versionado semántico.
 
 
+
+## [v0.7.3] - 2026-01-29 (Mejoras en Rasa Discovery y Fotos de Negocios)
+
+### ✨ Añadido (Added)
+
+**Fotos Únicas para Cada Negocio de Ejemplo (2026-01-29):**
+- Ahora cada negocio de muestra tiene una foto distinta asociada para mejorar la experiencia visual y la diferenciación en la interfaz.
+- **Archivo afectado:** `backend/manage_db.py`, `frontend/uploads/`
+
+**Mejoras en el Modelo Rasa Discovery (2026-01-29):**
+- Mejoras en la comprensión de intents y entidades para Discovery.
+- Respuestas más precisas y naturales en la búsqueda de negocios.
+- Mejor manejo de expresiones ambiguas y sinónimos.
+- **Archivos afectados:** `rasa_discovery/actions/discovery.py`, `rasa_discovery/data/`, `rasa_discovery/domain.yml`
+
+### 🐛 Arreglado (Fixed)
+
+- Correcciones menores en la visualización de fotos en frontend.
+- Ajustes en la lógica de asignación de imágenes para evitar duplicados.
+
+---
+
 ## [v0.7.2] - 2026-01-17 (Mejoras Críticas en Bot de Descubrimiento Rasa)
 
 ### ✨ Añadido (Added)

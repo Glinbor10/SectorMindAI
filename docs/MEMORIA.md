@@ -270,6 +270,8 @@
 | **v0.6.0** | Ene 6, 2026 | Geolocalización de Negocios ✅ |
 | **v0.7.0** | Ene 8, 2026 | Interfaz Adaptativa + Rasa Discovery ✅ |
 | **v0.7.1** | Ene 15, 2026 | Datos de Muestra + Configuración ✅ |
+| **v0.7.2** | Ene 17, 2026 | Bot Discovery Mejorado + Redirección + Fotos |
+| **v0.7.3** | Ene 29, 2026 | Fotos únicas negocios + Rasa Discovery mejorado ✅ |
 | **v1.0.0** | (previsto) Feb/Mar, 2026 | SaaS Multi-Tenant |
 
 ---
@@ -283,9 +285,21 @@ Cada release debe cumplir:
 
 ---
 
-**Actualizado:** 8 Enero 2026
-**Versión Actual:** v0.7.0 (Interfaz Adaptativa + Rasa Discovery)  
-**Estado:** ✅ 116 tests passing (backend + geo + Rasa Model)
+**Actualizado:** 29 Enero 2026
+**Versión Actual:** v0.7.3 (Fotos únicas negocios + Rasa Discovery mejorado)
+**Estado:** ✅ 128 tests passing (backend + geo + Rasa Model + Discovery)
+### **v0.7.3 - Fotos únicas y mejoras en Rasa Discovery**
+**Fecha:** Enero 29, 2026
+
+**Logros:**
+- ✅ Cada negocio de ejemplo ahora tiene una foto única asociada, mejorando la experiencia visual y la diferenciación en la interfaz.
+- ✅ Mejoras en el modelo Rasa Discovery: mayor precisión en intents, mejor manejo de sinónimos y expresiones ambiguas, respuestas más naturales.
+- ✅ Ajustes en frontend para mostrar correctamente las fotos y evitar duplicados.
+
+**Métricas:**
+- 128 tests: 100% passing (backend + geo + Rasa Model + Discovery)
+
+---
   - 24 intents iniciales (distribuidos entre dentista, peluquería, fisioterapia)
   - Extracción de entities (servicios, fechas, tipos de urgencia)
 - **Rasa Actions Custom:** 7 acciones personalizadas ("urgencias" que necesiten contexto) de cata tipo de negocio para conectar NLU con lógica de negocio

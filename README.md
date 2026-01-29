@@ -1,5 +1,5 @@
 ﻿
-# **Sector Mind AI (v0.7.2)**
+# **Sector Mind AI (v0.7.3)**
 ## 🐳 **¿Cómo funciona Docker en SectorMindAI?**
 
 SectorMindAI utiliza Docker y Docker Compose para orquestar todos los servicios necesarios (backend, base de datos, dos asistentes Rasa y sus servidores de acciones) de forma profesional, reproducible y persistente.
@@ -49,11 +49,15 @@ Docker Compose y los scripts PowerShell permiten levantar, detener, testear y ma
 
 ## 📋 **Estado del Proyecto**
 
-El proyecto ha alcanzado la versión **v0.7.2 (Bot de descubrimiento mejorado + filtrado de citas por negocio + redirección automática)**.
+El proyecto ha alcanzado la versión **v0.7.3 (Fotos únicas para negocios de ejemplo + mejoras en Rasa Discovery)**.
 Sistema de reservas con IA contextual, geolocalización de negocios, búsqueda inteligente por distancia, dos modelos Rasa (Discovery 5006 y Model 5005), tarjetas de negocio clicables desde la home, selección enumerada de negocios con redirección automática, detección de disponibilidad para mañana y filtrado de citas por contexto de negocio, con 100+ tests automatizados desplegable en contenedores.
 
 
 ### 🎯 Funcionalidades Principales (Sistema Completo)
+
+#### 🆕 Novedades v0.7.3 (Enero 2026)
+- **Fotos únicas para cada negocio de ejemplo:** Ahora cada negocio de muestra tiene una foto distinta asociada, mejorando la experiencia visual y la diferenciación en la interfaz.
+- **Mejoras en el modelo Rasa Discovery:** Mayor precisión en intents, mejor manejo de sinónimos y expresiones ambiguas, respuestas más naturales y relevantes en la búsqueda de negocios.
 - **Doble asistente Rasa:** Discovery (5006) para hallar negocios por proximidad desde la home; Model (5005) para gestionar citas dentro del detalle de negocio.
 - **UI por rol:** Home de clientes con búsqueda y chat Discovery; propietarios solo ven "Tus Negocios" sin chat de clientes.
 - **IA Contextual por Tipo de Negocio:** Respuestas especializadas según contexto (dentista/peluquería/fisioterapia)
