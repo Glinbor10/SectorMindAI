@@ -314,7 +314,7 @@ async function sendToRasa(msg, hidden = false, typingElementId = null) {
         const data = await res.json();
         if (typingElementId && document.getElementById(typingElementId)) document.getElementById(typingElementId).remove();
         if (!hidden) {
-            if (data.length === 0) handleBotResponse('Ups, no he entendido eso. ¿Puedes repetirlo?');
+            if (data.length === 0) handleBotResponse('Ups, no he entendido eso. ¿Puedes repetirlo más claro lo que quieres?');
             else data.forEach(rta => handleBotResponse(rta.text));
         } else {
             // Si hidden, solo procesar mensajes de slots
