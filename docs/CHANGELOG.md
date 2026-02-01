@@ -1,4 +1,48 @@
 
+## [v1.0.0] - Próximamente (Chat de Voz Unificado y Totalmente Funcional)
+
+### ✨ Añadido (Added)
+
+**Chat de Voz Unificado con Texto:**
+- Interfaz de chat unificada que combina voz y texto en un solo historial de conversación continuo
+- Botón de micrófono integrado en el input de chat para entrada de voz sin cambiar de modo
+- Reconocimiento de voz (STT) que agrega automáticamente mensajes de usuario al historial del chat
+- Síntesis de voz (TTS) opcional para respuestas del bot con toggle de activación/desactivación
+- Conversación multimodal que funciona exactamente igual en voz y texto
+- Eliminación del modo voz separado - ahora es una característica integrada en el chat principal
+- **Archivos afectados:** `frontend/detalle.html`, `frontend/app.js`
+
+**Mejoras en Accesibilidad y UX Multimodal:**
+- Indicadores visuales claros para estado de reconocimiento de voz (escuchando, procesando, etc.)
+- Feedback auditivo opcional para confirmación de comandos de voz
+- Transición suave entre entrada de voz y texto sin pérdida de contexto
+- Soporte completo para conversaciones largas con voz
+
+### 🔧 Cambiado (Changed)
+
+**Unificación de Interfaces de Chat:**
+- Eliminación de tabs separados para "Chat" y "Voz" - ahora interfaz única
+- Refactorización completa de `switchMode()` y manejo de modos en `app.js`
+- `handleBotResponse()` actualizado para agregar respuestas al historial del chat en ambos modos
+- `sendToRasa()` mantiene consistencia entre voz y texto
+- Experiencia de usuario unificada: voz es solo un método de input, no un modo diferente
+
+**Mejoras en Web Speech API:**
+- Mejor manejo de errores y estados de reconocimiento de voz
+- Configuración optimizada para español con mejor precisión
+- Cancelación automática de síntesis anterior al iniciar nueva
+- Timeout inteligente para reconocimiento continuo
+
+### 🐛 Arreglado (Fixed)
+
+- Chat de voz ahora totalmente funcional y equivalente al de texto
+- Historial de conversación preservado al alternar entre voz y texto
+- Problemas de sincronización entre reconocimiento y síntesis de voz
+- Mejor integración de Web Speech API con el flujo de conversación de Rasa
+- Estados de loading y error consistentes entre voz y texto
+
+---
+
 ## [v0.7.5] - 2026-01-29 (Diversificación de Servicios en Datos de Muestra)
 
 ### ✨ Añadido (Added)
