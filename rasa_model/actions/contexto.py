@@ -19,14 +19,50 @@ class ActionSetContexto(Action):
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
+        # Estrategia 1: Intentar obtener del metadata (si Rasa lo pasa)
         metadata = tracker.latest_message.get("metadata", {})
         cliente_id = metadata.get("cliente_id")
         negocio_id = metadata.get("negocio_id")
+        
+        # Estrategia 2: Extraer del mensaje JSON si viene como /greet{"negocio_id": X}
+        if not negocio_id:
+            mensaje = tracker.latest_message.get("text", "")
+            import json
+            # Buscar JSON en el mensaje (e.g., /greet{"negocio_id": 5, ...})
+            try:
+                # Extraer la parte entre { y }
+                if "{" in mensaje and "}" in mensaje:
+                    json_str = mensaje[mensaje.index("{"):mensaje.rindex("}")+1]
+                    json_data = json.loads(json_str)
+                    negocio_id = json_data.get("negocio_id")
+                    print(f"✅ ActionSetContexto: Extraído negocio_id={negocio_id} del mensaje JSON")
+            except Exception as e:
+                print(f"⚠️ No se pudo parsear JSON del mensaje: {e}")
+        
+        # Estrategia 3: Si no funciona, intentar extraer del intent_ranking o parse_data
+        if not negocio_id:
+            parse_data = tracker.latest_message.get("parse_data", {})
+            if isinstance(parse_data, dict):
+                negocio_id = parse_data.get("negocio_id")
+        
+        # Estrategia 4: Buscar en custom_data si existe
+        if not negocio_id:
+            custom_data = tracker.latest_message.get("custom_data", {})
+            if isinstance(custom_data, dict):
+                negocio_id = custom_data.get("negocio_id")
         
         slots = []
         if cliente_id:
             slots.append(SlotSet("cliente_id", cliente_id))
         if negocio_id:
+            # Convertir a int si es string
+            try:
+                if isinstance(negocio_id, str):
+                    negocio_id = int(negocio_id)
+            except (ValueError, TypeError):
+                print(f"⚠️ No se puede convertir negocio_id a int: {negocio_id}")
+                return []
+            
             slots.append(SlotSet("negocio_id", negocio_id))
             
             # Obtener el nombre del negocio
@@ -37,9 +73,13 @@ class ActionSetContexto(Action):
                     negocio_nombre = negocio_data.get("nombre")
                     if negocio_nombre:
                         slots.append(SlotSet("negocio", negocio_nombre))
-            except Exception:
-                pass  # Si falla, no pasa nada, solo no se establece el nombre
+                        print(f"✅ ActionSetContexto: negocio_id={negocio_id}, nombre={negocio_nombre}")
+                else:
+                    print(f"⚠️ Backend retornó {response.status_code} para negocio {negocio_id}")
+            except Exception as e:
+                print(f"⚠️ Error obteniendo negocio {negocio_id}: {e}")
         
+        return slots
         return slots
 
 

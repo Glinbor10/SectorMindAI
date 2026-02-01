@@ -38,11 +38,10 @@ def apply_migration(conn, version, sql):
     
     print(f"  ⏳ Aplicando migración {version}...")
     
-    # Ejecutar SQL de migración
-    for statement in sql.split(';'):
-        statement = statement.strip()
-        if statement:
-            cursor.execute(statement)
+    # Ejecutar SQL de migración, filtrando statements vacíos y comentarios
+    statements = [s.strip() for s in sql.split(';') if s.strip() and not s.strip().startswith('--')]
+    for statement in statements:
+        cursor.execute(statement)
     
     # Registrar migración aplicada (PostgreSQL EXCLUSIVAMENTE)
     cursor.execute(

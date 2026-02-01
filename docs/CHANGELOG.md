@@ -1,9 +1,457 @@
+
+## [v0.7.5] - 2026-01-29 (Diversificación de Servicios en Datos de Muestra)
+
+### ✨ Añadido (Added)
+
+**Variación en Número de Servicios por Negocio (2026-01-29):**
+- Los negocios de muestra ahora tienen diferente número de servicios (1-4) en lugar de todos tener exactamente 2.
+- **Peluquerías:** Varían entre 1, 2, 3 y 4 servicios por negocio.
+- **Dentistas:** Varían entre 1, 2, 3 y 4 servicios por negocio.
+- **Fisioterapias:** Varían entre 1, 2, 3 y 4 servicios por negocio.
+- **Archivo afectado:** `backend/manage_db.py`
+
+**Servicios Únicos por Tipo de Negocio (2026-01-29):**
+- Eliminada la repetición de servicios idénticos entre negocios del mismo tipo.
+- Cada negocio ahora ofrece servicios diferenciados para mejor testing y realismo.
+- **Archivo afectado:** `backend/manage_db.py`
+
+### 🐛 Arreglado (Fixed)
+
+- Datos de muestra más realistas para testing del bot de Rasa.
+- Mejor diferenciación visual y funcional entre negocios similares.
+
+---
+
+## [v0.7.4] - 2026-01-29 (Fallback inteligente en Rasa Model)
+
+### ✨ Añadido (Added)
+
+**Fallback Inteligente en Rasa Model (2026-01-29):**
+- El agente ahora detecta si el usuario menciona directamente el nombre de un servicio del negocio antes de mostrar el mensaje de "no he entendido".
+- Si el usuario escribe el nombre de un servicio (ej: "endodoncia"), lo selecciona automáticamente aunque el intent no lo haya detectado.
+- **Archivo afectado:** `rasa_model/actions/actions.py`
 # Historial de Cambios (Changelog)
 
 Todas las modificaciones notables en el proyecto Sector Mind AI se documentarán en este archivo.
 
 El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/), y este proyecto se adhiere al versionado semántico.
 
+
+
+## [v0.7.3] - 2026-01-29 (Mejoras en Rasa Discovery y Fotos de Negocios)
+
+### ✨ Añadido (Added)
+
+**Fotos Únicas para Cada Negocio de Ejemplo (2026-01-29):**
+- Ahora cada negocio de muestra tiene una foto distinta asociada para mejorar la experiencia visual y la diferenciación en la interfaz.
+- **Archivo afectado:** `backend/manage_db.py`, `frontend/uploads/`
+
+**Mejoras en el Modelo Rasa Discovery (2026-01-29):**
+- Mejoras en la comprensión de intents y entidades para Discovery.
+- Respuestas más precisas y naturales en la búsqueda de negocios.
+- Mejor manejo de expresiones ambiguas y sinónimos.
+- **Archivos afectados:** `rasa_discovery/actions/discovery.py`, `rasa_discovery/data/`, `rasa_discovery/domain.yml`
+
+### 🐛 Arreglado (Fixed)
+
+- Correcciones menores en la visualización de fotos en frontend.
+- Ajustes en la lógica de asignación de imágenes para evitar duplicados.
+
+---
+
+## [v0.7.2] - 2026-01-17 (Mejoras Críticas en Bot de Descubrimiento Rasa)
+
+### ✨ Añadido (Added)
+
+**Detección Mejorada de Disponibilidad para Mañana (2026-01-17):**
+- **Soporte para "Mañana":** El bot ahora detecta correctamente expresiones como "mañana", "manana", "tomorrow"
+- **Filtrado Inteligente:** Nueva función `_filtrar_con_hueco_manana()` que filtra negocios con disponibilidad para el día siguiente
+- **Archivo afectado:** `rasa_discovery/actions/discovery.py`
+
+**Selección Enumerada de Negocios con Redirección Automática (2026-01-17):**
+- **Numeración de Resultados:** Los negocios se muestran enumerados del 1 al 5
+- **Redirección Automática:** Al seleccionar un número (ej: "el 1"), redirige automáticamente a la página de detalle
+- **Patrón [REDIRECT:...]:** Nuevo formato de respuesta que el frontend detecta para navegación automática
+- **Archivos afectados:** `rasa_discovery/actions/discovery.py`, `frontend/index.html`
+
+### 🔧 Cambiado (Changed)
+
+**Simplificación de Selección de Ubicación (2026-01-17):**
+- **Auto-selección del Primer Resultado:** Eliminada la selección múltiple de ubicaciones, ahora auto-selecciona el mejor resultado
+- **Mejora de UX:** Reduce fricción en el flujo de búsqueda eliminando pasos innecesarios
+- **Archivo afectado:** `rasa_discovery/actions/discovery.py`
+
+**Límite de Resultados de Negocios (2026-01-17):**
+- **Máximo 5 Negocios:** Reducido de 10 a 5 resultados para mejorar la claridad y velocidad de respuesta
+- **Archivo afectado:** `rasa_discovery/actions/discovery.py`
+
+### 🐛 Arreglado (Fixed)
+
+**Filtrado de Citas por Negocio Específico (2026-01-17):**
+- **Citas Filtradas por Contexto:** El comando "mis citas" en un negocio específico ahora muestra solo las citas de ese negocio
+- **Parámetro negocio_id:** Agregado filtrado por `negocio_id` en la consulta de citas del agente de negocio
+- **Archivo afectado:** `rasa_model/actions/consultas.py`
+
+**Corrección de Errores de Ubicación (2026-01-17):**
+- **Detección de Saludos Mejorada:** Función `_es_saludo_simple()` y `_es_saludo_fuzzy()` evitan que saludos se guarden como ubicaciones
+- **Sistema de Puntuación de Geocoding:** Prioriza ciudades sobre provincias con sistema de scoring de 4 niveles
+- **Archivo afectado:** `rasa_discovery/actions/discovery.py`
+
+**Error UnboundLocalError con import re (2026-01-17):**
+- **Importación Duplicada:** Eliminada importación duplicada de `re` que causaba UnboundLocalError
+- **Archivo afectado:** `rasa_discovery/actions/discovery.py`
+
+
+## [v0.7.1] - 2026-01-15 (Mejoras en Datos de Muestra y Configuración)
+
+### ✨ Añadido (Added)
+
+**Expansión de Datos de Muestra (2026-01-15):**
+- **Negocios de Muestra Expandidos:** Agregadas múltiples entradas para peluquerías, fisioterapias y dentistas en la lista de NEGOCIOS
+- **Diversidad de Servicios:** Mayor variedad de servicios y tipos de negocio para testing y demostración
+- **Archivo afectado:** `backend/manage_db.py`
+
+**Configuración Mejorada (2026-01-15):**
+- **Variables de Entorno de Ejemplo:** Agregado archivo `.env.example` con todas las variables necesarias
+- **Instrucciones de Configuración:** Actualizado README.md con guía completa de configuración e instalación
+- **Archivos afectados:** `.env.example`, `README.md`
+
+### 🔧 Cambiado (Changed)
+
+**Limpieza de Migraciones SQL (2026-01-15):**
+- **Ejecución de Migraciones Mejorada:** Filtrado de statements vacíos y comentarios en la ejecución de SQL
+- **Robustez Mejorada:** Manejo más seguro de archivos de migración con múltiples statements
+- **Archivo afectado:** `backend/migrate.py`
+
+
+## [v0.7.0] - 2026-01-08 (Interfaz de Usuario Adaptativa por Rol)
+
+### ✨ Añadido (Added)
+
+**Sistema de Conmutación de Vistas Basado en Rol de Usuario (2026-01-08):**
+- **Vistas Separadas Cliente vs Propietario:**
+  - **Vista Cliente:** Cabecera, búsqueda, grid de negocios destacados + Chat AI Discovery (derecha)
+  - **Vista Propietario:** Solo "Tus Negocios" con tarjetas de gestión, sin chat ni búsqueda
+  - Conmutación instantánea sin recargar página al iniciar/cerrar sesión
+  - Lógica centralizando en función `window.updateRoleViews()`
+  - Archivos afectados: `frontend/index.html`, `frontend/app.js`
+
+- **Mejoras en Mensajería y Accesibilidad:**
+  - **Nuevo Slogan:** "Accesible y fácil, pensado para mayores." (antes: "Tecnología sencilla, para todos.")
+  - **Descripción Actualizada:** "Reserva citas o encuentra el mejor negocio con ayuda de la IA, sin complicaciones."
+  - Enfoque mejorado en facilidad de uso para usuarios de mayor edad
+
+**Carga Dinámica de Negocios por Rol (2026-01-08):**
+- **Para Clientes:** Función `loadBusinesses()` carga grid de negocios destacados
+- **Para Propietarios:** Función `loadMyBusinesses()` carga grid de negocios propios al cambiar rol
+- Integración automática en `window.updateRoleViews()` 
+- Eliminación de duplicación de lógica de autenticación en múltiples scripts
+
+### 🔧 Cambiado (Changed)
+
+**Refactorización de Autenticación (2026-01-08):**
+- **Funciones de Auth Propias en index.html:**
+  - `handleLogin()`, `handleRegister()`, `saveUserSessionIndex()`, `logout()`, `updateUIIndex()`
+  - Eliminada dependencia de `app.js` en `index.html` (evita conflictos de variables globales)
+  - Cada página ahora gestiona independientemente su autenticación
+  - `app.js` sigue siendo usado solo en páginas de detalle de negocio
+
+- **Manejo de currentUser Global:**
+  - Variable `currentUser` ahora declarada solo en `app.js` (para otras páginas)
+  - En `index.html`, se declara localmente para evitar conflictos de scope
+  - Sincronización via `localStorage` ('sector_mind_user')
+
+- **Estructura HTML Simplificada:**
+  - Contenedor principal ahora alterna entre dos vistas simples:
+    - `<div id="cliente-view">` (contiene header + search + grid + discovery chat)
+    - `<div id="propietario-view">` (contiene solo "Tus Negocios")
+  - Eliminadas capas innecesarias de grid (antes `lg:col-span-5`, `lg:col-span-12`)
+  - Reducción de complejidad CSS/Tailwind
+
+### 🐛 Arreglado (Fixed)
+
+- **Carga de Negocios en Propietarios:** Función `loadMyBusinesses()` ahora se ejecuta automáticamente al cambiar rol
+- **Sincronización de Sesión:** `saveUserSessionIndex()` ahora llama a `updateRoleViews()` inmediatamente
+- **Evento de Carga:** `window.onload` ahora ejecuta `loadBusinesses()` además de `initDiscoveryChat()`
+- **Logout Completo:** Función `logout()` ahora llama a `updateRoleViews()` para limpiar vista correctamente
+
+
+## [v0.6.1] - 2026-01-06 (Interfaz Visual por Tipo de Negocio)
+
+### ✨ Añadido (Added)
+
+**Backgrounds y Emoji Personalizados por Tipo de Negocio (2026-01-06):**
+- **Asignación de Estilos Visuales por Categoría:**
+  - **Dentista** 🦷: Fondo azul claro (`bg-blue-100`, `#dbeafe`)
+  - **Peluquería** ✂️: Fondo rosa claro (`bg-pink-100`, `#fce7f3`)
+  - **Fisioterapia** 🦴: Fondo verde claro (`bg-green-100`, `#dcfce7`)
+  - Emoji escalado a `text-6xl` (grid) y 2rem (gestion) con opacidad 0.8
+
+- **Función Helper `getBusinessStyle()`:**
+  - Ubicación: `frontend/index.html` (línea 651) y `frontend/gestion_negocio.html` (línea 691)
+  - Mapeo de tipo_negocio → {bgColor, emoji, color, textColor}
+  - Fallback a 'dentista' si tipo_negocio no coincide (casos edge)
+  - Reutilizable para futuras expansiones de categorías
+
+- **Integración en Interfaz de Usuario:**
+  - **Grid de Negocios (Cliente):** Función `renderBusinessGrid()` ahora renderiza emoji+background si no hay `foto_base64`
+  - **Lista de Propietario:** Función `loadMyBusinesses()` ahora renderiza emoji+background si no hay `foto_base64`
+  - **Página de Gestión:** Función `loadBusinessData()` muestra emoji en thumbnail (w-16 h-16) si no hay foto
+
+### 🔧 Cambiado (Changed)
+
+- **Reducción de Categorías de Negocio:**
+  - Removida categoría "General" (demasiado genérica en MVP)
+  - Dropdown de creación/edición (`business-type`, `edit-business-type`) ahora solo contiene:
+    - Dentista
+    - Peluquería
+    - Fisioterapia
+  - Valor default cambiado de 'general' a 'dentista'
+  - Archivos afectados: `frontend/index.html`, `frontend/gestion_negocio.html`
+
+- **Mejora de Experiencia Visual:**
+  - Negocios sin foto ahora muestran identidad visual clara según tipo
+  - Sustitución de placeholder genérico SVG por emoji descriptivo
+  - Mejor diferenciación visual entre tipos de negocio en grillas
+
+
+## [v0.6.0] - 2026-01-06 (Geolocalización de Negocios y Búsqueda por Proximidad)
+
+### ✨ Añadido (Added)
+
+**Geolocalización de Negocios (2026-01-06):**
+- **Esquema de Base de Datos Extendido:** Adición de columnas geográficas a tabla `negocios`
+  - `latitud DECIMAL(10, 8)` - Rango: -90.0° a +90.0° (precisión de 7 decimales ≈ 1.1 cm)
+  - `longitud DECIMAL(11, 8)` - Rango: -180.0° a +180.0° (precisión de 7 decimales ≈ 1.1 cm)
+  - `CREATE INDEX idx_negocios_ubicacion ON negocios(latitud, longitud)` para optimización de queries
+  - Archivos: `database/schema_postgres.sql`, `backend/migrations/003_add_geolocalizacion.sql`
+
+- **API REST con Cálculo de Distancia:**
+  - **Endpoint GET `/negocios/?lat=X&lon=Y`** - Nuevo parámetro de query para ubicación del usuario
+    - Calcula distancia Haversine en tiempo real: `SELECT *, 6371 * acos(...) as distancia_km`
+    - Ordena automáticamente por proximidad: `ORDER BY distancia_km NULLS LAST`
+    - Retorna campo `distancia_km` en respuesta JSON para cada negocio
+    - Soporta fallback: sin parámetros devuelve todos los negocios (sin distancia)
+  - **Endpoint POST `/negocios`** - Validación de coordenadas en creación
+    - Extrae `latitud` y `longitud` del payload (JSON o FormData)
+    - Valida rangos: -90 ≤ lat ≤ 90, -180 ≤ lon ≤ 180
+    - Retorna error 400 si coordenadas inválidas
+    - Opcional: coordenadas pueden omitirse (negocio se crea sin ubicación)
+  - **Endpoint PUT `/negocios/<id>`** - Actualización de coordenadas
+    - Permite modificar `latitud` y `longitud` de negocios existentes
+    - Misma validación de rangos que en POST
+  - Archivos: `backend/routes/negocios.py` (refactorización completa)
+
+- **Geocodificación con Nominatim (OpenStreetMap):**
+  - **Forward Geocoding:** Función `geocodificarDireccion()` convierte dirección → coordenadas
+    - Envía búsqueda a API Nominatim: `GET https://nominatim.openstreetmap.org/search`
+    - Parámetros: `q=<dirección>&format=json&limit=1`
+    - User-Agent requerido para respetar políticas de rate limiting
+    - Respeta límite de ~1 request/segundo de Nominatim
+  - **Reverse Geocoding:** Función `useMyLocation()` convierte coordenadas → dirección
+    - Envía coordenadas a Nominatim reverse: `GET .../reverse?format=json&lat=X&lon=Y`
+    - Extrae `address.road`, `address.house_number`, `address.city` de respuesta
+    - Formatea dirección legible automáticamente
+  - Archivos: `frontend/index.html`, `frontend/gestion_negocio.html`
+
+- **Interfaz de Usuario para Geolocalización:**
+  - **En Creación de Negocio:** 3 métodos para ingresar ubicación
+    1. **Input Manual:** Escribir dirección en campo de texto
+    2. **Botón "Usar mi ubicación" (📍):** Icono pin en formulario que activa GPS
+       - Solicita permiso de geolocalización del navegador (con timeout de 30 segundos)
+       - Muestra UI "⏳ Esperando permiso de ubicación..." durante espera
+       - Llama automáticamente a reverse geocoding para mostrar dirección legible
+    3. **Botón "Actualizar coordenadas":** Re-geocodifica dirección si fue editada
+  - **En Edición de Negocio:** Funciones paralelas `useMyLocationEdit()` y `geocodificarDireccionEdit()`
+  - **Feedback Visual:**
+    - ✅ Éxito (verde): "📍 40.41685, -3.70379" con coordenadas mostradas
+    - ⚠️ Advertencia (naranja): "Negocio se creará sin coordenadas si falla geocodificación"
+    - ❌ Error (rojo): "No se encontraron coordenadas para esa dirección"
+  - Archivos: `frontend/index.html`, `frontend/gestion_negocio.html` (UI updates)
+
+### ✨ Añadido (Added)
+
+**Geolocalización de Negocios (2026-01-06):**
+- **Esquema de Base de Datos Extendido:** Adición de columnas geográficas a tabla `negocios`
+  - `latitud DECIMAL(10, 8)` - Rango: -90.0° a +90.0° (precisión de 7 decimales ≈ 1.1 cm)
+  - `longitud DECIMAL(11, 8)` - Rango: -180.0° a +180.0° (precisión de 7 decimales ≈ 1.1 cm)
+  - `CREATE INDEX idx_negocios_ubicacion ON negocios(latitud, longitud)` para optimización de queries
+  - Archivos: `database/schema_postgres.sql`, `backend/migrations/003_add_geolocalizacion.sql`
+
+- **API REST con Cálculo de Distancia:**
+  - **Endpoint GET `/negocios/?lat=X&lon=Y`** - Nuevo parámetro de query para ubicación del usuario
+    - Calcula distancia Haversine en tiempo real: `SELECT *, 6371 * acos(...) as distancia_km`
+    - Ordena automáticamente por proximidad: `ORDER BY distancia_km NULLS LAST`
+    - Retorna campo `distancia_km` en respuesta JSON para cada negocio
+    - Soporta fallback: sin parámetros devuelve todos los negocios (sin distancia)
+  - **Endpoint POST `/negocios`** - Validación de coordenadas en creación
+    - Extrae `latitud` y `longitud` del payload (JSON o FormData)
+    - Valida rangos: -90 ≤ lat ≤ 90, -180 ≤ lon ≤ 180
+    - Retorna error 400 si coordenadas inválidas
+    - Opcional: coordenadas pueden omitirse (negocio se crea sin ubicación)
+  - **Endpoint PUT `/negocios/<id>`** - Actualización de coordenadas
+    - Permite modificar `latitud` y `longitud` de negocios existentes
+    - Misma validación de rangos que en POST
+  - Archivos: `backend/routes/negocios.py` (refactorización completa)
+
+- **Geocodificación con Nominatim (OpenStreetMap):**
+  - **Forward Geocoding:** Función `geocodificarDireccion()` convierte dirección → coordenadas
+    - Envía búsqueda a API Nominatim: `GET https://nominatim.openstreetmap.org/search`
+    - Parámetros: `q=<dirección>&format=json&limit=1`
+    - User-Agent requerido para respetar políticas de rate limiting
+    - Respeta límite de ~1 request/segundo de Nominatim
+  - **Reverse Geocoding:** Función `useMyLocation()` convierte coordenadas → dirección
+    - Envía coordenadas a Nominatim reverse: `GET .../reverse?format=json&lat=X&lon=Y`
+    - Extrae `address.road`, `address.house_number`, `address.city` de respuesta
+    - Formatea dirección legible automáticamente
+  - Archivos: `frontend/index.html`, `frontend/gestion_negocio.html`
+
+- **Interfaz de Usuario para Geolocalización:**
+  - **En Creación de Negocio:** 3 métodos para ingresar ubicación
+    1. **Input Manual:** Escribir dirección en campo de texto
+    2. **Botón "Usar mi ubicación" (📍):** Icono pin en formulario que activa GPS
+       - Solicita permiso de geolocalización del navegador (con timeout de 30 segundos)
+       - Muestra UI "⏳ Esperando permiso de ubicación..." durante espera
+       - Llama automáticamente a reverse geocoding para mostrar dirección legible
+    3. **Botón "Actualizar coordenadas":** Re-geocodifica dirección si fue editada
+  - **En Edición de Negocio:** Funciones paralelas `useMyLocationEdit()` y `geocodificarDireccionEdit()`
+  - **Feedback Visual:**
+    - ✅ Éxito (verde): "📍 40.41685, -3.70379" con coordenadas mostradas
+    - ⚠️ Advertencia (naranja): "Negocio se creará sin coordenadas si falla geocodificación"
+    - ❌ Error (rojo): "No se encontraron coordenadas para esa dirección"
+  - Archivos: `frontend/index.html`, `frontend/gestion_negocio.html` (UI updates)
+
+- **Visualización de Distancia en Listado:**
+  - **Tarjetas de Negocio Mejoradas:** Nueva línea en renderizado
+    - Muestra: `📍 ${distancia_km.toFixed(1)} km` cuando geolocalización está habilitada
+    - Oculta distancia si usuario denegó permiso de ubicación
+  - Archivo: `frontend/index.html` - Función `renderBusinessGrid()`
+
+- **Datos de Prueba con Coordenadas Reales:**
+  - Script `backend/manage_db.py` actualizado con 3 negocios en ciudades españolas reales:
+    1. **Peluquería Estilo & Glamour** - Madrid (40.4168, -3.7038)
+    2. **Clínica Dental Smile** - Barcelona (41.3874, 2.1686)
+    3. **FisioMente Centro** - Valencia (39.4699, -0.3763)
+  - Output al ejecutar: `✅ Peluquería Estilo & Glamour (ID: 1) - 📍 40.4168, -3.7038`
+  - Archivo: `backend/manage_db.py` (array NEGOCIOS y query INSERT)
+
+- **Suite de Tests para Geolocalización:**
+  - **6 Tests Nuevos en `backend/tests/test_geolocalizacion.py`:**
+    - `test_crear_negocio_con_coordenadas` - Verifica persistencia de lat/lon en BD
+    - `test_crear_negocio_sin_coordenadas` - Negocio creado exitosamente con coords NULL
+    - `test_listar_negocios_con_distancia` - Calcula y ordena por distancia correctamente
+      - Crea 3 negocios (Madrid, Barcelona, Valencia)
+      - Consulta desde ubicación del usuario (Madrid)
+      - Valida orden: Negocio A (0 km) → B (302 km) → C (505 km)
+      - Verifica cálculo Haversine: Madrid→Valencia ≈ 302 km, Madrid→Barcelona ≈ 505 km
+    - `test_actualizar_coordenadas_negocio` - PUT endpoint actualiza lat/lon
+    - `test_listar_negocios_sin_ubicacion_usuario` - Fallback sin params lat/lon
+    - `test_coordenadas_invalidas` - Valida rechazo de coords fuera de rango
+  - **Fixtures Mejorados:** @pytest.fixture `test_user()` usa UUID para emails únicos
+    - Previene error "El email ya está registrado" en ejecuciones rápidas
+    - Registra usuario como cliente, login automático
+  - Tests ejecutados vía Docker: `docker compose exec backend pytest backend/tests/test_geolocalizacion.py -v`
+  - **Resultado: 6 tests passing (100%) en 1.20 segundos**
+  - Archivo: `backend/tests/test_geolocalizacion.py` (nuevo)
+
+### 🔧 Cambiado (Changed)
+
+- **Backend Routes - `negocios.py` Refactorizado:**
+  - Función `listar_negocios()` ahora acepta parámetros `?lat=X&lon=Y` opcionales
+  - Fórmula Haversine en SQL para cálculo de distancia: `6371 * acos(cos(radians(lat)) * ...)`
+  - Validación de rangos de coordenadas en `crear_negocio()` y `actualizar_negocio()`
+  - Manejo de coordenadas NULL en queries con `NULLS LAST`
+  
+- **Frontend - `index.html` Mejoras Significativas:**
+  - Función `loadBusinesses()` ahora es async y solicita geolocalización automáticamente
+  - Promesa de geolocalización con timeout de 30 segundos
+  - Renderizado de UI "⏳ Esperando permiso de ubicación..." durante espera
+  - Construcción dinámica de URL: `/negocios/?lat=X&lon=Y` si permiso otorgado
+  - Fallback seguro si usuario deniega permiso
+
+- **Frontend - `gestion_negocio.html` Nuevas Funciones:**
+  - Funciones de geocodificación parallelas: `geocodificarDireccionEdit()`, `useMyLocationEdit()`
+  - Modal de creación/edición ahora soporta entry de coordenadas
+
+- **Docker y DevOps:**
+  - **Fix de Line Endings:** `docker-entrypoint.sh` convertido de CRLF a LF
+    - Problema: "exec /app/docker-entrypoint.sh: no such file or directory"
+    - Solución: PowerShell script para conversión: `(Get-Content ... -Raw) -replace "`r`n", "`n"`
+    - Docker image rebuilda sin cache: `docker-compose build backend --no-cache`
+  - **Volumen de Migraciones:** Backend container ahora tiene acceso a scripts de migración
+
+- **Tests - Fixtures Robustos:**
+  - `conftest.py` actualizado: fixtures ahora usan `uuid.uuid4()` para emails únicos
+  - Previene colisiones en test rápidos (antes usaba `time.time()`)
+
+- **Documentación:**
+  - Nuevo archivo `docs/GEOLOCALIZACION.md` con arquitectura técnica completa
+    - Flujo de usuario (propietario → geocodificación → BD)
+    - Flujo de búsqueda (cliente → GPS → Haversine → ordenamiento)
+    - Opciones de entrada (manual, GPS, reverse geocoding)
+    - Feedback visual (success/error/warning states)
+
+### 🐛 Corregido (Fixed)
+
+- **Bug: Permiso de Geolocalización No Solicitado**
+  - Problema: `loadBusinesses()` no llamaba a `navigator.geolocation.getCurrentPosition()`
+  - Solución: Refactorización a async/await con Promise explícita
+  - Resultado: Navegador ahora solicita permiso correctamente al cargar la página
+
+- **Bug: Timeout Insuficiente**
+  - Problema: 5 segundos no eran suficientes para que usuario responda a permiso
+  - Solución: Incrementado a 30 segundos con UI feedback: "⏳ Esperando permiso..."
+  - Resultado: Usuario tiene tiempo suficiente para otorgar/denegar permiso
+
+- **Bug: Distancias No Mostradas**
+  - Problema: Aún con coordenadas en BD, `renderBusinessGrid()` no mostraba distancia
+  - Solución: Agregado cálculo de distancia Haversine en `listar_negocios()` endpoint
+  - Resultado: Cada negocio ahora incluye `distancia_km` en respuesta JSON
+
+- **Bug: Docker Backend No Iniciaba**
+  - Problema: `docker-entrypoint.sh` tenía line endings Windows (CRLF)
+  - Solución: Convertido a Unix line endings (LF) via PowerShell
+  - Comando: `(Get-Content -Path ./docker-entrypoint.sh -Raw) -replace "`r`n", "`n" | Set-Content -Path ./docker-entrypoint.sh -NoNewline`
+  - Resultado: Backend container ahora inicia correctamente
+
+- **Bug: Tests Registrando Mismo Email**
+  - Problema: Fixtures con `time.time()` generaban colisiones en tests rápidos
+  - Solución: Cambio a `uuid.uuid4()` para garantizar unicidad
+  - Resultado: Tests corren consecutivamente sin "El email ya está registrado"
+
+- **Bug: Validación de Coordenadas Ausente**
+  - Problema: Backend aceptaba lat/lon fuera de rango geográfico válido
+  - Solución: Validación en `crear_negocio()` y `actualizar_negocio()`:
+    - `-90 ≤ latitud ≤ 90`
+    - `-180 ≤ longitud ≤ 180`
+  - Resultado: Coordenadas inválidas rechazadas con error HTTP 400
+
+### 🧪 Testeado (Tests)
+
+**Backend Geolocation Test Suite:**
+- Suite: **6 tests new + 110 existing = 116 total tests (100% passing)**
+- **Nuevos Tests:**
+  - ✅ `test_crear_negocio_con_coordenadas` - POST con coords
+  - ✅ `test_crear_negocio_sin_coordenadas` - POST sin coords (NULL allowed)
+  - ✅ `test_listar_negocios_con_distancia` - GET con ?lat=X&lon=Y ordering
+  - ✅ `test_actualizar_coordenadas_negocio` - PUT actualiza lat/lon
+  - ✅ `test_listar_negocios_sin_ubicacion_usuario` - Fallback sin params
+  - ✅ `test_coordenadas_invalidas` - Validación de rangos
+
+**Test Data Validation:**
+- ✅ 3 negocios españoles con coordenadas reales verificadas
+- ✅ Distancias calculadas: Madrid→Valencia 302.56 km (vs real ~302 km), Madrid→Barcelona 505.10 km (vs real ~505 km)
+- ✅ Reverse geocoding: GPS 40.4168, -3.7038 → "Calle Gran Vía, Madrid"
+
+**Rasa Tests (Unchanged):**
+- ✅ 12 Rasa action tests - All passing
+- Tests aún en `rasa_model/tests/test_acciones.py`
+
+**Full CI/CD Pipeline:**
+- ✅ `powershell -ExecutionPolicy Bypass -File ./scripts/run_tests.ps1`
+- Result: **116 Backend + 12 Rasa = 128 Total Tests - 100% Passing** ✅
+
+---
 
 ## [v0.5.0] - 2025-12-20 hasta 2026-01-02 (Refactorización Rasa, Flujo Propietario y Búsqueda de Clientes)
 

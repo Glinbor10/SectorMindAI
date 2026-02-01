@@ -20,7 +20,7 @@ RUN pip install --upgrade setuptools wheel
 
 # Install Python dependencies first (leverages Docker layer cache)
 COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Copy application source
 COPY backend /app/backend

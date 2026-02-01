@@ -1,16 +1,18 @@
 ﻿
-# **Sector Mind AI (v0.5.0)**
+# **Sector Mind AI (v0.7.3)**
 ## 🐳 **¿Cómo funciona Docker en SectorMindAI?**
 
-SectorMindAI utiliza Docker y Docker Compose para orquestar todos los servicios necesarios (backend, base de datos, IA conversacional y acciones personalizadas) de forma profesional, reproducible y persistente.
+SectorMindAI utiliza Docker y Docker Compose para orquestar todos los servicios necesarios (backend, base de datos, dos asistentes Rasa y sus servidores de acciones) de forma profesional, reproducible y persistente.
 
 ### 1. Orquestación con Docker Compose
 
-- El archivo `docker-compose.yml` define los 4 servicios principales:
+- El archivo `docker-compose.yml` define los 6 servicios principales:
   - **backend**: API Flask (servidor principal)
   - **db**: PostgreSQL 15-Alpine (base de datos relacional)
-  - **rasa**: Motor de NLU y diálogo (IA)
-  - **rasa-actions**: Acciones personalizadas de IA
+  - **rasa**: Motor Rasa Model (gestión de citas, puerto 5005)
+  - **rasa-actions**: Acciones personalizadas para Rasa Model (puerto 5055)
+  - **rasa-discovery**: Motor Rasa Discovery (búsqueda de negocios, puerto 5006 → 5005 interno)
+  - **rasa-discovery-actions**: Acciones personalizadas para Rasa Discovery (puerto 5056)
 
 - Cada servicio se ejecuta en su propio contenedor, pero todos comparten una red interna (`sector_mind_net`) para comunicarse de forma segura.
 
@@ -27,7 +29,7 @@ SectorMindAI utiliza Docker y Docker Compose para orquestar todos los servicios 
 
 - El backend tiene un `Dockerfile` y un `docker-entrypoint.sh` personalizado, que ahora solo arranca el servidor Flask (ya no borra ni repuebla la base de datos automáticamente, para evitar pérdida de datos).
 - La base de datos PostgreSQL utiliza un volumen persistente, por lo que los datos no se pierden aunque se reinicie Docker o el sistema operativo.
-- Los servicios de Rasa y Rasa Actions se levantan automáticamente y se comunican con el backend y la base de datos según la configuración de red y variables de entorno.
+- Los dos motores de Rasa y sus servidores de acciones se levantan automáticamente y se comunican con el backend y la base de datos según la configuración de red y variables de entorno.
 
 ### 4. Flujo típico de trabajo
 
@@ -40,22 +42,32 @@ SectorMindAI utiliza Docker y Docker Compose para orquestar todos los servicios 
 Docker Compose y los scripts PowerShell permiten levantar, detener, testear y mantener toda la infraestructura de SectorMindAI de forma profesional, con persistencia real de datos y máxima reproducibilidad. Solo es necesario inicializar la base de datos manualmente en casos excepcionales (nuevas migraciones o reseteo total).
 
 
-**Plataforma de gestión de reservas inteligente con asistencia conversacional multimodal, orquestación en Docker y persistencia profesional en PostgreSQL.**
+**Plataforma de gestión de reservas inteligente con asistencia conversacional dual (Discovery + Model), orquestación en Docker y persistencia profesional en PostgreSQL.**
 
 ---
 
 
 ## 📋 **Estado del Proyecto**
 
-El proyecto ha alcanzado la versión **v0.5.0 (Arquitectura modular + IA contextual + Frontend avanzado + Búsqueda de Clientes)**.
-Sistema de reservas con IA contextual desplegable en contenedores, 104 tests automatizados (92 backend + 12 Rasa), base de datos relacional de nivel empresarial, frontend con calendario interactivo y búsqueda de clientes por email.
+El proyecto ha alcanzado la versión **v0.7.3 (Fotos únicas para negocios de ejemplo + mejoras en Rasa Discovery)**.
+Sistema de reservas con IA contextual, geolocalización de negocios, búsqueda inteligente por distancia, dos modelos Rasa (Discovery 5006 y Model 5005), tarjetas de negocio clicables desde la home, selección enumerada de negocios con redirección automática, detección de disponibilidad para mañana y filtrado de citas por contexto de negocio, con 100+ tests automatizados desplegable en contenedores.
 
 
 ### 🎯 Funcionalidades Principales (Sistema Completo)
+
+#### 🆕 Novedades v0.7.3 (Enero 2026)
+- **Fotos únicas para cada negocio de ejemplo:** Ahora cada negocio de muestra tiene una foto distinta asociada, mejorando la experiencia visual y la diferenciación en la interfaz.
+- **Mejoras en el modelo Rasa Discovery:** Mayor precisión en intents, mejor manejo de sinónimos y expresiones ambiguas, respuestas más naturales y relevantes en la búsqueda de negocios.
+- **Doble asistente Rasa:** Discovery (5006) para hallar negocios por proximidad desde la home; Model (5005) para gestionar citas dentro del detalle de negocio.
+- **UI por rol:** Home de clientes con búsqueda y chat Discovery; propietarios solo ven "Tus Negocios" sin chat de clientes.
 - **IA Contextual por Tipo de Negocio:** Respuestas especializadas según contexto (dentista/peluquería/fisioterapia)
   - 🦷 **Dentista:** Urgencias dentales, protocolos de primeros auxilios, consejos específicos
-  - 💇 **Peluquería:** Emergencias de imagen, desastres de tinte, eventos importantes
-  - 🏥 **Fisioterapia:** Protocolo RICE, lesiones deportivas, dolor agudo
+  - ✂️ **Peluquería:** Emergencias de imagen, desastres de tinte, eventos importantes
+  - 🦴 **Fisioterapia:** Protocolo RICE, lesiones deportivas, dolor agudo
+- **Geolocalización de Negocios:** Búsqueda inteligente por proximidad con cálculo Haversine en tiempo real
+  - Forward & Reverse Geocoding con Nominatim (OpenStreetMap)
+  - Distancias en km ordenadas automáticamente
+  - Selección interactiva de ubicación con mapas Leaflet
 - **Reservas Automáticas End-to-End:** El agente IA completa reservas reales sin intervención manual
 - **IA Multimodal (Voz):** Reconocimiento de voz y síntesis (Web Speech API)
 - **Gestión de Archivos:** Sistema de subida de fotos de perfil con validaciones
@@ -65,6 +77,7 @@ Sistema de reservas con IA contextual desplegable en contenedores, 104 tests aut
 - **Frontend avanzado:** Calendario interactivo para crear y editar citas visualmente
 - **Búsqueda de Clientes por Email:** Autocomplete inteligente que muestra solo clientes (excluyendo propietarios), con fotos, nombres y emails
 - **Corrección de Timezone:** Formato local de fecha/hora sin conversión UTC (elimina desplazamientos de horario)
+- **Interfaz Visual por Tipo de Negocio:** Backgrounds y emoji personalizados para dentista, peluquería y fisioterapia
 
 ---
 
@@ -110,8 +123,10 @@ SectorMindAI implementa una arquitectura de microservicios containerizada para m
 |----------|--------|--------|----------|
 | **Backend** | 5000 | `sectormindai-backend:latest` | API REST, lógica de negocio, autenticación |
 | **PostgreSQL** | 5432 | `postgres:15-alpine` | Base de datos relacional con ACID |
-| **Rasa** | 5005 | `rasa/rasa:3.6.2` | Motor de NLU y gestión de diálogo |
-| **Rasa Actions** | 5055 | `sectormindai-rasa-actions:latest` | Servidor de acciones personalizadas |
+| **Rasa Model** | 5005 | `rasa/rasa:3.6.2` | IA de citas y gestión de flujos |
+| **Rasa Actions** | 5055 | `sectormindai-rasa-actions:latest` | Acciones personalizadas para Rasa Model |
+| **Rasa Discovery** | 5006→5005 | `rasa/rasa:3.6.2` | IA de descubrimiento de negocios |
+| **Rasa Discovery Actions** | 5056 | `sectormindai-rasa-discovery-actions:latest` | Acciones personalizadas para Discovery |
 
 ---
 
@@ -143,7 +158,7 @@ SectorMindAI/
 ├── database/             # Base de datos y esquema
 │   └── schema_postgres.sql # Plano de la BD (7 tablas relacionales)
 │
-├── rasa_model/           # Inteligencia Artificial (Rasa 3.6.2)
+├── rasa_model/           # IA de citas (Rasa Model, puerto 5005)
 │   ├── actions/          # Acciones personalizadas (9 módulos)
 │   │   ├── actions.py        # Cerebro central (421 líneas)
 │   │   ├── utils.py         # Funciones comunes (106 líneas)
@@ -154,12 +169,19 @@ SectorMindAI/
 │   │   ├── cancelaciones.py # Flujo cancelación (143 líneas)
 │   │   ├── consultas.py     # Consultas sin flujos (209 líneas)
 │   │   └── __init__.py      # Exports de módulos
-│   ├── tests/            # 12 tests unitarios (100% passing)
+│   ├── tests/            # 12 tests unitarios
 │   ├── data/             # Ejemplos de entrenamiento por contexto
 │   │   ├── nlu.yml           # Intents unificados (incluye thanks)
 │   │   ├── stories.yml       # Flujos conversacionales
 │   │   └── rules.yml         # Reglas globales
 │   └── [config files]    # domain.yml, config.yml, etc.
+│
+├── rasa_discovery/       # IA de descubrimiento (Rasa Discovery, puerto 5006)
+│   ├── actions/          # Acciones personalizadas de búsqueda
+│   ├── data/             # Intents de ubicación/servicio, stories y rules
+│   ├── domain.yml        # Slots de ubicación y negocio seleccionado
+│   ├── config.yml        # Pipeline NLU para búsqueda
+│   └── endpoints.docker.yml # Conexión al action server discovery
 │
 ├── docs/                 # Documentación técnica
 │   ├── MEMORIA.md        # Memoria técnica completa
@@ -192,14 +214,17 @@ El proyecto incluye botones configurados directamente en VS Code para máxima co
 Esto levanta automáticamente:
 - ✅ **PostgreSQL** (puerto 5432)
 - ✅ **Backend Flask** (puerto 5000)
-- ✅ **Rasa Core** (puerto 5005)
+- ✅ **Rasa Model** (puerto 5005)
 - ✅ **Rasa Actions** (puerto 5055)
+- ✅ **Rasa Discovery** (puerto 5006)
+- ✅ **Rasa Discovery Actions** (puerto 5056)
 
 #### **Paso 2: Acceder a la Aplicación**
 ```
 Frontend:    http://localhost:5000
 API Backend: http://localhost:5000/api
-Rasa:        http://localhost:5005
+Rasa Model:        http://localhost:5005
+Rasa Discovery:    http://localhost:5006
 ```
 
 #### **Paso 3: Ejecutar Tests**
@@ -207,11 +232,14 @@ Desde VS Code: `Run Task` → **🧪 TESTS**
 
 O desde PowerShell:
 ```powershell
-.\run_tests.ps1                # Ambas suites (104 tests)
-.\run_tests.ps1 -BackendOnly   # Solo backend (75 tests)
-.\run_tests.ps1 -RasaOnly      # Solo Rasa (29 tests)
+.\run_tests.ps1                # Tests unitarios (rápido, ~10-15 seg)
+.\run_tests.ps1 -Integration   # Tests de integración con APIs externas (lento, ~30-40 seg, requiere internet)
+.\run_tests.ps1 -BackendOnly   # Solo backend
+.\run_tests.ps1 -RasaOnly      # Solo Rasa
 .\run_tests.ps1 -Coverage      # Con reporte HTML
 ```
+
+**Nota sobre tests de integración:** Los tests con `-Integration` validan APIs externas reales (Nominatim/OpenStreetMap) y requieren conexión a internet. Por defecto se excluyen para ejecutar tests rápidos.
 
 #### **Paso 4: Detener Infraestructura**
 Desde VS Code: `Run Task` → **🛑 STOP**
@@ -260,7 +288,13 @@ git clone https://github.com/tu-usuario/SectorMindAI.git
 cd SectorMindAI
 ```
 
-2. **Verificar Docker**
+2. **Configurar variables de entorno**
+```bash
+cp .env.example .env
+# Edita .env con tus credenciales si es necesario
+```
+
+3. **Verificar Docker**
 ```bash
 docker --version
 docker compose --version
@@ -282,7 +316,13 @@ http://localhost:5000
 
 Si prefieres no usar Docker:
 
-1. **Crear entorno virtual**
+1. **Configurar variables de entorno**
+```bash
+cp .env.example .env
+# Edita .env con tus credenciales locales
+```
+
+2. **Crear entorno virtual**
 ```bash
 python -m venv .venv
 # Windows
@@ -291,7 +331,7 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-2. **Instalar dependencias**
+3. **Instalar dependencias**
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
@@ -325,6 +365,18 @@ Terminal 3 - Rasa Actions:
 cd rasa_model
 rasa run actions
 ``` 
+
+Terminal 4 - Rasa Discovery:
+```bash
+cd rasa_discovery
+rasa run --enable-api --cors "*" --port 5006
+```
+
+Terminal 5 - Rasa Discovery Actions:
+```bash
+cd rasa_discovery
+rasa run actions --port 5056
+```
 ## 🧪 **Cómo probar la demo** 
 
 ### Usuarios de desarrollo disponibles
@@ -348,11 +400,17 @@ Login Cliente:     cliente@sectormind.com / u
 
 El proyecto cuenta con **104 tests automatizados** (92 backend + 12 Rasa) que validan toda la funcionalidad dentro de Docker:
 
-### **Ejecutar TODOS los tests (Recomendado):**
+### **Ejecutar tests unitarios (Recomendado, rápido):**
 ```bash
 .\run_tests.ps1
 ```
 Resultado: `[OK] Total: 104 tests passed (92 backend + 12 Rasa)`
+
+### **Ejecutar tests de integración (APIs externas):**
+```bash
+.\run_tests.ps1 -Integration
+```
+**⚠️ Requiere:** Conexión a internet activa. Valida APIs externas como Nominatim (OpenStreetMap) para geocodificación. Duración: ~30-40 segundos (respeta rate limits de 1 req/seg).
 
 ### **Con reporte de cobertura:**
 ```bash
@@ -364,6 +422,7 @@ Resultado: `[OK] Total: 104 tests passed (92 backend + 12 Rasa)`
 .\run_tests.ps1 -BackendOnly   # 92 tests del API
 .\run_tests.ps1 -RasaOnly      # 12 tests de IA
 .\run_tests.ps1 -Verbose       # Con output detallado
+.\run_tests.ps1 -BackendOnly -Integration  # Solo integración del backend
 ```
 
 ### **Cobertura de Tests:**
@@ -371,15 +430,26 @@ Resultado: `[OK] Total: 104 tests passed (92 backend + 12 Rasa)`
 | Módulo | Tests | Estado |
 |--------|-------|--------|
 | **Backend API** | 92 | ✅ 100% Passing |
+| **Backend Integración** | 22 | ✅ Nominatim/OSM |
 | **Rasa Actions** | 12 | ✅ 100% Passing |
-| **Total** | 104 | ✅ 100% Passing |
+| **Total** | 126 | ✅ 100% Passing |
 
-**Nota:** Los tests de stories están deshabilitados (solo unitarios). Los tests se ejecutan dentro del contenedor backend con BD PostgreSQL dedicada. Cada test es independiente y limpia su estado automáticamente.
+**Nota:** 
+- Los tests unitarios usan la BD PostgreSQL en Docker y son independientes (cada test limpia su estado).
+- Los tests de integración (`-Integration`) validan la comunicación real con APIs externas (Nominatim para geocodificación).
+- Por defecto, los tests de integración están excluidos para ejecución rápida. Úsalos cuando necesites validar conectividad externa.
+- Los tests de stories de Rasa están deshabilitados (solo unitarios activos).
 
 **Tests Nuevos (v0.5.0 - Enero 2, 2026):**
 - ✅ `test_buscar_usuarios_filtra_por_rol_cliente` - Verifica filtro de búsqueda solo clientes
 - ✅ `test_post_citas_formato_iso_T` - Valida formato `YYYY-MM-DDTHH:MM` sin segundos
 - ✅ `test_post_citas_con_usuario_id` - Valida alias `usuario_id` para `cliente_id`
+
+**Tests de Integración (v0.7.2 - Enero 17, 2026):**
+- ✅ 22 tests de integración con API Nominatim (OpenStreetMap)
+- ✅ Geocodificación de ciudades españolas (Madrid, Barcelona, Sevilla, etc.)
+- ✅ Manejo de errores, timeouts y rate limiting
+- ✅ Validación de precisión de coordenadas y consistencia de respuestas
 
 ---
 
@@ -402,9 +472,13 @@ docker-compose up -d
 - Rasa: Requiere reentrenamiento (`rasa train`)
 - Frontend: Recarga en navegador (cache limpio con Ctrl+F5)
 
-#### **3. Entrenar modelo Rasa (si modificas archivos de IA)**
+#### **3. Entrenar modelos Rasa (si modificas archivos de IA)**
 ```bash
-docker-compose exec rasa rasa train
+# Modelo de citas (Rasa Model)
+docker compose run --rm rasa rasa train
+
+# Modelo de descubrimiento (Rasa Discovery)
+docker compose run --rm rasa-discovery rasa train
 ```
 
 #### **4. Ejecutar tests**
@@ -522,6 +596,14 @@ git push origin main --tags
 ---
 
 *Proyecto desarrollado con enfoque profesional siguiendo mejores prácticas de DevOps, testing y arquitectura cloud-native.*
+
+---
+
+**Cambios v0.7.0 (Enero 8, 2026):**
+- ✅ Separación en dos modelos Rasa: Discovery (5006) para recomendación de negocios y Model (5005) para gestión de citas
+- ✅ UI por rol: clientes con búsqueda + chat Discovery; propietarios solo gestión de negocios sin chat de clientes
+- ✅ Tarjetas de negocio clicables que redirigen a la página de detalle con el modelo correcto
+- ✅ Comandos de entrenamiento vía Docker para ambos modelos Rasa
 
 ---
 

@@ -9,22 +9,123 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet para mapas interactivos -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .hidden { display: none !important; }
         .filter-btn.active { background-color: #4f46e5; color: white; border-color: #4f46e5; }
+        .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+        /* Animación Micrófono */
+        .mic-pulse { animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen relative">
 
     <script>
-        const API_URL = 'http://localhost:5000';
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_URL = isLocalhost ? 'http://localhost:5000' : `http://${window.location.hostname}:5000`;
+        const DISCOVERY_RASA_URL = isLocalhost ? 'http://localhost:5006/webhooks/rest/webhook' : `http://${window.location.hostname}:5006/webhooks/rest/webhook`;
+        const DISCOVERY_RASA_HEALTH = isLocalhost ? 'http://localhost:5006' : `http://${window.location.hostname}:5006`;
         let currentUser = null;
         let allNegocios = []; 
         let currentCategory = 'Todos';
         let currentSearchTerm = '';
+        let discoverySenderId = null;
+
+        // === FUNCIONES DE AUTENTICACIÓN (PARA INDEX.HTML) ===
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    saveUserSessionIndex(data);
+                    closeModal('modal-login');
+                    Swal.fire({ title: '¡Hola de nuevo!', text: `Conectado como ${data.nombre}`, icon: 'success', confirmButtonColor: '#4f46e5' });
+                } else { Swal.fire('Error', data.error, 'error'); }
+            } catch (err) { Swal.fire('Error', 'Error de conexión', 'error'); }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('nombre', document.getElementById('reg-name').value);
+            formData.append('email', document.getElementById('reg-email').value);
+            formData.append('password', document.getElementById('reg-password').value);
+            formData.append('rol', document.getElementById('reg-rol').value);
+            const fileInput = document.getElementById('reg-photo-file');
+            if(fileInput.files[0]) formData.append('foto_perfil', fileInput.files[0]);
+
+            try {
+                const res = await fetch(`${API_URL}/auth/register`, { method: 'POST', body: formData });
+                const data = await res.json();
+                if (res.ok) {
+                    saveUserSessionIndex(data);
+                    closeModal('modal-register');
+                    Swal.fire({ title: '¡Bienvenido!', text: `Cuenta creada para ${data.nombre}`, icon: 'success', confirmButtonColor: '#4f46e5' });
+                } else { 
+                    Swal.fire({
+                        title: 'Error al Registrar',
+                        text: data.error,
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+            } catch (err) { Swal.fire('Error', 'Error al registrarse', 'error'); }
+        }
+
+        function saveUserSessionIndex(userData) {
+            localStorage.setItem('sector_mind_user', JSON.stringify(userData));
+            currentUser = userData;
+            updateUIIndex();
+            window.updateRoleViews();
+        }
+
+        function logout() {
+            localStorage.removeItem('sector_mind_user');
+            currentUser = null;
+            updateUIIndex();
+            window.updateRoleViews();
+            window.location.href = '/';
+        }
+
+        function updateUIIndex() {
+            if (currentUser) {
+                document.getElementById('user-menu').classList.remove('hidden');
+                document.getElementById('user-menu').classList.add('flex');
+                document.getElementById('auth-buttons').classList.add('hidden');
+                document.getElementById('user-name-display').innerText = currentUser.nombre;
+                const avatar = currentUser.foto_perfil_base64 || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
+                document.getElementById('user-avatar-display').src = avatar;
+                document.getElementById('logout-btn').classList.remove('hidden');
+            } else {
+                document.getElementById('user-menu').classList.add('hidden');
+                document.getElementById('auth-buttons').classList.remove('hidden');
+                document.getElementById('auth-buttons').classList.add('flex');
+                document.getElementById('logout-btn').classList.add('hidden');
+            }
+        }
     </script>
 
     <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
@@ -54,60 +155,131 @@
         </div>
     </nav>
 
-    <header id="cliente-header" class="relative pt-6 pb-4 lg:pt-8 lg:pb-6 overflow-hidden">
-        <div class="max-w-3xl mx-auto px-2 sm:px-4 lg:px-6 relative z-10 text-center">
-            <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 mb-2">
-                Tu tiempo, <span class="text-indigo-600">mejor invertido.</span>
-            </h1>
-            <p class="mt-1 text-base text-slate-500 mb-4">
-                Reserva citas en tus negocios favoritos con nuestra IA conversacional.
-            </p>
-            <div class="max-w-md mx-auto relative group">
-                <div class="relative bg-white rounded-xl shadow flex items-center p-1 border border-slate-100">
-                    <i data-lucide="search" class="ml-2 text-slate-400 w-4 h-4"></i>
-                    <input type="text" id="search-input" placeholder="Buscar..." class="w-full p-2 outline-none text-slate-700 placeholder:text-slate-400 bg-transparent text-base">
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="relative flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 w-full">
+
+        <!-- VISTA CLIENTE (Header + Search + Negocios + Chat Discovery) -->
+        <div id="cliente-view" class="grid grid-cols-1 lg:grid-cols-12 gap-3 w-full lg:pr-[400px]">
+            <!-- COLUMNA IZQUIERDA: Cabecera + Negocios -->
+            <div class="lg:col-span-12 flex flex-col gap-6">
+                <header class="relative">
+                    <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 mb-2">
+                        Tecnología sencilla, <span class="text-indigo-600">para todos.</span>
+                    </h1>
+                    <p class="text-base text-slate-500 mb-4">
+                        Reserva citas o encuentra el mejor negocio con ayuda de la IA, sin complicaciones.
+                    </p>
+                    <div class="space-y-3">
+                        <div class="relative bg-white rounded-xl shadow flex items-center p-1 border border-slate-100">
+                            <i data-lucide="search" class="ml-2 text-slate-400 w-4 h-4"></i>
+                            <input type="text" id="search-input" placeholder="Buscar..." class="w-full p-2 outline-none text-slate-700 placeholder:text-slate-400 bg-transparent text-base">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="relative bg-white rounded-xl shadow flex items-center p-1 border border-slate-100 flex-1">
+                                <i data-lucide="map-pin" class="ml-2 text-slate-400 w-4 h-4"></i>
+                                <input type="text" id="location-input" placeholder="Ej: Gran Vía 123, Madrid / Solo: Madrid" class="w-full p-2 outline-none text-slate-700 placeholder:text-slate-400 bg-transparent text-sm">
+                            </div>
+                            <button onclick="searchNearLocation()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-indigo-700 transition shadow flex items-center gap-2 text-sm whitespace-nowrap">
+                                <i data-lucide="navigation" class="w-4 h-4"></i> Buscar cerca
+                            </button>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Negocios Destacados -->
+                <div class="flex-grow">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+                        <h2 class="text-2xl font-bold text-slate-900">Negocios Destacados</h2>
+                        <div id="filters-container" class="flex flex-wrap gap-2"></div>
+                    </div>
+                    <div id="business-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="col-span-full text-center py-20"><p class="text-slate-500">Cargando...</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMNA DERECHA: IA Discovery Sticky -->
+            <div class="lg:col-span-5">
+                <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden sticky top-24 h-[650px] flex flex-col relative lg:fixed lg:right-6 lg:top-20 lg:w-[380px] lg:z-30 lg:shadow-2xl">
+                <div class="bg-gradient-to-r from-indigo-700 via-indigo-800 to-slate-900 p-4 text-white">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-indigo-500 p-2 rounded-xl"><i data-lucide="bot" class="w-6 h-6 text-white"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Sector Mind AI</h3>
+                                <p id="discovery-status" class="text-xs text-slate-300 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span> Conectando...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex bg-slate-800/80 p-1 rounded-xl backdrop-blur">
+                        <button onclick="switchDiscoveryMode('chat')" id="disc-tab-chat" class="flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 bg-indigo-600 text-white shadow transition-all"><i data-lucide="message-square" class="w-4 h-4"></i> Chat</button>
+                        <button onclick="switchDiscoveryMode('voice')" id="disc-tab-voice" class="flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 text-slate-400 hover:text-white transition-all"><i data-lucide="mic" class="w-4 h-4"></i> Voz</button>
+                    </div>
+                </div>
+
+                <div class="flex-grow flex flex-col relative overflow-hidden">
+                    <div id="discovery-loader" class="absolute inset-0 bg-white/95 z-[60] flex flex-col items-center justify-center text-center p-6 hidden">
+                        <div class="relative w-16 h-16 mb-4">
+                            <div class="absolute top-0 left-0 w-full h-full border-4 border-slate-200 rounded-full"></div>
+                            <div class="absolute top-0 left-0 w-full h-full border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                            <i data-lucide="brain-circuit" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-indigo-600 w-6 h-6 animate-pulse"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800 animate-pulse">Iniciando Servidor IA...</h3>
+                        <p id="discovery-loader-status" class="text-sm text-slate-500 mt-2">Cargando modelo neuronal...</p>
+                    </div>
+
+                    <!-- Chat interface -->
+                    <div id="discovery-chat-interface" class="flex flex-col flex-grow h-full min-h-0">
+                        <div id="discovery-chat-messages" class="flex-grow p-4 overflow-y-auto space-y-3 bg-slate-50 border-b border-slate-100"></div>
+                        <div class="p-4 bg-white">
+                            <form onsubmit="handleDiscoveryChatSubmit(event)" class="relative">
+                                <input type="text" id="discovery-chat-input" placeholder="Ej: Tengo que cortarme el pelo hoy!!" class="w-full pl-4 pr-11 py-3 bg-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-slate-200 shadow-sm">
+                                <button type="submit" class="absolute right-2 top-2 p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition shadow"><i data-lucide="send" class="w-4 h-4"></i></button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Voice interface -->
+                    <div id="discovery-voice-interface" class="hidden flex flex-col flex-grow h-full bg-slate-50 items-center justify-center text-center p-6 relative">
+                        <div class="relative group cursor-pointer" onclick="toggleDiscoveryVoice()">
+                            <div id="discovery-mic-bg" class="absolute inset-0 bg-indigo-500 rounded-full opacity-0 transition-opacity duration-300"></div>
+                            <div class="w-24 h-24 bg-white border-4 border-indigo-100 rounded-full flex items-center justify-center shadow-xl relative z-10 transition-transform transform group-hover:scale-105 active:scale-95">
+                                <i data-lucide="mic" id="discovery-mic-icon" class="w-10 h-10 text-indigo-600"></i>
+                            </div>
+                        </div>
+                        <h3 id="discovery-voice-status" class="mt-8 text-xl font-bold text-slate-800">Pulsa para hablar</h3>
+                        <p id="discovery-voice-transcript" class="mt-2 text-slate-500 text-sm max-w-xs mx-auto h-12">Estoy listo para escucharte...</p>
+                        <div id="discovery-voice-response-box" class="mt-6 bg-white p-4 rounded-2xl shadow-sm border border-indigo-100 w-full hidden fade-in">
+                            <p class="text-xs text-indigo-500 font-bold uppercase mb-1">IA Dice:</p>
+                            <p id="discovery-voice-response-text" class="text-slate-700 text-sm italic">...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </header>
+        </div><!-- FIN cliente-view -->
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
-        <!-- Vista para Clientes (búsqueda general) -->
-        <div id="cliente-view">
-            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                <h2 class="text-2xl font-bold text-slate-900">Negocios Destacados</h2>
-                <div id="filters-container" class="flex flex-wrap gap-2"></div>
-            </div>
-            <div id="business-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div class="col-span-full text-center py-20"><p class="text-slate-500">Cargando...</p></div>
+        <!-- VISTA PROPIETARIO (Tus Negocios) -->
+        <div id="propietario-view" class="hidden w-full">
+            <div class="max-w-6xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-4xl font-bold text-slate-900 mb-3 flex items-center justify-center gap-3">
+                        <i data-lucide="building" class="w-8 h-8 text-indigo-600"></i>
+                        <span>Tus Negocios</span>
+                    </h2>
+                    <p class="text-lg text-slate-600">Gestiona tus servicios y citas</p>
+                </div>
+                <div class="flex items-center justify-end gap-3 flex-wrap mb-8">
+                    <button onclick="openCreateBusinessModal()" class="bg-indigo-600 text-white px-6 py-3 rounded-full font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center gap-2">
+                        <i data-lucide="plus" class="w-5 h-5"></i> Crear Nuevo Negocio
+                    </button>
+                </div>
+                <div id="negocios-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="col-span-full text-center py-20"><p class="text-slate-500">Cargando tus negocios...</p></div>
+                </div>
             </div>
         </div>
-
-        <!-- Vista para Propietarios (mis negocios) -->
-        <div id="propietario-view" class="hidden">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-slate-900 mb-2 flex items-center justify-center">
-                    <i data-lucide="building" class="mr-2 text-indigo-600"></i>
-                    <span class="text-slate-900">Tus Negocios</span>
-                </h2>
-                <p class="text-lg text-slate-600">Gestiona tus servicios y citas</p>
-            </div>
-            <div class="flex items-center justify-end gap-3 flex-wrap mb-8">
-                <button onclick="openCreateBusinessModal()" class="bg-indigo-600 text-white px-6 py-2 rounded-full font-medium hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 flex items-center gap-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i> Crear Nuevo Negocio
-                </button>
-            </div>
-            <div id="negocios-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div class="col-span-full text-center py-20"><p class="text-slate-500">Cargando tus negocios...</p></div>
-            </div>
-        </div>
-    </main>
-
-    <footer class="bg-white border-t border-slate-200 py-8 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
-            &copy; 2025 Sector Mind AI.
-        </div>
-    </footer>
+    </div>
 
     <div id="modal-login" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center fade-in">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative mx-4">
@@ -137,9 +309,10 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1 ml-1">Rol <span class="text-red-500">*</span></label>
                     <select id="reg-rol" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
-                    <option value="cliente">Cliente (Quiero reservar)</option>
-                    <option value="propietario">Dueño de Negocio</option>
-                </select>
+                        <option value="cliente">Cliente (Quiero reservar)</option>
+                        <option value="propietario">Dueño de Negocio</option>
+                    </select>
+                </div>
                 <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700">Registrarse</button>
             </form>
         </div>
@@ -148,6 +321,285 @@
     <script>
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // Variables globales para coordenadas temporales
+        let currentCoords = null;
+
+        // Ocultar chat Discovery para propietarios y mostrar solo su vista
+        window.updateRoleViews = function() {
+            const clienteView = document.getElementById('cliente-view');
+            const propietarioView = document.getElementById('propietario-view');
+            
+            if (currentUser && currentUser.rol === 'propietario') {
+                if (clienteView) clienteView.classList.add('hidden');
+                if (propietarioView) propietarioView.classList.remove('hidden');
+                console.log('👔 Modo Propietario activado');
+                // Cargar negocios del propietario
+                if (typeof loadMyBusinesses === 'function') {
+                    loadMyBusinesses();
+                }
+            } else {
+                if (clienteView) clienteView.classList.remove('hidden');
+                if (propietarioView) propietarioView.classList.add('hidden');
+                console.log('👤 Modo Cliente activado');
+            }
+        };
+
+        // Llamar a updateRoleViews cuando se carga la página
+        window.addEventListener('load', () => {
+            const userStr = localStorage.getItem('sector_mind_user');
+            if (userStr) {
+                try {
+                    currentUser = JSON.parse(userStr);
+                } catch (e) {
+                    console.error('Error parsing user:', e);
+                }
+            }
+            window.updateRoleViews();
+        });
+
+        // Función para geocodificar dirección usando Nominatim (OpenStreetMap)
+        async function geocodificarDireccion(direccion) {
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(direccion)}&format=json&limit=1&addressdetails=1&accept-language=es`;
+                const res = await fetch(url, {
+                    headers: { 'User-Agent': 'SectorMindAI/1.0 (Contact: admin@sectormind.com)' }
+                });
+                const data = await res.json();
+                
+                if (data && data.length > 0) {
+                    const coords = {
+                        latitud: parseFloat(data[0].lat),
+                        longitud: parseFloat(data[0].lon)
+                    };
+                    
+                    // Mostrar estado de éxito
+                    document.getElementById('geocode-status').classList.remove('hidden');
+                    document.getElementById('geocode-error').classList.add('hidden');
+                    document.getElementById('coords-display').textContent = `${coords.latitud.toFixed(5)}, ${coords.longitud.toFixed(5)}`;
+                    lucide.createIcons();
+                    
+                    return coords;
+                }
+            } catch (err) {
+                console.warn('Error geocodificando:', err);
+            }
+            
+            // Mostrar error
+            document.getElementById('geocode-status').classList.add('hidden');
+            document.getElementById('geocode-error').classList.remove('hidden');
+            lucide.createIcons();
+            return null;
+        }
+
+        // === Chat de descubrimiento en home (Rasa especializado en proximidad y huecos) ===
+        async function initDiscoveryChat() {
+            const container = document.getElementById('discovery-chat-messages');
+            if (!container) return;
+            const locInput = document.getElementById('location-input');
+            if (locInput) locInput.value = '';
+            // Usar un sender distinto en cada recarga para no arrastrar slots previos
+            discoverySenderId = (currentUser ? `cli-${currentUser.id}` : 'anon') + `-${Date.now()}`;
+            container.innerHTML = '';
+            addDiscoveryMsg('bot', '👋 ¡Hola! ¿Desde dónde sales para tu cita? Así te recomiendo negocios cerca y te ayudo a encontrar lo que necesitas (**peluquería**, **dentista**, **fisio**...).');
+            await checkDiscoveryRasaAvailability();
+        }
+
+        async function checkDiscoveryRasaAvailability() {
+            const loader = document.getElementById('discovery-loader');
+            const loaderStatus = document.getElementById('discovery-loader-status');
+            const status = document.getElementById('discovery-status');
+            
+            if (loader) loader.classList.remove('hidden');
+            if (status) status.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span> Conectando...';
+            if (loaderStatus) loaderStatus.textContent = 'Cargando modelo neuronal...';
+            
+            let isReady = false;
+            
+            while (!isReady) {
+                try {
+                    const res = await fetch(`${DISCOVERY_RASA_HEALTH}/version`, { cache: 'no-store' });
+                    if (res.ok) {
+                        isReady = true;
+                        if (status) status.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> IA lista';
+                        if (loaderStatus) loaderStatus.textContent = '✅ IA conectada';
+                        break;
+                    }
+                } catch (err) {
+                    // Seguir intentando
+                }
+                
+                // Esperar 2 segundos antes de reintentar
+                await new Promise(r => setTimeout(r, 2000));
+            }
+            
+            // Ocultar el loader solo cuando está listo
+            if (loader) loader.classList.add('hidden');
+        }
+
+        function sendDiscoveryQuickPrompt(texto) {
+            const input = document.getElementById('discovery-chat-input');
+            if (input) input.value = texto;
+            handleDiscoveryChatSubmit({ preventDefault: () => {}, message: texto });
+        }
+
+        async function handleDiscoveryChatSubmit(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            const input = document.getElementById('discovery-chat-input');
+            if (!input) return;
+            const msg = (e && e.message) ? e.message : input.value.trim();
+            if (!msg) return;
+            input.value = '';
+            addDiscoveryMsg('user', msg);
+            const typingId = showDiscoveryTyping();
+            await sendToDiscoveryRasa(msg, typingId);
+        }
+
+        function getDiscoveryMetadata() {
+            const locInput = document.getElementById('location-input');
+            const chatMessages = document.getElementById('discovery-chat-messages');
+            let savedLocation = null;
+            
+            // Buscar ubicación en los últimos mensajes del IA que contengan "Ubicación guardada:"
+            if (chatMessages) {
+                const allDivs = chatMessages.querySelectorAll('div');
+                for (let i = allDivs.length - 1; i >= 0; i--) {
+                    const text = allDivs[i].textContent || '';
+                    if (text.includes('Ubicación guardada:')) {
+                        const match = text.match(/Ubicación guardada: ([^\n]+)/);
+                        if (match) {
+                            savedLocation = match[1].trim();
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            return {
+                cliente_id: currentUser ? currentUser.id : null,
+                ubicacion_texto: savedLocation || (locInput?.value || '').trim() || null
+            };
+        }
+
+        async function sendToDiscoveryRasa(msg, typingId = null) {
+            const sender = currentUser ? `cli-${currentUser.id}` : (discoverySenderId || `anon-${Date.now()}`);
+            discoverySenderId = sender;
+            try {
+                const res = await fetch(DISCOVERY_RASA_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sender, message: msg, metadata: getDiscoveryMetadata() })
+                });
+                const data = await res.json();
+                if (typingId) {
+                    const t = document.getElementById(typingId);
+                    if (t) t.remove();
+                }
+                if (!Array.isArray(data) || data.length === 0) {
+                    handleDiscoveryBotResponse('¿Puedes ser más específico? Escribe tu ciudad y provincia (ej: Córdoba, Andalucía) o una dirección más detallada.');
+                    return;
+                }
+                data.forEach(r => { if (r.text) handleDiscoveryBotResponse(r.text); });
+            } catch (err) {
+                if (typingId) {
+                    const t = document.getElementById(typingId);
+                    if (t) t.remove();
+                }
+                handleDiscoveryBotResponse('No me pude conectar con la IA ahora mismo.');
+            }
+        }
+
+        function addDiscoveryMsg(sender, text) {
+            const container = document.getElementById('discovery-chat-messages');
+            if (!container) return;
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = sender === 'user' ? 'flex gap-3 flex-row-reverse fade-in' : 'flex gap-3 fade-in';
+            
+            // Detectar mapas antes de procesar
+            const mapMatch = text.match(/\[MAP:([^,]+),([^\]]+)\]/);
+            
+            if (mapMatch && sender === 'bot') {
+                const lat = parseFloat(mapMatch[1]);
+                const lon = parseFloat(mapMatch[2]);
+                text = text.replace(/\[MAP:[^,]+,[^\]]+\]/, '').trim();
+                
+                let sanitized = (text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+                sanitized = sanitized.replace(/\*\*(.+?)\*\*/g, '<span class="font-semibold">$1<\/span>');
+                sanitized = sanitized.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-indigo-600 underline hover:text-indigo-700">$1<\/a>');
+                
+                const mapId = `map-${Date.now()}`;
+                const msgContent = `<div class="bg-white text-slate-700 p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-sm"><div>${sanitized}</div><div id="${mapId}" class="mt-3 w-full h-48 rounded-lg border border-slate-300 shadow"></div></div>`;
+                wrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">IA</div>${msgContent}`;
+                
+                container.appendChild(wrapper);
+                container.scrollTop = container.scrollHeight;
+                
+                // Inicializar mapa con Leaflet (ya cargado en la página)
+                setTimeout(() => {
+                    const mapEl = document.getElementById(mapId);
+                    if (mapEl && window.L) {
+                        const map = L.map(mapId).setView([lat, lon], 15);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap contributors',
+                            maxZoom: 19
+                        }).addTo(map);
+                        L.marker([lat, lon]).addTo(map).bindPopup('Tu ubicación');
+                    }
+                }, 50);
+            } else if (sender === 'bot' && text.includes('[BUSINESS_CARD]')) {
+                // Procesar tarjetas de negocio con HTML y imágenes
+                const intro = text.substring(0, text.indexOf('[BUSINESS_CARD]')).trim();
+                const cards = text.match(/\[BUSINESS_CARD\]([\s\S]*?)\[\/BUSINESS_CARD\]/g) || [];
+                
+                let htmlContent = '';
+                if (intro) {
+                    let sanitizedIntro = intro.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+                    sanitizedIntro = sanitizedIntro.replace(/\*\*(.+?)\*\*/g, '<span class="font-semibold">$1<\/span>');
+                    htmlContent += `<div class="mb-2">${sanitizedIntro}</div>`;
+                }
+                
+                // Renderizar cada tarjeta sin escapar el HTML
+                cards.forEach(card => {
+                    // Extraer el id del negocio del contenido HTML
+                    const idMatch = card.match(/detalle\.html\?id=(\d+)/);
+                    const negocioId = idMatch ? idMatch[1] : null;
+                    const cardContent = card.replace(/\[BUSINESS_CARD\]/g, '').replace(/\[\/BUSINESS_CARD\]/g, '').trim();
+                    htmlContent += `<div class="mb-2 p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer" style="opacity:1;" ${negocioId ? `onclick=\"window.location.href='detalle.html?id=${negocioId}'\"` : ''}>
+                        ${cardContent}
+                    </div>`;
+                });
+                
+                wrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">IA</div><div class="bg-white text-slate-700 p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-sm flex-1">${htmlContent}</div>`;
+                container.appendChild(wrapper);
+                container.scrollTop = container.scrollHeight;
+            } else {
+                let sanitized = (text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+                sanitized = sanitized.replace(/\*\*(.+?)\*\*/g, '<span class="font-semibold">$1<\/span>');
+                sanitized = sanitized.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-indigo-600 underline hover:text-indigo-700">$1<\/a>');
+                
+                if (sender === 'user') {
+                    wrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">YO</div><div class="bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-none shadow-md text-sm max-w-[80%]">${sanitized}</div>`;
+                } else {
+                    wrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">IA</div><div class="bg-white text-slate-700 p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-sm max-w-[80%]">${sanitized}</div>`;
+                }
+                container.appendChild(wrapper);
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        function showDiscoveryTyping() {
+            const container = document.getElementById('discovery-chat-messages');
+            if (!container) return null;
+            const id = 'disc-typing-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'flex gap-3 fade-in';
+            div.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">IA</div><div class="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 flex gap-1 items-center"><div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div><div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div><div class="w-2 h-2 bg-slate-400 rounded-full typing-dot"></div></div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
 
         async function handleLogin(e) {
             e.preventDefault();
@@ -199,58 +651,159 @@
         function saveUserSession(userData) {
             localStorage.setItem('sector_mind_user', JSON.stringify(userData));
             currentUser = userData;
-            updateUI();
+            discoverySenderId = null;
+            initDiscoveryChat();
+            updateUIIndex();
+            window.updateRoleViews();
+            loadBusinesses();
         }
 
-        function updateUI() {
-            const userStr = localStorage.getItem('sector_mind_user');
-            const logoutBtn = document.getElementById('logout-btn');
-            if (userStr) {
-                currentUser = JSON.parse(userStr);
-                document.getElementById('auth-buttons').classList.add('hidden');
+        function updateUIIndex() {
+            if (currentUser) {
                 document.getElementById('user-menu').classList.remove('hidden');
                 document.getElementById('user-menu').classList.add('flex');
-                if (logoutBtn) logoutBtn.classList.remove('hidden');
+                document.getElementById('auth-buttons').classList.add('hidden');
                 document.getElementById('user-name-display').innerText = currentUser.nombre;
-                document.getElementById('user-avatar-display').src = currentUser.foto_perfil_base64 || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
-
-                // Mostrar vista apropiada según rol
-                if (currentUser.rol === 'propietario') {
-                    document.getElementById('cliente-header').classList.add('hidden');
-                    document.getElementById('cliente-view').classList.add('hidden');
-                    document.getElementById('propietario-view').classList.remove('hidden');
-                    loadMyBusinesses();
-                } else {
-                    document.getElementById('cliente-header').classList.remove('hidden');
-                    document.getElementById('cliente-view').classList.remove('hidden');
-                    document.getElementById('propietario-view').classList.add('hidden');
-                    loadBusinesses();
-                }
+                const avatar = currentUser.foto_perfil_base64 || `https://ui-avatars.com/api/?name=${currentUser.nombre}&background=random`;
+                document.getElementById('user-avatar-display').src = avatar;
+                document.getElementById('logout-btn').classList.remove('hidden');
             } else {
-                document.getElementById('auth-buttons').classList.remove('hidden');
                 document.getElementById('user-menu').classList.add('hidden');
-                document.getElementById('user-menu').classList.remove('flex');
-                if (logoutBtn) logoutBtn.classList.add('hidden');
-                // Vista por defecto para usuarios no logueados (cliente)
-                document.getElementById('cliente-header').classList.remove('hidden');
-                document.getElementById('cliente-view').classList.remove('hidden');
-                document.getElementById('propietario-view').classList.add('hidden');
-                loadBusinesses();
+                document.getElementById('auth-buttons').classList.remove('hidden');
+                document.getElementById('auth-buttons').classList.add('flex');
+                document.getElementById('logout-btn').classList.add('hidden');
             }
         }
 
-        async function loadBusinesses() {
+        async function loadBusinesses(lat = null, lon = null) {
             const grid = document.getElementById('business-grid');
             try {
-                const res = await fetch(`${API_URL}/negocios/`);
+                let url = `${API_URL}/negocios/`;
+                
+                // Solo agregar parámetros de ubicación si se proporcionan
+                if (lat !== null && lon !== null) {
+                    url += `?lat=${lat}&lon=${lon}`;
+                    console.log(`🔗 Buscando negocios cerca de: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+                } else {
+                    console.log("🔗 Cargando todos los negocios (sin filtro de ubicación)");
+                }
+                
+                const res = await fetch(url);
                 allNegocios = await res.json();
+                console.log("✅ Negocios cargados:", allNegocios.length);
+                
                 if(allNegocios.length === 0) {
                     grid.innerHTML = '<p class="text-center col-span-full text-slate-500">No hay negocios.</p>';
                     return;
                 }
                 generateFilters(allNegocios);
                 renderBusinessGrid(allNegocios);
-            } catch (err) { grid.innerHTML = '<p class="text-red-500 col-span-full">Error al conectar.</p>'; }
+            } catch (err) { 
+                console.error("❌ Error cargando negocios:", err);
+                grid.innerHTML = '<p class="text-red-500 col-span-full">Error al conectar.</p>'; 
+            }
+        }
+        
+        async function searchNearLocation() {
+            const locationInput = document.getElementById('location-input').value.trim();
+            
+            if (!locationInput) {
+                Swal.fire('Aviso', 'Por favor ingresa una ciudad o dirección', 'info');
+                return;
+            }
+            
+            Swal.fire({
+                title: 'Buscando ubicación...',
+                text: `Geocodificando: ${locationInput}`,
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            
+            try {
+                // Geocodificar la dirección ingresada
+                let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationInput)}&format=json&limit=3&accept-language=es`;
+                let res = await fetch(url, {
+                    headers: { 'User-Agent': 'SectorMindAI/1.0' }
+                });
+                let data = await res.json();
+                
+                // Si no encuentra nada, intentar con solo la última parte (ciudad)
+                if (!data || data.length === 0) {
+                    const parts = locationInput.split(',').map(p => p.trim());
+                    if (parts.length > 1) {
+                        const city = parts[parts.length - 1];
+                        console.log(`⚠️ Dirección completa no encontrada. Intentando solo con: ${city}`);
+                        
+                        Swal.update({
+                            title: 'Buscando ubicación...',
+                            text: `Probando con: ${city}`
+                        });
+                        
+                        url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)},España&format=json&limit=3&accept-language=es`;
+                        res = await fetch(url, {
+                            headers: { 'User-Agent': 'SectorMindAI/1.0' }
+                        });
+                        data = await res.json();
+                    }
+                }
+                
+                if (data && data.length > 0) {
+                    // Si hay múltiples resultados, mostrar opciones
+                    if (data.length > 1) {
+                        Swal.close();
+                        
+                        const options = data.slice(0, 3).map((result, idx) => 
+                            `<button onclick="selectLocation(${result.lat}, ${result.lon}, '${result.display_name.replace(/'/g, "\\'")}')" class="w-full text-left p-3 mb-2 border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition">${result.display_name}</button>`
+                        ).join('');
+                        
+                        Swal.fire({
+                            title: 'Selecciona una ubicación',
+                            html: `<div class="text-left">${options}</div>`,
+                            showConfirmButton: false,
+                            showCancelButton: true,
+                            cancelButtonText: 'Cancelar'
+                        });
+                    } else {
+                        const lat = parseFloat(data[0].lat);
+                        const lon = parseFloat(data[0].lon);
+                        
+                        Swal.close();
+                        await loadBusinesses(lat, lon);
+                        
+                        Swal.fire({
+                            title: '¡Búsqueda completada!',
+                            html: `<p>Mostrando negocios cerca de <strong>${data[0].display_name}</strong></p>`,
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    }
+                } else {
+                    Swal.fire({
+                        title: 'Ubicación no encontrada',
+                        html: '<p>No se pudo encontrar esa ubicación.</p><p class="text-sm text-slate-500 mt-2">💡 Intenta con:</p><ul class="text-left text-sm text-slate-600 mt-2 ml-4 list-disc"><li>Solo el nombre de la ciudad: "Madrid", "Sevilla"</li><li>Ciudad y provincia: "Estepa, Sevilla"</li><li>Dirección más genérica</li></ul>',
+                        icon: 'error',
+                        confirmButtonColor: '#4f46e5'
+                    });
+                }
+            } catch (err) {
+                console.error('Error al geocodificar:', err);
+                Swal.fire('Error', 'Error al buscar la ubicación', 'error');
+            }
+        }
+        
+        // Función auxiliar para seleccionar ubicación de múltiples resultados
+        async function selectLocation(lat, lon, displayName) {
+            Swal.close();
+            await loadBusinesses(lat, lon);
+            
+            Swal.fire({
+                title: '¡Búsqueda completada!',
+                html: `<p>Mostrando negocios cerca de <strong>${displayName}</strong></p>`,
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
         }
 
         async function loadMyBusinesses() {
@@ -272,10 +825,16 @@
                             sessionStorage.setItem('gestion_negocio_id', negocio.id);
                             window.location.href = '/gestion_negocio.html';
                         };
-                        const fotoSrc = negocio.foto_base64 || 'https://via.placeholder.com/400x200/6366f1/ffffff?text=' + encodeURIComponent(negocio.nombre);
+                        
+                        // Obtener estilo personalizado según tipo de negocio
+                        const style = getBusinessStyle(negocio.tipo_negocio || 'general');
+                        const photoSection = negocio.foto_base64 
+                            ? `<img src="${negocio.foto_base64}" alt="${negocio.nombre}" class="w-full h-full object-cover">`
+                            : `<div class="w-full h-full flex items-center justify-center ${style.bgColor}"><span class="text-5xl opacity-80">${style.emoji}</span></div>`;
+                        
                         card.innerHTML = `
                             <div class="h-48 overflow-hidden relative rounded-t-2xl">
-                                <img src="${fotoSrc}" alt="${negocio.nombre}" class="w-full h-full object-cover">
+                                ${photoSection}
                                 <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-indigo-600 shadow-sm capitalize">${negocio.tipo_negocio}</div>
                                 <button onclick="event.stopPropagation(); deleteBusiness(${negocio.id})" class="absolute top-4 left-4 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-sm transition" title="Eliminar negocio">
                                     <i data-lucide="trash" class="w-4 h-4"></i>
@@ -304,7 +863,7 @@
         function closeCreateBusinessModal() {
             document.getElementById('modal-create-business').classList.add('hidden');
             document.getElementById('business-name').value = '';
-            document.getElementById('business-type').value = 'general';
+            document.getElementById('business-type').value = 'dentista';
             document.getElementById('business-address').value = '';
             document.getElementById('business-description').value = '';
             document.getElementById('business-opening-morning').value = '';
@@ -324,12 +883,22 @@
         async function handleCreateBusiness(e) {
             e.preventDefault();
             
+            // Obtener coordenadas antes de enviar
+            const direccion = document.getElementById('business-address').value;
+            const coords = await geocodificarDireccion(direccion);
+            
             const formData = new FormData();
             formData.append('nombre', document.getElementById('business-name').value);
             formData.append('tipo_negocio', document.getElementById('business-type').value);
-            formData.append('direccion', document.getElementById('business-address').value);
+            formData.append('direccion', direccion);
             formData.append('descripcion', document.getElementById('business-description').value);
             formData.append('propietario_id', currentUser.id);
+            
+            // Agregar coordenadas si se obtuvieron
+            if (coords) {
+                formData.append('latitud', coords.latitud);
+                formData.append('longitud', coords.longitud);
+            }
             
             // Agregar horarios
             const openingMorning = document.getElementById('business-opening-morning').value;
@@ -464,6 +1033,16 @@
             applyFilters();
         }
 
+        // 🎨 Función para obtener color y emoji según tipo de negocio
+        function getBusinessStyle(tipoNegocio) {
+            const styles = {
+                'dentista': { bgColor: 'bg-blue-100', textColor: 'text-blue-600', emoji: '🦷', color: '#dbeafe' },
+                'peluqueria': { bgColor: 'bg-pink-100', textColor: 'text-pink-600', emoji: '✂️', color: '#fce7f3' },
+                'fisioterapia': { bgColor: 'bg-green-100', textColor: 'text-green-600', emoji: '🦴', color: '#dcfce7' }
+            };
+            return styles[tipoNegocio.toLowerCase()] || styles['dentista'];
+        }
+
         function applyFilters() {
             const term = currentSearchTerm.toLowerCase();
             const category = currentCategory.toLowerCase();
@@ -486,7 +1065,7 @@
             }
             negociosData.forEach(negocio => {
                 // Solo usar foto_base64, nunca foto_url
-                // Si no hay foto_base64, mostrar un dibujo/ilustración por defecto
+                // Si no hay foto_base64, mostrar emoji y color según tipo de negocio
                 const cardLink = document.createElement('a');
                 cardLink.className = "group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 cursor-pointer flex flex-col h-full fade-in block text-left";
 
@@ -500,13 +1079,10 @@
                 if (negocio.foto_base64) {
                     fotoHtml = `<img src="${negocio.foto_base64}" alt="${negocio.nombre}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">`;
                 } else {
-                    // Fondo de color e icono SVG inline
-                    fotoHtml = `<div class='w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-400' style='height: 100%; min-height: 12rem;'>
-                        <svg width="64" height="64" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" class="opacity-60">
-                          <rect x="3" y="7" width="18" height="13" rx="3" stroke="currentColor" stroke-width="1.5" fill="#6366f1"/>
-                          <circle cx="8.5" cy="13.5" r="2.5" fill="#fff"/>
-                          <path d="M21 17l-4.5-4.5a2 2 0 0 0-2.8 0L3 21" stroke="#fff" stroke-width="1.5"/>
-                        </svg>
+                    // Obtener estilo personalizado según tipo de negocio
+                    const style = getBusinessStyle(negocio.tipo_negocio || 'general');
+                    fotoHtml = `<div class='w-full h-full flex items-center justify-center ${style.bgColor}' style='height: 100%; min-height: 12rem;'>
+                        <span class='text-6xl opacity-80'>${style.emoji}</span>
                     </div>`;
                 }
 
@@ -518,9 +1094,12 @@
                     <div class="p-6 flex flex-col flex-grow">
                         <h3 class="text-xl font-bold text-slate-900 mb-2">${negocio.nombre}</h3>
                         <p class="text-slate-500 text-sm line-clamp-2 mb-4 flex-grow">${negocio.descripcion || 'Sin descripción.'}</p>
-                        <div class="flex items-center text-slate-400 text-xs pt-4 border-t border-slate-100 mt-auto">
-                            <i data-lucide="map-pin" class="w-4 h-4 mr-1"></i>
-                            <span>${negocio.direccion || 'Ubicación no especificada'}</span>
+                        <div class="flex items-center justify-between text-slate-400 text-xs pt-4 border-t border-slate-100 mt-auto">
+                            <div class="flex items-center">
+                                <i data-lucide="map-pin" class="w-4 h-4 mr-1"></i>
+                                <span>${negocio.direccion || 'Ubicación no especificada'}</span>
+                            </div>
+                            ${negocio.distancia_km !== null && negocio.distancia_km !== undefined ? `<span class="text-indigo-600 font-semibold ml-2">📍 ${negocio.distancia_km.toFixed(1)} km</span>` : ''}
                         </div>
                     </div>
                 `;
@@ -533,6 +1112,9 @@
 
         function logout() {
             localStorage.removeItem('sector_mind_user');
+            currentUser = null;
+            updateUIIndex();
+            window.updateRoleViews();
             window.location.href = '/';
         }
 
@@ -542,12 +1124,275 @@
         });
 
         window.onload = () => {
-            updateUI();
+            updateUIIndex();
+            window.updateRoleViews();
+            loadBusinesses();
+            setupDiscoveryVoiceRecognition();
+            initDiscoveryChat();
             // Inicializar iconos después de que todo esté cargado
             setTimeout(() => {
                 lucide.createIcons();
             }, 100);
         };
+
+        // === DISCOVERY VOICE RECOGNITION ===
+        let discoveryRecognition = null;
+        let discoveryIsListening = false;
+        let discoveryIsVoiceMode = false;
+
+        function setupDiscoveryVoiceRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                return;
+            }
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            discoveryRecognition = new SpeechRecognition();
+            discoveryRecognition.lang = 'es-ES';
+            discoveryRecognition.continuous = false;
+            discoveryRecognition.onstart = () => {
+                discoveryIsListening = true;
+                document.getElementById('discovery-voice-status').innerText = "Escuchando...";
+                document.getElementById('discovery-mic-bg').classList.add('mic-pulse');
+                document.getElementById('discovery-mic-bg').classList.add('opacity-100');
+            };
+            discoveryRecognition.onend = () => {
+                discoveryIsListening = false;
+                document.getElementById('discovery-voice-status').innerText = "Pulsa para hablar";
+                document.getElementById('discovery-mic-bg').classList.remove('mic-pulse');
+                document.getElementById('discovery-mic-bg').classList.remove('opacity-100');
+            };
+            discoveryRecognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('discovery-voice-transcript').innerText = `"${transcript}"`;
+                sendToDiscoveryRasa(transcript);
+            };
+        }
+
+        function switchDiscoveryMode(mode) {
+            const chatUI = document.getElementById('discovery-chat-interface');
+            const voiceUI = document.getElementById('discovery-voice-interface');
+            const btnChat = document.getElementById('disc-tab-chat');
+            const btnVoice = document.getElementById('disc-tab-voice');
+
+            if (mode === 'chat') {
+                discoveryIsVoiceMode = false;
+                chatUI.classList.remove('hidden');
+                voiceUI.classList.add('hidden');
+                btnChat.classList.add('bg-indigo-600', 'text-white', 'shadow');
+                btnChat.classList.remove('text-slate-400');
+                btnVoice.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+                btnVoice.classList.add('text-slate-400');
+                if (discoveryIsListening && discoveryRecognition) discoveryRecognition.stop();
+            } else {
+                discoveryIsVoiceMode = true;
+                chatUI.classList.add('hidden');
+                voiceUI.classList.remove('hidden');
+                btnVoice.classList.add('bg-indigo-600', 'text-white', 'shadow');
+                btnVoice.classList.remove('text-slate-400');
+                btnChat.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+                btnChat.classList.add('text-slate-400');
+            }
+        }
+
+        function toggleDiscoveryVoice() {
+            if (!discoveryRecognition) return;
+            if (discoveryIsListening) discoveryRecognition.stop();
+            else { window.speechSynthesis.cancel(); discoveryRecognition.start(); }
+        }
+
+        function speakDiscoveryText(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'es-ES';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Modificar handleBotResponse para incluir voz en discovery
+        function handleDiscoveryBotResponse(text) {
+            // Detectar si es una redirección automática
+            if (text.startsWith('[REDIRECT:')) {
+                const url = text.substring(10, text.length - 1); // Extraer URL entre [REDIRECT: y ]
+                window.location.href = url;
+                return;
+            }
+            
+            addDiscoveryMsg('bot', text);
+            if (discoveryIsVoiceMode) {
+                const voiceResBox = document.getElementById('discovery-voice-response-box');
+                document.getElementById('discovery-voice-response-text').innerText = text;
+                voiceResBox.classList.remove('hidden');
+                speakDiscoveryText(text);
+            }
+        }
+        let mapInstance = null;
+        let mapMarker = null;
+        let selectedLat = null;
+        let selectedLon = null;
+        let currentMapMode = null;
+
+        async function openMapModal(mode) {
+            currentMapMode = mode;
+            selectedLat = null;
+            selectedLon = null;
+            document.getElementById('map-modal').classList.remove('hidden');
+            
+            // Esperar a que el DOM se renderice
+            setTimeout(() => {
+                initializeMap();
+            }, 100);
+        }
+
+        function closeMapModal() {
+            document.getElementById('map-modal').classList.add('hidden');
+            if (mapInstance) {
+                mapInstance.remove();
+                mapInstance = null;
+            }
+        }
+
+        async function initializeMap() {
+            if (mapInstance) return;
+            
+            // Crear mapa
+            mapInstance = L.map('map-container').setView([40.4168, -3.7038], 13);
+            
+            // Agregar tiles de OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(mapInstance);
+            
+            // Intentar obtener ubicación actual del usuario
+            if (navigator.geolocation) {
+                Swal.fire({
+                    title: 'Obteniendo tu ubicación...',
+                    text: 'Para centrar el mapa más cerca de ti',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        
+                        Swal.close();
+                        mapInstance.setView([lat, lon], 13);
+                        console.log(`📍 Mapa centrado en ubicación actual: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+                    },
+                    (error) => {
+                        Swal.close();
+                        console.log('⚠️ No se pudo obtener ubicación, usando Madrid por defecto');
+                        // El mapa ya está centrado en Madrid
+                    },
+                    { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+                );
+            }
+            
+            // Evento para hacer click en el mapa
+            mapInstance.on('click', async (e) => {
+                const lat = e.latlng.lat;
+                const lon = e.latlng.lng;
+                
+                selectedLat = lat;
+                selectedLon = lon;
+                
+                // Remover marcador anterior
+                if (mapMarker) {
+                    mapInstance.removeLayer(mapMarker);
+                }
+                
+                // Agregar nuevo marcador
+                mapMarker = L.marker([lat, lon]).addTo(mapInstance);
+                
+                // Hacer reverse geocoding
+                try {
+                    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=es`;
+                    const res = await fetch(url, {
+                        headers: { 'User-Agent': 'SectorMindAI/1.0' }
+                    });
+                    const data = await res.json();
+                    
+                    if (data && data.address) {
+                        const addr = data.address;
+                        const street = addr.road || addr.street || addr.pedestrian || addr.path || '';
+                        const city = addr.city || addr.town || addr.village || addr.municipality || '';
+                        const parts = [];
+                        
+                        if (street) {
+                            if (addr.house_number) {
+                                parts.push(`${street} ${addr.house_number}`);
+                            } else {
+                                parts.push(street);
+                            }
+                        }
+                        if (city) parts.push(city);
+                        
+                        const cleanAddress = parts.join(', ') || data.display_name;
+                        document.getElementById('map-selected-address').innerHTML = `📍 <strong>${cleanAddress}</strong> (${lat.toFixed(5)}, ${lon.toFixed(5)})`;
+                    }
+                } catch (err) {
+                    console.error('Error en reverse geocoding:', err);
+                    document.getElementById('map-selected-address').innerHTML = `📍 <strong>Coordenadas: ${lat.toFixed(5)}, ${lon.toFixed(5)}</strong>`;
+                }
+            });
+        }
+
+        async function confirmMapSelection() {
+            if (selectedLat === null || selectedLon === null) {
+                Swal.fire('Aviso', 'Debes seleccionar una ubicación haciendo click en el mapa', 'warning');
+                return;
+            }
+            
+            // Hacer reverse geocoding para obtener dirección
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?lat=${selectedLat}&lon=${selectedLon}&format=json&accept-language=es`;
+                const res = await fetch(url, {
+                    headers: { 'User-Agent': 'SectorMindAI/1.0' }
+                });
+                const data = await res.json();
+                
+                if (data && data.address) {
+                    const addr = data.address;
+                    const street = addr.road || addr.street || addr.pedestrian || addr.path || '';
+                    const city = addr.city || addr.town || addr.village || addr.municipality || '';
+                    const parts = [];
+                    
+                    if (street) {
+                        if (addr.house_number) {
+                            parts.push(`${street} ${addr.house_number}`);
+                        } else {
+                            parts.push(street);
+                        }
+                    }
+                    if (city) parts.push(city);
+                    
+                    const cleanAddress = parts.join(', ') || data.display_name;
+                    
+                    // Llenar los campos según el modo
+                    if (currentMapMode === 'create') {
+                        document.getElementById('business-address').value = cleanAddress;
+                    } else if (currentMapMode === 'edit') {
+                        document.getElementById('edit-business-address').value = cleanAddress;
+                        document.getElementById('edit-geocode-status').classList.remove('hidden');
+                        document.getElementById('edit-geocode-error').classList.add('hidden');
+                        document.getElementById('edit-coords-display').textContent = `${selectedLat.toFixed(5)}, ${selectedLon.toFixed(5)}`;
+                    }
+                    
+                    closeMapModal();
+                    Swal.fire({
+                        title: '¡Ubicación confirmada!',
+                        html: `<p><strong>${cleanAddress}</strong></p><p class="text-xs text-slate-500 mt-2">Coordenadas: ${selectedLat.toFixed(5)}, ${selectedLon.toFixed(5)}</p>`,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                Swal.fire('Error', 'No se pudo obtener la dirección', 'error');
+            }
+        }
 
         // También inicializar iconos cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', () => {
@@ -582,13 +1427,25 @@
                         <option value="dentista">Dentista</option>
                         <option value="peluqueria">Peluquería</option>
                         <option value="fisioterapia">Fisioterapia</option>
-                        <option value="general">General</option>
                     </select>
                 </div>
                 
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-2">Dirección <span class="text-red-500">*</span></label>
-                    <input type="text" id="business-address" required class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                    <div class="flex gap-2">
+                        <input type="text" id="business-address" required placeholder="Ej: Gran Vía 123, Madrid" class="flex-1 p-3 border border-slate-300 rounded-xl outline-none focus:border-indigo-500">
+                        <button type="button" onclick="openMapModal('create')" title="Seleccionar en mapa" class="bg-indigo-100 text-indigo-600 hover:bg-indigo-200 px-3 py-2 rounded-xl transition">
+                            <i data-lucide="map" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div id="geocode-status" class="mt-2 text-xs text-slate-500 flex items-center gap-2 hidden">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-green-600"></i>
+                        <span>Ubicación validada (<span id="coords-display"></span>)</span>
+                    </div>
+                    <div id="geocode-error" class="mt-2 text-xs text-orange-600 flex items-center gap-2 hidden">
+                        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                        <span>No se pudo geocodificar. El negocio se creará sin coordenadas.</span>
+                    </div>
                 </div>
                 
                 <div>
@@ -678,6 +1535,31 @@
                     <i data-lucide="plus" class="w-5 h-5"></i> Crear Negocio
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Selector de Ubicación en Mapa -->
+    <div id="map-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+            <div class="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center">
+                <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Selecciona la ubicación en el mapa</h3>
+                    <p class="text-xs text-slate-500 mt-1">Haz click en el mapa para marcar la ubicación del negocio</p>
+                </div>
+                <button onclick="closeMapModal()" class="text-slate-400 hover:text-slate-600 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div id="map-container" class="flex-grow" style="height: 500px;"></div>
+            
+            <div class="border-t border-slate-200 p-6 bg-slate-50 flex justify-between items-center">
+                <div id="map-selected-address" class="text-sm text-slate-700">📍 Haz click en el mapa para seleccionar una ubicación...</div>
+                <div class="flex gap-3">
+                    <button onclick="closeMapModal()" class="px-6 py-2 border border-slate-300 rounded-xl font-medium text-slate-700 hover:bg-slate-100 transition">Cancelar</button>
+                    <button onclick="confirmMapSelection()" class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition">Confirmar ubicación</button>
+                </div>
+            </div>
         </div>
     </div>
 </body>

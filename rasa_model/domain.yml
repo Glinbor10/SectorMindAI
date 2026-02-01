@@ -20,6 +20,7 @@ intents:
   - inform
   - pedir_mas_opciones
   - nlu_fallback
+  - informar_ubicacion
 
 entities:
   - negocio
@@ -47,6 +48,12 @@ slots:
       - dentista
       - peluqueria
       - fisioterapia
+    influence_conversation: true
+    mappings:
+      - type: custom
+
+  ubicacion_texto:
+    type: text
     influence_conversation: true
     mappings:
       - type: custom

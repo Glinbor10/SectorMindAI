@@ -40,18 +40,28 @@ def client(app):
 def db_conn(app):
     """Conexión a PostgreSQL para tests (usa BD de test en Docker)."""
     with app.app_context():
+        # Conectar a la BD de tests
         conn = get_db_connection()
         
         # Limpiar tablas antes del test (sin DROP, solo DELETE para preservar schema)
         cursor = conn.cursor()
-        cursor.execute("TRUNCATE TABLE citas, servicios, horarios_negocio, negocios, usuarios CASCADE")
-        conn.commit()
+        try:
+            cursor.execute("TRUNCATE TABLE citas, servicios, horarios_negocio, negocios, usuarios CASCADE")
+            conn.commit()
+        except Exception as e:
+            print(f"⚠️ Warning al limpiar tablas: {e}")
+            conn.rollback()
         
         yield conn
         
         # Cleanup después del test
-        cursor.execute("TRUNCATE TABLE citas, servicios, horarios_negocio, negocios, usuarios CASCADE")
-        conn.commit()
+        try:
+            cursor.execute("TRUNCATE TABLE citas, servicios, horarios_negocio, negocios, usuarios CASCADE")
+            conn.commit()
+        except Exception as e:
+            print(f"⚠️ Warning al limpiar tablas post-test: {e}")
+            conn.rollback()
+        
         cursor.close()
         conn.close()
 

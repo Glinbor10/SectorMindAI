@@ -170,19 +170,92 @@
 - 0 falsos positivos en búsqueda de clientes
 - Producción estable ✅
 
+---
+
+### **v0.6.0 - Geolocalización de Negocios y Búsqueda por Proximidad**
+**Fecha:** Enero, 2026
+
+**Logros:**
+- ✅ Sistema de geolocalización completo: base de datos, backend, frontend
+- ✅ Fórmula Haversine para cálculo de distancia en tiempo real
+- ✅ Integración con Nominatim (OpenStreetMap) para geocodificación
+- ✅ Geolocalización del navegador con solicitud de permisos (30 segundos timeout)
+- ✅ Visualización de distancias en tarjetas de negocios
+- ✅ 3 métodos de entrada de ubicación (manual, GPS, reverse geocoding)
+- ✅ Suite de 6 tests de geolocalización (100% passing)
+- ✅ Test data con 3 negocios reales españoles (Madrid, Barcelona, Valencia)
+- ✅ Documentación técnica en `docs/GEOLOCALIZACION.md`
+
+**Retos Resueltos:**
+1. **Permiso de Geolocalización:** Implementación correcta de `navigator.geolocation` con UI feedback (⏳ esperando)
+2. **Precision de Coordenadas:** DECIMAL(10,8) y DECIMAL(11,8) para ~1.1 cm de precisión geográfica
+3. **Line Endings en Docker:** Conversión CRLF→LF en `docker-entrypoint.sh`
+4. **Fixtures Únicos en Tests:** Cambio de `time.time()` a `uuid.uuid4()` para evitar colisiones
+5. **Rate Limiting Nominatim:** User-Agent requerido y respeto de límite ~1 req/segundo
+
+**Métricas:**
+- 116 tests totales: 100% passing (110 backend + 6 geo + 12 Rasa)
+- Distancia Madrid→Valencia: 302.56 km (Haversine vs ~302 km real)
+- Distancia Madrid→Barcelona: 505.10 km (Haversine vs ~505 km real)
+- 3 ciudades españolas con coordenadas reales validadas
+- 0 bugs en Docker post-fix line endings
+- Producción estable ✅
 
 ---
 
-## 💻 Flujo Actual de Desarrollo (v0.5.0)
+### **v0.7.0 - Interfaz Adaptativa por Rol y Chat Discovery**
+**Fecha:** Enero 8, 2026
 
-### Flujo de trabajo como propietario
+**Logros:**
+- ✅ Dos vistas separadas según rol:
+   - **Cliente:** Header + búsqueda + grid de negocios + chat Discovery (Rasa Discovery, puerto 5006)
+   - **Propietario:** Panel "Tus Negocios" sin chat ni búsqueda
+- ✅ Conmutación instantánea sin recargar página al iniciar/cerrar sesión
+- ✅ Refactor de autenticación en `index.html` (sin dependencia de `app.js`)
+- ✅ Carga dinámica según rol: `loadBusinesses()` (cliente) y `loadMyBusinesses()` (propietario)
+- ✅ Nuevo slogan orientado a accesibilidad: "Accesible y fácil, pensado para mayores."
+- ✅ Separación de modelos Rasa:
+   - **Rasa Discovery (nuevo):** Descubrimiento de negocios por ubicación/tipo (5006)
+   - **Rasa Model (existente):** Gestión de citas completas (5005)
 
-1. Inicia sesión como propietario.
-2. Gestiona servicios, horarios y clientes desde la plataforma.
-3. Accede a la gestión de citas y visualiza el historial de clientes.
-4. El bot de IA responde a preguntas sobre el negocio, servicios y urgencias específicas.
-5. Las reservas y consultas se gestionan de forma centralizada usando Rasa y metadatos.
+**Retos Resueltos:**
+1) Conflicto de variable `currentUser` entre `index.html` y `app.js` → scopes separados y sincronización por `localStorage`.
+2) Cambio de rol sin recarga → `window.updateRoleViews()` y `saveUserSessionIndex()` actualizan UI al instante.
+3) Carga de negocios del propietario → `loadMyBusinesses()` se ejecuta al activar modo propietario.
+4) Logout limpia vistas y estado → se vuelven a mostrar elementos de cliente.
+
+**Métricas:**
+- 116 tests totales (backend + geolocalización + Rasa Model): 100% passing.
+- Cambio de rol < 50 ms percibido.
+- 0 conflictos de variables globales tras refactor.
+
+
 ---
+
+### **v0.7.1 - Mejoras en Datos de Muestra y Configuración**
+**Fecha:** Enero 15, 2026
+
+**Logros:**
+- ✅ Expansión de datos de muestra: Múltiples entradas para peluquerías, fisioterapias y dentistas
+- ✅ Archivo `.env.example` con todas las variables de entorno necesarias
+- ✅ README.md actualizado con instrucciones completas de configuración
+- ✅ Limpieza de migraciones SQL: Filtrado de statements vacíos y comentarios
+- ✅ Mayor robustez en la ejecución de archivos de migración
+
+**Retos Resueltos:**
+1) Datos de muestra limitados → Expansión de `manage_db.py` con 27+ negocios adicionales
+2) Configuración compleja → `.env.example` y README actualizado con guía paso a paso
+3) Migraciones frágiles → `migrate.py` mejorado para manejar SQL con múltiples statements
+
+**Métricas:**
+- 30 negocios de muestra (10 por tipo principal)
+- 0 errores en migraciones post-limpieza
+- Configuración simplificada para nuevos desarrolladores
+
+
+---
+
+
 
 ## 🚀 Roadmap General
 
@@ -194,8 +267,11 @@
 | **v0.3.0** | Dic 6, 2025 | Testing Comprehensivo |
 | **v0.4.0** |  Dic 20, 2025 | Profesionalización Docker |
 | **v0.5.0** | Dic/Ene, 2026 | Refactorización Rasa + Flujo Propietario |
-| **v0.5.1** | (previsto) Feb, 2026 | Contexto Profundo |
-| **v0.6.0** | (previsto) Ene, 2026 | Reservas por Voz correctamente |
+| **v0.6.0** | Ene 6, 2026 | Geolocalización de Negocios ✅ |
+| **v0.7.0** | Ene 8, 2026 | Interfaz Adaptativa + Rasa Discovery ✅ |
+| **v0.7.1** | Ene 15, 2026 | Datos de Muestra + Configuración ✅ |
+| **v0.7.2** | Ene 17, 2026 | Bot Discovery Mejorado + Redirección + Fotos |
+| **v0.7.3** | Ene 29, 2026 | Fotos únicas negocios + Rasa Discovery mejorado ✅ |
 | **v1.0.0** | (previsto) Feb/Mar, 2026 | SaaS Multi-Tenant |
 
 ---
@@ -209,9 +285,21 @@ Cada release debe cumplir:
 
 ---
 
-**Actualizado:** 20 Diciembre 2025
-**Versión Actual:** v0.5.0 (Refactorización Rasa + Propietario)  
-**Estado:** ✅ Refactorización en marcha y flujo propietario completo
+**Actualizado:** 29 Enero 2026
+**Versión Actual:** v0.7.3 (Fotos únicas negocios + Rasa Discovery mejorado)
+**Estado:** ✅ 128 tests passing (backend + geo + Rasa Model + Discovery)
+### **v0.7.3 - Fotos únicas y mejoras en Rasa Discovery**
+**Fecha:** Enero 29, 2026
+
+**Logros:**
+- ✅ Cada negocio de ejemplo ahora tiene una foto única asociada, mejorando la experiencia visual y la diferenciación en la interfaz.
+- ✅ Mejoras en el modelo Rasa Discovery: mayor precisión en intents, mejor manejo de sinónimos y expresiones ambiguas, respuestas más naturales.
+- ✅ Ajustes en frontend para mostrar correctamente las fotos y evitar duplicados.
+
+**Métricas:**
+- 128 tests: 100% passing (backend + geo + Rasa Model + Discovery)
+
+---
   - 24 intents iniciales (distribuidos entre dentista, peluquería, fisioterapia)
   - Extracción de entities (servicios, fechas, tipos de urgencia)
 - **Rasa Actions Custom:** 7 acciones personalizadas ("urgencias" que necesiten contexto) de cata tipo de negocio para conectar NLU con lógica de negocio
