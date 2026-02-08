@@ -3,6 +3,7 @@ Acciones para el bot de descubrimiento (búsqueda escalable por tipo dinámico).
 """
 import os
 import re
+import unicodedata
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from typing import Any, Dict, List, Optional, Tuple
@@ -85,6 +86,16 @@ class ActionDiscoveryBuscarNegocios(Action):
             # (se evalúa ANTES que saludos para no perder opciones)
             # ========================================
             if opciones_negocio and isinstance(opciones_negocio, list):
+                def _norm_text(value: str) -> str:
+                    if not value:
+                        return ""
+                    value = value.lower()
+                    value = unicodedata.normalize("NFD", value)
+                    value = "".join(ch for ch in value if unicodedata.category(ch) != "Mn")
+                    value = re.sub(r"[^a-z0-9\s]", " ", value)
+                    return re.sub(r"\s+", " ", value).strip()
+
+                matched = False
                 try:
                     # Buscar número en el mensaje (ej: "1", "el 1", "la 1", "número 1")
                     match = re.search(r'\b(\d{1,2})\b', mensaje)
@@ -102,36 +113,40 @@ class ActionDiscoveryBuscarNegocios(Action):
                                 SlotSet("opciones_negocio", None),
                                 SlotSet("ubicacion_texto", ubicacion_actual or slot_ubicacion),
                             ]
-
-                    # Detectar números en palabras (uno, dos, tres, etc.)
-                    palabras_num = {
-                        "uno": 1, "una": 1, "un": 1,
-                        "dos": 2,
-                        "tres": 3,
-                        "cuatro": 4,
-                        "cinco": 5,
-                        "seis": 6,
-                        "siete": 7,
-                        "ocho": 8,
-                        "nueve": 9,
-                        "diez": 10,
-                    }
-                    match_palabra = re.search(r"\b(un|una|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\b", mensaje)
-                    if match_palabra:
-                        val = palabras_num.get(match_palabra.group(1))
-                        if val:
-                            idx = val - 1
-                            if 0 <= idx < len(opciones_negocio):
-                                seleccionado = opciones_negocio[idx]
-                                negocio_id = seleccionado.get("id")
-                                link = f"detalle.html?id={negocio_id}" if negocio_id is not None else "detalle.html"
-                                dispatcher.utter_message(text=f"[REDIRECT:{link}]")
-                                return [
-                                    SlotSet("opciones_negocio", None),
-                                    SlotSet("ubicacion_texto", ubicacion_actual or slot_ubicacion),
-                                ]
+                    # Detectar nombre del negocio en el mensaje (parcial o fuzzy)
+                    mensaje_norm = _norm_text(mensaje)
+                    if mensaje_norm:
+                        best_score = 0
+                        best_id = None
+                        for opcion in opciones_negocio:
+                            nombre = opcion.get("nombre") or ""
+                            nombre_norm = _norm_text(nombre)
+                            if not nombre_norm:
+                                continue
+                            if nombre_norm in mensaje_norm:
+                                best_id = opcion.get("id")
+                                best_score = 100
+                                break
+                            score = fuzz.token_set_ratio(mensaje_norm, nombre_norm)
+                            if score > best_score:
+                                best_score = score
+                                best_id = opcion.get("id")
+                        if best_id is not None and best_score >= 80:
+                            link = f"detalle.html?id={best_id}"
+                            dispatcher.utter_message(text=f"[REDIRECT:{link}]")
+                            matched = True
+                    if matched:
+                        return [
+                            SlotSet("opciones_negocio", None),
+                            SlotSet("ubicacion_texto", ubicacion_actual or slot_ubicacion),
+                        ]
                 except Exception:
                     pass
+
+                dispatcher.utter_message(
+                    text="👉 DI EL NÚMERO (1,2,3,4,5...) o el nombre del negocio que quieres."
+                )
+                return []
 
             # ========================================
             # FLUJO 3: SALUDOS O CAMBIO DE UBICACIÓN
@@ -186,7 +201,7 @@ class ActionDiscoveryBuscarNegocios(Action):
                         print(f"⚠️ Error en geocodificación: {e}")
 
                     dispatcher.utter_message(
-                        text="❌ No pude localizar esa ubicación. ¿Puedes ser más específico? Escribe tu **ciudad y provincia** (ej: Córdoba, Andalucía) o una **dirección completa** (calle, número, ciudad)."
+                        text="❌ No pude localizar esa ubicación. ¿Puedes ser más específico? Di tu **ciudad y provincia** (ej: Córdoba, Andalucía) o una **dirección completa** (calle, número, ciudad)."
                     )
                     return [SlotSet("ubicacion_texto", None)]
 
@@ -275,13 +290,16 @@ class ActionDiscoveryBuscarNegocios(Action):
             else:
                 # Detectar números en palabras básicas (es) hasta cinco
                 palabras_num = {
-                    "uno": 1, "una": 1, "dos": 2, "tres": 3, "cuatro": 4,
+                    "uno": 1, "una": 1,
+                    "dos": 2,
+                    "tres": 3,
+                    "cuatro": 4,
                     "cinco": 5
                 }
-                for w, val in palabras_num.items():
-                    if f" {w} " in f" {mensaje} ":
-                        max_items = min(val, 5)
-                        break
+                patron = r"\b(" + "|".join(palabras_num.keys()) + r")\b"
+                match = re.search(patron, mensaje)
+                if match:
+                    max_items = min(palabras_num[match.group(1)], 5)
 
             mensaje = self._formatear_respuesta(negocios[:max_items], detalles, busca_hoy or busca_manana, tipo_detectado)
             lista_opciones = [
@@ -298,7 +316,7 @@ class ActionDiscoveryBuscarNegocios(Action):
             import traceback
             traceback.print_exc()
             dispatcher.utter_message(
-                text="⚠️ Hubo un problema. Por favor, intenta de nuevo o escribe tu ubicación de otra forma."
+                text="⚠️ Hubo un problema. Por favor, intenta de nuevo o di tu ubicación de otra forma."
             )
             return [SlotSet("ubicacion_texto", None)]
 
@@ -772,7 +790,7 @@ class ActionDiscoveryBuscarNegocios(Action):
         lineas = []
         for idx, n in enumerate(negocios, start=1):
             distancia = n.get("distancia_km")
-            etiqueta_dist = f" \u00b7 📍 {distancia:.1f} km" if distancia is not None else ""
+            etiqueta_dist = f" · 📍 {distancia:.1f} km" if distancia is not None else ""
             tipo_txt = (n.get('tipo_negocio') or '').capitalize()
             icono = self._emoji_tipo(n.get('tipo_negocio'))
             
@@ -784,21 +802,22 @@ class ActionDiscoveryBuscarNegocios(Action):
                 # Placeholder con emoji si no hay foto
                 foto_html = f'<div style="width:100%; height:120px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:3rem; margin-bottom:8px;">{icono}</div>'
             
-            # Construir línea con foto + info + link
+            # Construir línea con foto + info + link (HTML puro, sin markdown)
             negocio_id = n.get("id")
             nombre = n.get('nombre', 'Negocio')
             
             linea = f"""[BUSINESS_CARD]
 {foto_html}
-**{idx}.** <a href="detalle.html?id={negocio_id}" style="text-decoration:none; color:#4f46e5; font-weight:bold;">{icono} {nombre}</a> ({tipo_txt}){etiqueta_dist}"""
+<div style="font-size:0.95rem; line-height:1.4;">
+<span style="font-weight:bold; color:#1e293b;">{idx}. {icono} <a href="detalle.html?id={negocio_id}" style="text-decoration:none; color:#4f46e5; font-weight:bold; cursor:pointer;">{nombre}</a></span> <span style="color:#666; font-size:0.85rem;">({tipo_txt}){etiqueta_dist}</span>"""
             
             if busca_hoy and n.get("id") in detalles:
                 slot = detalles[n["id"]]["slot"]
                 hora = slot.split(" ")[1][:5] if " " in slot else slot[-5:]
                 servicio = detalles[n["id"]].get("servicio", "servicio")
-                linea += f"<br><small style='color:#666;'>{servicio} a las {hora}</small>"
+                linea += f"<br><span style='color:#666; font-size:0.85rem;'>{servicio} a las {hora}</span>"
             
-            linea += "[/BUSINESS_CARD]"
+            linea += "</div>[/BUSINESS_CARD]"
             lineas.append(linea)
         
         return intro + "\n" + "\n".join(lineas)

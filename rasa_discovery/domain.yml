@@ -49,7 +49,7 @@ responses:
   utter_goodbye:
     - text: "¡Hasta pronto! Vuelve cuando necesites encontrar un negocio."
   utter_fallback:
-    - text: "¿Puedes ser más específico? Escribe tu **ciudad y provincia** (ej: Córdoba, Andalucía) o el **tipo de negocio** que buscas (peluquería, dentista, fisio...)."
+    - text: "¿Puedes ser más específico? Di tu **ciudad y provincia** (ej: Córdoba, Andalucía) o el **tipo de negocio** que buscas (peluquería, dentista, fisio...)."
 
 actions:
   - action_discovery_buscar_negocios

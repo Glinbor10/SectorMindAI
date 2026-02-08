@@ -240,18 +240,30 @@
                     </div>
 
                     <!-- Voice interface -->
-                    <div id="discovery-voice-interface" class="hidden flex flex-col flex-grow h-full bg-slate-50 items-center justify-center text-center p-6 relative">
-                        <div class="relative group cursor-pointer" onclick="toggleDiscoveryVoice()">
-                            <div id="discovery-mic-bg" class="absolute inset-0 bg-indigo-500 rounded-full opacity-0 transition-opacity duration-300"></div>
-                            <div class="w-24 h-24 bg-white border-4 border-indigo-100 rounded-full flex items-center justify-center shadow-xl relative z-10 transition-transform transform group-hover:scale-105 active:scale-95">
-                                <i data-lucide="mic" id="discovery-mic-icon" class="w-10 h-10 text-indigo-600"></i>
+                    <div id="discovery-voice-interface" class="hidden flex flex-col flex-grow h-full bg-slate-50 relative">
+                        <!-- Voice control area -->
+                        <div id="discovery-voice-panel" class="relative z-[80] flex flex-col flex-shrink-0 items-center justify-center text-center p-6 border-b border-slate-100 bg-slate-50/95">
+                            <div class="relative group cursor-pointer" onclick="toggleDiscoveryVoice()">
+                                <div id="discovery-mic-bg" class="absolute inset-0 bg-indigo-500 rounded-full opacity-0 transition-opacity duration-300"></div>
+                                <div class="w-24 h-24 bg-white border-4 border-indigo-100 rounded-full flex items-center justify-center shadow-xl relative z-10 transition-transform transform group-hover:scale-105 active:scale-95">
+                                    <i data-lucide="mic" id="discovery-mic-icon" class="w-10 h-10 text-indigo-600"></i>
+                                </div>
                             </div>
+                            <h3 id="discovery-voice-status" class="mt-8 text-xl font-bold text-slate-800">Pulsa para hablar</h3>
+                            <p id="discovery-voice-transcript" class="mt-2 text-slate-500 text-sm max-w-xs mx-auto h-12">Estoy listo para escucharte...</p>
+                            <div id="discovery-voice-bubble" class="hidden mt-4 w-full max-w-sm bg-white text-slate-700 text-sm p-3 rounded-2xl shadow-sm border border-slate-200"></div>
                         </div>
-                        <h3 id="discovery-voice-status" class="mt-8 text-xl font-bold text-slate-800">Pulsa para hablar</h3>
-                        <p id="discovery-voice-transcript" class="mt-2 text-slate-500 text-sm max-w-xs mx-auto h-12">Estoy listo para escucharte...</p>
-                        <div id="discovery-voice-response-box" class="mt-6 bg-white p-4 rounded-2xl shadow-sm border border-indigo-100 w-full hidden fade-in">
-                            <p class="text-xs text-indigo-500 font-bold uppercase mb-1">IA Dice:</p>
-                            <p id="discovery-voice-response-text" class="text-slate-700 text-sm italic">...</p>
+                        <!-- Visual output area (map/cards only) -->
+                        <div id="discovery-voice-visuals" class="hidden fixed inset-0 z-[70] bg-slate-50/95 backdrop-blur-sm p-4 overflow-hidden">
+                            <div class="w-full min-h-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4 items-center">
+                                <div class="min-w-0 self-center">
+                                    <div class="flex justify-end mb-3 pr-2">
+                                        <button type="button" onclick="closeDiscoveryVoiceVisuals()" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 shadow-sm">Cerrar</button>
+                                    </div>
+                                    <div id="discovery-voice-visuals-content"></div>
+                                </div>
+                                <div id="discovery-voice-visuals-side" class="hidden lg:block self-center"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -394,14 +406,20 @@
 
         // === Chat de descubrimiento en home (Rasa especializado en proximidad y huecos) ===
         async function initDiscoveryChat() {
-            const container = document.getElementById('discovery-chat-messages');
-            if (!container) return;
+            const containerChat = document.getElementById('discovery-chat-messages');
+            const containerVisuals = document.getElementById('discovery-voice-visuals');
+            const containerVisualsContent = document.getElementById('discovery-voice-visuals-content');
+            if (!containerChat || !containerVisuals) return;
             const locInput = document.getElementById('location-input');
             if (locInput) locInput.value = '';
             // Usar un sender distinto en cada recarga para no arrastrar slots previos
             discoverySenderId = (currentUser ? `cli-${currentUser.id}` : 'anon') + `-${Date.now()}`;
-            container.innerHTML = '';
-            addDiscoveryMsg('bot', '👋 ¡Hola! ¿Desde dónde sales para tu cita? Así te recomiendo negocios cerca y te ayudo a encontrar lo que necesitas (**peluquería**, **dentista**, **fisio**...).');
+            containerChat.innerHTML = '';
+            if (containerVisualsContent) containerVisualsContent.innerHTML = '';
+            containerVisuals.classList.add('hidden');
+            setVoicePanelFloating(false);
+            discoveryVoiceGreeted = false;
+            addDiscoveryMsg('bot', discoveryGreetingText);
             await checkDiscoveryRasaAvailability();
         }
 
@@ -496,7 +514,7 @@
                     if (t) t.remove();
                 }
                 if (!Array.isArray(data) || data.length === 0) {
-                    handleDiscoveryBotResponse('¿Puedes ser más específico? Escribe tu ciudad y provincia (ej: Córdoba, Andalucía) o una dirección más detallada.');
+                    handleDiscoveryBotResponse('¿Puedes ser más específico? Di tu ciudad y provincia (ej: Córdoba, Andalucía) o una dirección más detallada.');
                     return;
                 }
                 data.forEach(r => { if (r.text) handleDiscoveryBotResponse(r.text); });
@@ -510,11 +528,31 @@
         }
 
         function addDiscoveryMsg(sender, text) {
-            const container = document.getElementById('discovery-chat-messages');
-            if (!container) return;
+            const isVoice = discoveryIsVoiceMode === true;
+            const hasMap = /\[MAP:[^,]+,[^\]]+\]/.test(text);
+            const hasCards = text.includes('[BUSINESS_CARD]');
+            const isConfirmMap = /es\s+correcta\s+la\s+ubicaci[oó]n/i.test(text);
+
+            let container;
+            if (isVoice) {
+                if (sender === 'bot' && (hasMap || hasCards)) {
+                    const visuals = document.getElementById('discovery-voice-visuals');
+                    const visualsContent = document.getElementById('discovery-voice-visuals-content');
+                    if (!visuals || !visualsContent) return;
+                    visuals.classList.remove('hidden');
+                    visualsContent.innerHTML = '';
+                    setVoicePanelFloating(true);
+                    container = visualsContent;
+                    discoveryVoiceTempVisuals = hasMap && isConfirmMap;
+                } else {
+                    return;
+                }
+            } else {
+                container = document.getElementById('discovery-chat-messages');
+            }
             
             const wrapper = document.createElement('div');
-            wrapper.className = sender === 'user' ? 'flex gap-3 flex-row-reverse fade-in' : 'flex gap-3 fade-in';
+            wrapper.className = isVoice ? 'fade-in' : (sender === 'user' ? 'flex gap-3 flex-row-reverse fade-in' : 'flex gap-3 fade-in');
             
             // Detectar mapas antes de procesar
             const mapMatch = text.match(/\[MAP:([^,]+),([^\]]+)\]/);
@@ -529,8 +567,13 @@
                 sanitized = sanitized.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-indigo-600 underline hover:text-indigo-700">$1<\/a>');
                 
                 const mapId = `map-${Date.now()}`;
-                const msgContent = `<div class="bg-white text-slate-700 p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-sm"><div>${sanitized}</div><div id="${mapId}" class="mt-3 w-full h-48 rounded-lg border border-slate-300 shadow"></div></div>`;
-                wrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">IA</div>${msgContent}`;
+                const mapSizeClass = isVoice ? 'w-full max-w-[70vh] aspect-square' : 'w-full h-56';
+                const mapWrapClass = isVoice ? 'mt-3 flex justify-center' : 'mt-3';
+                const mapBoxClass = isVoice ? 'bg-white text-slate-700 p-4 rounded-2xl shadow-sm border border-slate-100 text-sm w-full mx-auto' : 'bg-white text-slate-700 p-4 rounded-2xl shadow-sm border border-slate-100 text-sm w-full';
+                const mapBox = `<div class="${mapBoxClass}"><div>${sanitized}</div><div class="${mapWrapClass}"><div id="${mapId}" class="${mapSizeClass} rounded-lg border border-slate-300 shadow"></div></div></div>`;
+                wrapper.innerHTML = isVoice
+                    ? mapBox
+                    : `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">IA</div>${mapBox}`;
                 
                 container.appendChild(wrapper);
                 container.scrollTop = container.scrollHeight;
@@ -539,14 +582,18 @@
                 setTimeout(() => {
                     const mapEl = document.getElementById(mapId);
                     if (mapEl && window.L) {
-                        const map = L.map(mapId).setView([lat, lon], 15);
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '© OpenStreetMap contributors',
-                            maxZoom: 19
-                        }).addTo(map);
-                        L.marker([lat, lon]).addTo(map).bindPopup('Tu ubicación');
+                        try {
+                            const map = L.map(mapId).setView([lat, lon], 15);
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                attribution: '© OpenStreetMap contributors',
+                                maxZoom: 19
+                            }).addTo(map);
+                            L.marker([lat, lon]).addTo(map).bindPopup('Tu ubicación');
+                        } catch (e) {
+                            console.warn('Error inicializando mapa:', e);
+                        }
                     }
-                }, 50);
+                }, 100);
             } else if (sender === 'bot' && text.includes('[BUSINESS_CARD]')) {
                 // Procesar tarjetas de negocio con HTML y imágenes
                 const intro = text.substring(0, text.indexOf('[BUSINESS_CARD]')).trim();
@@ -556,21 +603,26 @@
                 if (intro) {
                     let sanitizedIntro = intro.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
                     sanitizedIntro = sanitizedIntro.replace(/\*\*(.+?)\*\*/g, '<span class="font-semibold">$1<\/span>');
-                    htmlContent += `<div class="mb-2">${sanitizedIntro}</div>`;
+                    htmlContent += `<div class="mb-4 text-sm text-slate-700">${sanitizedIntro}</div>`;
                 }
                 
-                // Renderizar cada tarjeta sin escapar el HTML
+                // Crear grid responsivo para tarjetas
+                htmlContent += `<div class="grid grid-cols-1 md:grid-cols-2 gap-2 w-full auto-rows-max">`;
+                
+                // Renderizar cada tarjeta SIN escapar el HTML (viene ya formateado)
                 cards.forEach(card => {
-                    // Extraer el id del negocio del contenido HTML
-                    const idMatch = card.match(/detalle\.html\?id=(\d+)/);
-                    const negocioId = idMatch ? idMatch[1] : null;
                     const cardContent = card.replace(/\[BUSINESS_CARD\]/g, '').replace(/\[\/BUSINESS_CARD\]/g, '').trim();
-                    htmlContent += `<div class="mb-2 p-2 bg-slate-50 rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer" style="opacity:1;" ${negocioId ? `onclick=\"window.location.href='detalle.html?id=${negocioId}'\"` : ''}>
+                    htmlContent += `<div class="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer overflow-hidden">
                         ${cardContent}
                     </div>`;
                 });
                 
-                wrapper.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">IA</div><div class="bg-white text-slate-700 p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-sm flex-1">${htmlContent}</div>`;
+                htmlContent += `</div>`;
+                
+                const cardsBox = `<div class="bg-white text-slate-700 p-4 rounded-2xl shadow-sm border border-slate-100 text-sm w-full">${htmlContent}</div>`;
+                wrapper.innerHTML = isVoice
+                    ? cardsBox
+                    : `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">IA</div>${cardsBox}`;
                 container.appendChild(wrapper);
                 container.scrollTop = container.scrollHeight;
             } else {
@@ -1139,6 +1191,13 @@
         let discoveryRecognition = null;
         let discoveryIsListening = false;
         let discoveryIsVoiceMode = false;
+        let discoveryAutoListen = false;
+        let discoveryIsSpeaking = false;
+        let discoveryVoiceGreeted = false;
+        let discoveryVoiceTempVisuals = false;
+        let discoveryVoicePanelHomeParent = null;
+        let discoveryVoicePanelHomeNext = null;
+        const discoveryGreetingText = '👋 ¡Hola! ¿Desde dónde sales para tu cita? Así te recomiendo negocios cerca y te ayudo a encontrar lo que necesitas (**peluquería**, **dentista**, **fisio**...).';
 
         function setupDiscoveryVoiceRecognition() {
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -1159,6 +1218,9 @@
                 document.getElementById('discovery-voice-status').innerText = "Pulsa para hablar";
                 document.getElementById('discovery-mic-bg').classList.remove('mic-pulse');
                 document.getElementById('discovery-mic-bg').classList.remove('opacity-100');
+                if (discoveryIsVoiceMode && discoveryAutoListen && !discoveryIsSpeaking) {
+                    setTimeout(() => startDiscoveryListening(), 150);
+                }
             };
             discoveryRecognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
@@ -1177,6 +1239,8 @@
                 discoveryIsVoiceMode = false;
                 chatUI.classList.remove('hidden');
                 voiceUI.classList.add('hidden');
+                closeDiscoveryVoiceVisuals();
+                setVoicePanelFloating(false);
                 btnChat.classList.add('bg-indigo-600', 'text-white', 'shadow');
                 btnChat.classList.remove('text-slate-400');
                 btnVoice.classList.remove('bg-indigo-600', 'text-white', 'shadow');
@@ -1190,21 +1254,145 @@
                 btnVoice.classList.remove('text-slate-400');
                 btnChat.classList.remove('bg-indigo-600', 'text-white', 'shadow');
                 btnChat.classList.add('text-slate-400');
+                if (!discoveryVoiceGreeted) {
+                    discoveryAutoListen = true;
+                    speakDiscoveryText(discoveryGreetingText, () => {
+                        discoveryVoiceGreeted = true;
+                        if (discoveryIsVoiceMode) startDiscoveryListening();
+                    });
+                }
             }
         }
 
         function toggleDiscoveryVoice() {
             if (!discoveryRecognition) return;
-            if (discoveryIsListening) discoveryRecognition.stop();
-            else { window.speechSynthesis.cancel(); discoveryRecognition.start(); }
+            if (discoveryIsListening) {
+                discoveryAutoListen = false;
+                discoveryRecognition.stop();
+            } else {
+                discoveryAutoListen = true;
+                window.speechSynthesis.cancel();
+                startDiscoveryListening();
+            }
         }
 
-        function speakDiscoveryText(text) {
-            if (!('speechSynthesis' in window)) return;
+        function startDiscoveryListening() {
+            if (!discoveryRecognition || discoveryIsListening) return;
+            try {
+                discoveryRecognition.start();
+            } catch (e) {
+                // Ignore if recognition is already active
+            }
+        }
+
+        function speakDiscoveryText(text, onDone) {
+            if (!('speechSynthesis' in window)) {
+                if (onDone) onDone();
+                return;
+            }
+            if (discoveryIsListening && discoveryRecognition) {
+                discoveryRecognition.stop();
+            }
+            discoveryIsSpeaking = true;
+            const bubble = document.getElementById('discovery-voice-bubble');
+            const cleaned = (text || '')
+                .replace(/\[MAP:[^\]]+\]/g, '')
+                .replace(/\[BUSINESS_CARD\][\s\S]*?\[\/BUSINESS_CARD\]/g, '')
+                .trim();
+            const displayText = cleaned || (text || '').trim();
+            const bubbleHtml = displayText
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.+?)\*\*/g, '<span class="font-semibold">$1<\/span>')
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1');
+            if (bubble) {
+                bubble.innerHTML = bubbleHtml;
+                bubble.classList.remove('hidden');
+            }
             window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
+            const speechText = displayText
+                .replace(/\*\*(.+?)\*\*/g, '$1')
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
+                .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '');
+            const utterance = new SpeechSynthesisUtterance(speechText);
             utterance.lang = 'es-ES';
+            utterance.onend = () => {
+                discoveryIsSpeaking = false;
+                if (bubble) {
+                    bubble.classList.add('hidden');
+                    bubble.innerHTML = '';
+                }
+                if (discoveryIsVoiceMode && discoveryVoiceTempVisuals) {
+                    closeDiscoveryVoiceVisuals();
+                }
+                if (onDone) onDone();
+            };
             window.speechSynthesis.speak(utterance);
+        }
+
+        function closeDiscoveryVoiceVisuals() {
+            const visuals = document.getElementById('discovery-voice-visuals');
+            const visualsContent = document.getElementById('discovery-voice-visuals-content');
+            const bubble = document.getElementById('discovery-voice-bubble');
+            const transcript = document.getElementById('discovery-voice-transcript');
+            const status = document.getElementById('discovery-voice-status');
+            const micBg = document.getElementById('discovery-mic-bg');
+            if (visualsContent) visualsContent.innerHTML = '';
+            if (visuals) visuals.classList.add('hidden');
+            discoveryVoiceTempVisuals = false;
+            discoveryAutoListen = false;
+            discoveryIsSpeaking = false;
+            discoveryVoiceGreeted = false;
+            if (discoveryIsListening && discoveryRecognition) {
+                discoveryRecognition.stop();
+            }
+            window.speechSynthesis.cancel();
+            if (bubble) {
+                bubble.classList.add('hidden');
+                bubble.innerHTML = '';
+            }
+            if (transcript) {
+                transcript.innerText = 'Estoy listo para escucharte...';
+            }
+            if (status) {
+                status.innerText = 'Pulsa para hablar';
+            }
+            if (micBg) {
+                micBg.classList.remove('mic-pulse');
+                micBg.classList.remove('opacity-100');
+            }
+            setVoicePanelFloating(false);
+        }
+
+        function setVoicePanelFloating(isActive) {
+            const panel = document.getElementById('discovery-voice-panel');
+            const visuals = document.getElementById('discovery-voice-visuals');
+            const side = document.getElementById('discovery-voice-visuals-side');
+            if (!panel || !visuals) return;
+
+            const sideClasses = ['rounded-2xl', 'border', 'border-slate-200', 'shadow-xl', 'bg-slate-50/95'];
+            const stickyClasses = ['sticky', 'top-6', 'self-start'];
+
+            if (isActive && side && window.innerWidth >= 1024) {
+                if (!discoveryVoicePanelHomeParent) {
+                    discoveryVoicePanelHomeParent = panel.parentElement;
+                    discoveryVoicePanelHomeNext = panel.nextElementSibling;
+                }
+                side.classList.remove('hidden');
+                panel.classList.add(...sideClasses, ...stickyClasses);
+                side.appendChild(panel);
+            } else {
+                panel.classList.remove(...sideClasses, ...stickyClasses);
+                if (side) side.classList.add('hidden');
+                if (discoveryVoicePanelHomeParent) {
+                    if (discoveryVoicePanelHomeNext && discoveryVoicePanelHomeNext.parentElement === discoveryVoicePanelHomeParent) {
+                        discoveryVoicePanelHomeParent.insertBefore(panel, discoveryVoicePanelHomeNext);
+                    } else {
+                        discoveryVoicePanelHomeParent.appendChild(panel);
+                    }
+                }
+            }
         }
 
         // Modificar handleBotResponse para incluir voz en discovery
@@ -1218,10 +1406,9 @@
             
             addDiscoveryMsg('bot', text);
             if (discoveryIsVoiceMode) {
-                const voiceResBox = document.getElementById('discovery-voice-response-box');
-                document.getElementById('discovery-voice-response-text').innerText = text;
-                voiceResBox.classList.remove('hidden');
-                speakDiscoveryText(text);
+                speakDiscoveryText(text, () => {
+                    if (discoveryIsVoiceMode) startDiscoveryListening();
+                });
             }
         }
         let mapInstance = null;
