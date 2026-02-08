@@ -6,8 +6,9 @@ from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
 from datetime import datetime
+import json
 
-from .utils import limpiar_flujo, obtener_horarios_disponibles, formatear_horarios_display
+from .utils import limpiar_flujo, obtener_horarios_disponibles, formatear_horarios_display, build_availability_hours_payload
 from .extractores import ExtractorFechaHora
 
 
@@ -63,11 +64,11 @@ class ActionReservarCita(Action):
             dia_texto = f"{dias_es[fecha_obj.weekday()]} {fecha_obj.day:02d}/{fecha_obj.month:02d}"
             
             # Extraer horas (sin fecha)
-            horas = [h.split()[1][:5] for h in horarios_dia]
+            horas_payload = build_availability_hours_payload(horarios_dia)
+            horas_tag = f"[AVAIL_HOURS]{json.dumps(horas_payload)}[/AVAIL_HOURS]" if horas_payload.get('hours') else ""
             
             mensaje = f"📅 <b>Fecha seleccionada:</b> {dia_texto}\n\n"
-            mensaje += f"⏰ <b>Horarios disponibles:</b> {', '.join(horas)}\n\n"
-            mensaje += "¿A qué hora prefieres?"
+            mensaje += f"¿A qué hora prefieres?\n{horas_tag}"
             
             dispatcher.utter_message(text=mensaje)
             

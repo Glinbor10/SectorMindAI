@@ -106,6 +106,49 @@ def formatear_horarios_display(horarios_por_dia: dict, negocio_id: int = None,
     return mensaje
 
 
+def build_availability_dates_payload(horarios_por_dia: dict, dias_mostrar: int = 5) -> Dict[str, Any]:
+    if not horarios_por_dia:
+        return {"dates": [], "meta": {"total": 0, "last_label": ""}}
+    dias_cortos = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
+    fechas_ordenadas = sorted(horarios_por_dia.keys())
+    fechas = []
+    for fecha_str in fechas_ordenadas[:dias_mostrar]:
+        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d')
+        dia_corto = dias_cortos[fecha_obj.weekday()]
+        label = f"{dia_corto} {fecha_obj.day:02d}/{fecha_obj.month:02d}"
+        value = f"{fecha_obj.day:02d}/{fecha_obj.month:02d}"
+        fechas.append({"label": label, "value": value})
+    last_label = ""
+    if fechas_ordenadas:
+        last_fecha = datetime.strptime(fechas_ordenadas[-1], '%Y-%m-%d')
+        last_label = f"{dias_cortos[last_fecha.weekday()]} {last_fecha.day:02d}/{last_fecha.month:02d}"
+    return {
+        "dates": fechas,
+        "meta": {"total": len(fechas_ordenadas), "last_label": last_label}
+    }
+
+
+def build_availability_hours_payload(horarios_dia: List[str], max_items: int = 8) -> Dict[str, Any]:
+    if not horarios_dia:
+        return {"hours": [], "meta": {"total": 0, "morning": 0, "afternoon": 0}}
+    horas = [h.split()[1][:5] for h in horarios_dia]
+    morning = 0
+    afternoon = 0
+    for h in horas:
+        try:
+            hour = int(h.split(':')[0])
+            if hour < 14:
+                morning += 1
+            else:
+                afternoon += 1
+        except Exception:
+            continue
+    return {
+        "hours": horas[:max_items],
+        "meta": {"total": len(horas), "morning": morning, "afternoon": afternoon}
+    }
+
+
 def calcular_similitud(palabra1: str, palabra2: str) -> float:
     """
     Calcula similitud entre dos palabras (Levenshtein normalizado)

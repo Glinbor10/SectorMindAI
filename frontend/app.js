@@ -12,6 +12,8 @@ let businessData = null;
 let recognition = null;
 let isListening = false;
 let isVoiceMode = false; 
+let isSpeaking = false;
+let autoListen = false;
 
 // --- FUNCIONES DE UI ---
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -274,6 +276,12 @@ function switchMode(mode) {
         voiceUI.classList.remove('hidden'); voiceUI.classList.add('flex');
         btnVoice.classList.add('bg-indigo-600', 'text-white', 'shadow'); btnVoice.classList.remove('text-slate-400');
         btnChat.classList.remove('bg-indigo-600', 'text-white', 'shadow'); btnChat.classList.add('text-slate-400');
+        const nombreNegocio = businessData && businessData.nombre ? businessData.nombre : 'nuestro negocio';
+        const greet = `¡Hola! Soy el agente de IA de ${nombreNegocio}, ¿en qué puedo ayudarte?`;
+        autoListen = true;
+        speakText(greet, () => {
+            if (isVoiceMode) startListening();
+        });
     }
 }
 
@@ -344,13 +352,107 @@ function handleBotResponse(text) {
         }
         return;
     }
-    addMsg('bot', text);
+    const parsed = parseAvailabilityTags(text);
+    addMsg('bot', parsed.text);
+    renderChatAvailability(parsed);
     if (isVoiceMode) {
         const voiceResBox = document.getElementById('voice-response-box');
-        document.getElementById('voice-response-text').innerText = text;
+        document.getElementById('voice-response-text').innerText = parsed.text;
         voiceResBox.classList.remove('hidden');
-        speakText(text);
+        renderVoiceAvailability(parsed);
+        autoListen = true;
+        speakText(parsed.text);
     }
+}
+
+function parseAvailabilityTags(text) {
+    let cleaned = text || '';
+    let dates = null;
+    let hours = null;
+    let datesMeta = null;
+    let hoursMeta = null;
+
+    const datesMatch = cleaned.match(/\[AVAIL_DATES\]([\s\S]*?)\[\/AVAIL_DATES\]/);
+    if (datesMatch) {
+        try {
+            const payload = JSON.parse(datesMatch[1]);
+            dates = payload.dates || null;
+            datesMeta = payload.meta || null;
+        } catch (e) {
+            dates = null;
+        }
+        cleaned = cleaned.replace(datesMatch[0], '').trim();
+    }
+
+    const hoursMatch = cleaned.match(/\[AVAIL_HOURS\]([\s\S]*?)\[\/AVAIL_HOURS\]/);
+    if (hoursMatch) {
+        try {
+            const payload = JSON.parse(hoursMatch[1]);
+            hours = payload.hours || null;
+            hoursMeta = payload.meta || null;
+        } catch (e) {
+            hours = null;
+        }
+        cleaned = cleaned.replace(hoursMatch[0], '').trim();
+    }
+
+    return { text: cleaned, dates, hours, datesMeta, hoursMeta };
+}
+
+function renderVoiceAvailability(parsed) {
+    const container = document.getElementById('voice-availability');
+    if (!container) return;
+
+    if (!parsed.dates && !parsed.hours) {
+        container.classList.add('hidden');
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+    if (parsed.dates && parsed.dates.length) {
+        html += '<div class="mb-3">';
+        html += '<p class="text-xs text-indigo-500 font-bold uppercase mb-2">Dias disponibles</p>';
+        html += '<div class="flex flex-wrap gap-2">';
+        parsed.dates.forEach(d => {
+            const label = d.label || d.value;
+            const value = d.value || d.label;
+            html += `<button type="button" data-value="${value}" class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 hover:border-indigo-300 hover:text-indigo-600">${label}</button>`;
+        });
+        html += '</div></div>';
+        if (parsed.datesMeta && parsed.datesMeta.total > parsed.dates.length) {
+            const lastLabel = parsed.datesMeta.last_label || '';
+            html += `<p class="text-xs text-slate-500">Hay mas fechas disponibles${lastLabel ? ` hasta ${lastLabel}` : ''}.</p>`;
+        }
+    }
+
+    if (parsed.hours && parsed.hours.length) {
+        html += '<div class="mb-2">';
+        html += '<p class="text-xs text-indigo-500 font-bold uppercase mb-2">Horas disponibles</p>';
+        html += '<div class="flex flex-wrap gap-2">';
+        parsed.hours.forEach(h => {
+            html += `<button type="button" data-value="${h}" class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 hover:border-indigo-300 hover:text-indigo-600">${h}</button>`;
+        });
+        html += '</div></div>';
+        if (parsed.hoursMeta && parsed.hoursMeta.total > parsed.hours.length) {
+            const morning = parsed.hoursMeta.morning || 0;
+            const afternoon = parsed.hoursMeta.afternoon || 0;
+            html += `<p class="text-xs text-slate-500">Hay mas horas disponibles. Manana: ${morning}, Tarde: ${afternoon}.</p>`;
+        }
+    }
+
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+
+    container.querySelectorAll('button[data-value]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const value = btn.getAttribute('data-value');
+            if (!value) return;
+            addMsg('user', value);
+            const typingId = showTyping();
+            await sendToRasa(value, false, typingId);
+        });
+    });
 }
 
 function addMsg(sender, text) {
@@ -421,6 +523,9 @@ function setupVoiceRecognition() {
         isListening = false;
         document.getElementById('voice-status').innerText = "Pulsa para hablar";
         document.getElementById('mic-bg').classList.remove('mic-pulse', 'opacity-100');
+        if (isVoiceMode && autoListen && !isSpeaking) {
+            setTimeout(() => startListening(), 150);
+        }
     };
     recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
@@ -431,15 +536,41 @@ function setupVoiceRecognition() {
 
 function toggleVoice() {
     if (!recognition) return;
-    if (isListening) recognition.stop();
-    else { window.speechSynthesis.cancel(); recognition.start(); }
+    if (isListening) {
+        autoListen = false;
+        recognition.stop();
+    } else {
+        autoListen = true;
+        window.speechSynthesis.cancel();
+        startListening();
+    }
 }
 
-function speakText(text) {
+function startListening() {
+    if (!recognition || isListening) return;
+    try {
+        recognition.start();
+    } catch (e) {
+        // Ignore if already active
+    }
+}
+
+function speakText(text, onDone) {
     if (!('speechSynthesis' in window)) return;
+    if (isListening && recognition) {
+        recognition.stop();
+    }
+    isSpeaking = true;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const cleaned = (text || '')
+        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '');
+    const utterance = new SpeechSynthesisUtterance(cleaned);
     utterance.lang = 'es-ES';
+    utterance.onend = () => {
+        isSpeaking = false;
+        if (onDone) onDone();
+        if (isVoiceMode && autoListen) startListening();
+    };
     window.speechSynthesis.speak(utterance);
 }
 
@@ -758,4 +889,58 @@ async function confirmBooking() {
             confirmButtonColor: '#4f46e5'
         });
     }
+}
+
+function renderChatAvailability(parsed) {
+    const container = document.getElementById('chat-messages');
+    if (!container) return;
+    if (!parsed.dates && !parsed.hours) return;
+
+    let html = '';
+    if (parsed.dates && parsed.dates.length) {
+        html += '<div class="mb-3">';
+        html += '<p class="text-xs text-indigo-500 font-bold uppercase mb-2">Dias disponibles</p>';
+        html += '<div class="flex flex-wrap gap-2">';
+        parsed.dates.forEach(d => {
+            const label = d.label || d.value;
+            const value = d.value || d.label;
+            html += `<button type="button" data-value="${value}" class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 hover:border-indigo-300 hover:text-indigo-600">${label}</button>`;
+        });
+        html += '</div></div>';
+        if (parsed.datesMeta && parsed.datesMeta.total > parsed.dates.length) {
+            const lastLabel = parsed.datesMeta.last_label || '';
+            html += `<p class="text-xs text-slate-500">Hay mas fechas disponibles${lastLabel ? ` hasta ${lastLabel}` : ''}.</p>`;
+        }
+    }
+
+    if (parsed.hours && parsed.hours.length) {
+        html += '<div class="mb-2">';
+        html += '<p class="text-xs text-indigo-500 font-bold uppercase mb-2">Horas disponibles</p>';
+        html += '<div class="flex flex-wrap gap-2">';
+        parsed.hours.forEach(h => {
+            html += `<button type="button" data-value="${h}" class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm text-slate-700 hover:border-indigo-300 hover:text-indigo-600">${h}</button>`;
+        });
+        html += '</div></div>';
+        if (parsed.hoursMeta && parsed.hoursMeta.total > parsed.hours.length) {
+            const morning = parsed.hoursMeta.morning || 0;
+            const afternoon = parsed.hoursMeta.afternoon || 0;
+            html += `<p class="text-xs text-slate-500">Hay mas horas disponibles. Manana: ${morning}, Tarde: ${afternoon}.</p>`;
+        }
+    }
+
+    const div = document.createElement('div');
+    div.className = 'flex gap-3 fade-in';
+    div.innerHTML = `<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold flex-shrink-0">IA</div><div class="bg-white text-slate-600 p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 text-sm max-w-[80%]">${html}</div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+
+    div.querySelectorAll('button[data-value]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const value = btn.getAttribute('data-value');
+            if (!value) return;
+            addMsg('user', value);
+            const typingId = showTyping();
+            await sendToRasa(value, false, typingId);
+        });
+    });
 }

@@ -8,9 +8,10 @@ from rasa_sdk.events import SlotSet, FollowupAction
 from datetime import datetime, timedelta
 import requests
 import re
+import json
 from fuzzywuzzy import fuzz
 
-from .utils import limpiar_flujo, obtener_horarios_disponibles, formatear_horarios_display, API_URL
+from .utils import limpiar_flujo, obtener_horarios_disponibles, formatear_horarios_display, API_URL, build_availability_hours_payload
 from .extractores import ExtractorFechaHora
 
 
@@ -222,11 +223,11 @@ class ActionFallbackInteligente(Action):
             fecha_obj = datetime.strptime(fecha_seleccionada, '%Y-%m-%d')
             dias_es = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
             dia_texto = f"{dias_es[fecha_obj.weekday()]} {fecha_obj.day:02d}/{fecha_obj.month:02d}"
-            horas = [h.split()[1][:5] for h in horarios_dia]
+            horas_payload = build_availability_hours_payload(horarios_dia)
+            horas_tag = f"[AVAIL_HOURS]{json.dumps(horas_payload)}[/AVAIL_HOURS]" if horas_payload.get('hours') else ""
             
             mensaje = f"📅 <b>Fecha seleccionada: {dia_texto}</b>\n\n"
-            mensaje += f"⏰ <b>Horarios disponibles:</b> {', '.join(horas)}\n\n"
-            mensaje += "¿A qué hora prefieres?"
+            mensaje += f"¿A qué hora prefieres?\n{horas_tag}"
             dispatcher.utter_message(text=mensaje)
 
             # Transicionar a siguiente paso: pedir hora

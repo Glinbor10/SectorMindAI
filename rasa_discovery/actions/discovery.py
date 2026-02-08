@@ -144,7 +144,7 @@ class ActionDiscoveryBuscarNegocios(Action):
                     pass
 
                 dispatcher.utter_message(
-                    text="👉 DI EL NÚMERO (1,2,3,4,5...) o el nombre del negocio que quieres."
+                    text="👉 DI EL NÚMERO (1, 2, 3, 4, 5...) o el nombre del negocio que quieres."
                 )
                 return []
 

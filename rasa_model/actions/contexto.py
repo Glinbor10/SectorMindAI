@@ -1,13 +1,14 @@
-"""
-Acciones para contexto y normalización de servicios
-"""
+""" 
+Acciones para contexto y normalización de servicios 
+""" 
+import json
 from typing import Any, Text, Dict, List
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
 import requests
 
-from .utils import limpiar_flujo, obtener_horarios_disponibles, formatear_horarios_display, calcular_similitud, API_URL
+from .utils import limpiar_flujo, obtener_horarios_disponibles, formatear_horarios_display, calcular_similitud, API_URL, build_availability_dates_payload
 from fuzzywuzzy import fuzz
 
 
@@ -186,9 +187,13 @@ class ActionNormalizarServicio(Action):
                 )
                 return limpiar_flujo()
             
-            msg_horarios = formatear_horarios_display(horarios_disponibles)
+            fechas_payload = build_availability_dates_payload(horarios_disponibles)
+            fechas_tag = f"[AVAIL_DATES]{json.dumps(fechas_payload)}[/AVAIL_DATES]" if fechas_payload.get('dates') else ""
             
-            msg = f"Perfecto, te interesa: {servicio_nombre}\n\n{msg_horarios}\n\n¿Para qué día te gustaría reservar?"
+            msg = (
+                f"Perfecto, te interesa: {servicio_nombre}\n\n"
+                f"¿Para qué día te gustaría reservar?\n{fechas_tag}"
+            )
             dispatcher.utter_message(text=msg)
             
             return [
