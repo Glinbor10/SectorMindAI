@@ -42,12 +42,22 @@ class ActionDiscoveryBuscarNegocios(Action):
             ubicacion_pendiente = tracker.get_slot("ubicacion_pendiente_confirmar")
             slot_ubicacion = tracker.get_slot("ubicacion_texto")
             opciones_negocio = tracker.get_slot("opciones_negocio")
+            ubicacion_confirmada = tracker.get_slot("ubicacion_confirmada")
             meta = tracker.latest_message.get("metadata") or {}
             meta_ubicacion = meta.get("ubicacion_texto") if meta else None
             ubicacion_actual = slot_ubicacion or meta_ubicacion
+            auto_confirmada = False
+
+            # Si ya hay ubicacion guardada y el usuario pide un negocio, no volver a pedir ubicacion
+            if ubicacion_actual and not ubicacion_confirmada and not esperando_confirmacion:
+                if intent == "buscar_negocio" or self._mensaje_parece_buscar_negocio(mensaje):
+                    ubicacion_confirmada = True
+                    auto_confirmada = True
 
             # ========================================
             # FLUJO 1: ESPERANDO CONFIRMACIÓN DE UBICACIÓN
+            # Estado: esperando_confirmacion_ubicacion = True
+            # Acción: Solo acepta afirmar/negar para confirmar ubicación
             # ========================================
             if esperando_confirmacion:
                 # Solo aceptar afirmar/negar
@@ -59,7 +69,9 @@ class ActionDiscoveryBuscarNegocios(Action):
                     return [
                         SlotSet("ubicacion_texto", ubicacion_pendiente),
                         SlotSet("esperando_confirmacion_ubicacion", False),
-                        SlotSet("ubicacion_pendiente_confirmar", None)
+                        SlotSet("ubicacion_pendiente_confirmar", None),
+                        SlotSet("ubicacion_confirmada", True),
+                        SlotSet("opciones_negocio", None)
                     ]
                 
                 elif intent == "negar":
@@ -70,7 +82,9 @@ class ActionDiscoveryBuscarNegocios(Action):
                     return [
                         SlotSet("esperando_confirmacion_ubicacion", False),
                         SlotSet("ubicacion_pendiente_confirmar", None),
-                        SlotSet("ubicacion_texto", None)
+                        SlotSet("ubicacion_texto", None),
+                        SlotSet("ubicacion_confirmada", False),
+                        SlotSet("opciones_negocio", None)
                     ]
                 
                 else:
@@ -82,7 +96,8 @@ class ActionDiscoveryBuscarNegocios(Action):
 
             # ========================================
             # FLUJO 2: SELECCIÓN DE NEGOCIO (número)
-            # (se evalúa ANTES que saludos para no perder opciones)
+            # Estado: opciones_negocio tiene lista de negocios
+            # Acción: Detecta número (1,2,3...) o nombre y redirige
             # ========================================
             if opciones_negocio and isinstance(opciones_negocio, list):
                 try:
@@ -134,8 +149,10 @@ class ActionDiscoveryBuscarNegocios(Action):
                     pass
 
             # ========================================
-            # FLUJO 3: SALUDOS O CAMBIO DE UBICACIÓN
-            # (evitar si hay opciones pendientes)
+            # FLUJO 3: SALUDOS O RESET
+            # Estado: Sin opciones pendientes
+            # Intent: greet o detección de saludo
+            # Acción: Resetea todo y pide ubicación desde cero
             # ========================================
             if not opciones_negocio and (
                 intent == "greet" or self._es_saludo_simple(mensaje) or self._es_saludo_fuzzy(mensaje) 
@@ -146,14 +163,23 @@ class ActionDiscoveryBuscarNegocios(Action):
                 return [
                     SlotSet("ubicacion_texto", None),
                     SlotSet("esperando_confirmacion_ubicacion", False),
-                    SlotSet("ubicacion_pendiente_confirmar", None)
+                    SlotSet("ubicacion_pendiente_confirmar", None),
+                    SlotSet("ubicacion_confirmada", False),
+                    SlotSet("opciones_negocio", None)
                 ]
 
             # ========================================
             # FLUJO 4: CAPTURA Y CONFIRMACIÓN DE UBICACIÓN
+            # Estado: ubicacion_confirmada = False
+            # Intent: informar_ubicacion o texto que parece ubicación
+            # Acción: Geocodifica → Muestra mapa → Pide confirmación
             # ========================================
             full_text = tracker.latest_message.get("text", "").strip()
-            if (intent == "informar_ubicacion" or self._mensaje_parece_ubicacion(mensaje, intent)) and not opciones_negocio:
+            if (
+                not ubicacion_confirmada
+                and (intent == "informar_ubicacion" or self._mensaje_parece_ubicacion(mensaje, intent))
+                and not opciones_negocio
+            ):
                 if full_text:
                     try:
                         geo_resultados = self._geocodificar_con_opciones(full_text)
@@ -179,7 +205,9 @@ class ActionDiscoveryBuscarNegocios(Action):
                             # Activar modo "esperando confirmación"
                             return [
                                 SlotSet("ubicacion_pendiente_confirmar", display_guardado),
-                                SlotSet("esperando_confirmacion_ubicacion", True)
+                                SlotSet("esperando_confirmacion_ubicacion", True),
+                                SlotSet("ubicacion_confirmada", False),
+                                SlotSet("opciones_negocio", None)
                             ]
                             
                     except Exception as e:
@@ -188,16 +216,26 @@ class ActionDiscoveryBuscarNegocios(Action):
                     dispatcher.utter_message(
                         text="❌ No pude localizar esa ubicación. ¿Puedes ser más específico? Escribe tu **ciudad y provincia** (ej: Córdoba, Andalucía) o una **dirección completa** (calle, número, ciudad)."
                     )
-                    return [SlotSet("ubicacion_texto", None)]
+                    return [
+                        SlotSet("ubicacion_texto", None),
+                        SlotSet("ubicacion_confirmada", False),
+                        SlotSet("opciones_negocio", None)
+                    ]
 
             # ========================================
-            # FLUJO 5: BÚSQUEDA DE NEGOCIOS (requiere ubicación confirmada)
+            # FLUJO 5: BÚSQUEDA DE NEGOCIOS
+            # Estado: ubicacion_confirmada = True y ubicacion_texto existe
+            # Intent: buscar_negocio o mensaje con tipo de negocio
+            # Acción: Busca negocios cercanos y lista opciones
             # ========================================
-            if not ubicacion_actual:
+            if not ubicacion_actual or not ubicacion_confirmada:
                 dispatcher.utter_message(
                     text="📍 ¿Desde dónde sales para tu cita? Así te recomiendo negocios cerca."
                 )
-                return [SlotSet("ubicacion_texto", None)]
+                return [
+                    SlotSet("ubicacion_texto", None),
+                    SlotSet("ubicacion_confirmada", False)
+                ]
 
             # Geocodificar ubicación (intento directo y luego limpiando frases tipo "estoy en ...")
             lat_lon = self._geocodificar(ubicacion_actual)
@@ -291,6 +329,7 @@ class ActionDiscoveryBuscarNegocios(Action):
             return [
                 SlotSet("ubicacion_texto", ubicacion_actual),
                 SlotSet("opciones_negocio", lista_opciones),
+                SlotSet("ubicacion_confirmada", True) if auto_confirmada else SlotSet("ubicacion_confirmada", ubicacion_confirmada),
             ]
         
         except Exception as e:
@@ -606,9 +645,10 @@ class ActionDiscoveryBuscarNegocios(Action):
             return False
         norm = mensaje.strip().lower()
         palabras_cambio = [
-            "no", "esa no", "no es", "otra", "cambiar", "cambio",
-            "otra ubicacion", "otra ubicación", "no esa", "mal",
-            "incorrecto", "incorrecta", "equivocada", "equivocado"
+            "cambiar", "cambio", "cambiala", "cámbiala", "cambiala",
+            "otra ubicacion", "otra ubicación", "otra direccion", "otra dirección",
+            "quiero cambiar", "quiero otra", "pon otra", "pon otra ubicacion",
+            "desde otro sitio", "salgo de otro sitio", "salgo de otro lugar"
         ]
         return any(palabra in norm for palabra in palabras_cambio)
 
@@ -639,10 +679,17 @@ class ActionDiscoveryBuscarNegocios(Action):
 
         # Palabra/s cortas sin keywords ni saludo: intentar geocodificar (ciudades, pueblos)
         return True
-    def _map_url(self, lat: float, lon: float) -> str:
-        return (
-            f"https://maps.openstreetmap.org/?mlat={lat}&mlon={lon}&zoom=16&layers=M"
-        )
+
+    def _mensaje_parece_buscar_negocio(self, mensaje: str) -> bool:
+        """Heurística simple para detectar peticiones de negocio sin depender solo del intent."""
+        if not mensaje:
+            return False
+        msg = mensaje.lower().strip()
+        for kws in TIPO_KEYWORDS.values():
+            for kw in kws:
+                if kw in msg:
+                    return True
+        return False
 
     def _fetch_negocios(self, lat_lon: Optional[Tuple[float, float]] = None) -> List[Dict[str, Any]]:
         params = {}
