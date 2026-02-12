@@ -43,10 +43,17 @@ class ActionDiscoveryBuscarNegocios(Action):
             slot_ubicacion = tracker.get_slot("ubicacion_texto")
             opciones_negocio = tracker.get_slot("opciones_negocio")
             ubicacion_confirmada = tracker.get_slot("ubicacion_confirmada")
+            ubicacion_confirmada_texto = tracker.get_slot("ubicacion_confirmada_texto")
             meta = tracker.latest_message.get("metadata") or {}
             meta_ubicacion = meta.get("ubicacion_texto") if meta else None
             ubicacion_actual = slot_ubicacion or meta_ubicacion
             auto_confirmada = False
+
+            # Si existe una ubicacion confirmada guardada, fijarla y no permitir cambios
+            if ubicacion_confirmada_texto and not esperando_confirmacion:
+                if not ubicacion_confirmada:
+                    ubicacion_confirmada = True
+                ubicacion_actual = ubicacion_confirmada_texto
 
             # Si ya hay ubicacion guardada y el usuario pide un negocio, no volver a pedir ubicacion
             if ubicacion_actual and not ubicacion_confirmada and not esperando_confirmacion:
@@ -71,6 +78,7 @@ class ActionDiscoveryBuscarNegocios(Action):
                         SlotSet("esperando_confirmacion_ubicacion", False),
                         SlotSet("ubicacion_pendiente_confirmar", None),
                         SlotSet("ubicacion_confirmada", True),
+                        SlotSet("ubicacion_confirmada_texto", ubicacion_pendiente),
                         SlotSet("opciones_negocio", None)
                     ]
                 
@@ -84,6 +92,7 @@ class ActionDiscoveryBuscarNegocios(Action):
                         SlotSet("ubicacion_pendiente_confirmar", None),
                         SlotSet("ubicacion_texto", None),
                         SlotSet("ubicacion_confirmada", False),
+                        SlotSet("ubicacion_confirmada_texto", None),
                         SlotSet("opciones_negocio", None)
                     ]
                 
@@ -155,8 +164,13 @@ class ActionDiscoveryBuscarNegocios(Action):
             # Acción: Resetea todo y pide ubicación desde cero
             # ========================================
             if not opciones_negocio and (
-                intent == "greet" or self._es_saludo_simple(mensaje) or self._es_saludo_fuzzy(mensaje) 
+                intent == "greet" or self._es_saludo_simple(mensaje) or self._es_saludo_fuzzy(mensaje)
                 or self._quiere_cambiar_ubicacion(mensaje)):
+                if ubicacion_confirmada_texto:
+                    dispatcher.utter_message(
+                        text="¿Qué necesitas (**peluquería**, **dentista**, **fisio**, etc.)?"
+                    )
+                    return []
                 dispatcher.utter_message(
                     text="📍 ¿Desde dónde sales para tu cita? Así te recomiendo negocios cerca."
                 )
@@ -165,7 +179,28 @@ class ActionDiscoveryBuscarNegocios(Action):
                     SlotSet("esperando_confirmacion_ubicacion", False),
                     SlotSet("ubicacion_pendiente_confirmar", None),
                     SlotSet("ubicacion_confirmada", False),
+                    SlotSet("ubicacion_confirmada_texto", None),
                     SlotSet("opciones_negocio", None)
+                ]
+
+            # Si la ubicacion ya esta confirmada, no reabrir el flujo de geocodificacion
+            if (
+                ubicacion_confirmada
+                and not opciones_negocio
+                and (intent == "informar_ubicacion" or self._mensaje_parece_ubicacion(mensaje, intent))
+            ):
+                if ubicacion_actual:
+                    dispatcher.utter_message(
+                        text=f"✅ Ubicación confirmada: **{ubicacion_actual}**\n\nAhora dime qué necesitas (**peluquería**, **dentista**, **fisio**, etc.)."
+                    )
+                else:
+                    dispatcher.utter_message(
+                        text="Ahora dime qué necesitas (**peluquería**, **dentista**, **fisio**, etc.)."
+                    )
+                return [
+                    SlotSet("ubicacion_texto", ubicacion_actual),
+                    SlotSet("ubicacion_confirmada", True),
+                    SlotSet("ubicacion_confirmada_texto", ubicacion_actual),
                 ]
 
             # ========================================
@@ -219,6 +254,7 @@ class ActionDiscoveryBuscarNegocios(Action):
                     return [
                         SlotSet("ubicacion_texto", None),
                         SlotSet("ubicacion_confirmada", False),
+                        SlotSet("ubicacion_confirmada_texto", None),
                         SlotSet("opciones_negocio", None)
                     ]
 
@@ -234,7 +270,8 @@ class ActionDiscoveryBuscarNegocios(Action):
                 )
                 return [
                     SlotSet("ubicacion_texto", None),
-                    SlotSet("ubicacion_confirmada", False)
+                    SlotSet("ubicacion_confirmada", False),
+                    SlotSet("ubicacion_confirmada_texto", None)
                 ]
 
             # Geocodificar ubicación (intento directo y luego limpiando frases tipo "estoy en ...")
@@ -330,6 +367,7 @@ class ActionDiscoveryBuscarNegocios(Action):
                 SlotSet("ubicacion_texto", ubicacion_actual),
                 SlotSet("opciones_negocio", lista_opciones),
                 SlotSet("ubicacion_confirmada", True) if auto_confirmada else SlotSet("ubicacion_confirmada", ubicacion_confirmada),
+                SlotSet("ubicacion_confirmada_texto", ubicacion_actual) if ubicacion_actual else SlotSet("ubicacion_confirmada_texto", ubicacion_confirmada_texto),
             ]
         
         except Exception as e:

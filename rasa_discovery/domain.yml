@@ -37,6 +37,11 @@ slots:
     influence_conversation: true
     mappings:
       - type: custom
+  ubicacion_confirmada_texto:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
   opciones_negocio:
     type: any
     influence_conversation: false
