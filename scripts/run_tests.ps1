@@ -16,7 +16,36 @@ if ($Integration) {
 	Write-Host "[TEST] Modo: Tests Unitarios (sin integración)" -ForegroundColor Magenta
 }
 
-$TEST_DB_URL = "postgresql://sectormind:password@db:5432/sectormind_test_db"
+function Get-DotEnvValue {
+	param(
+		[string]$EnvPath,
+		[string]$Key
+	)
+
+	if (-not (Test-Path $EnvPath)) {
+		return $null
+	}
+
+	foreach ($line in Get-Content $EnvPath) {
+		$trimmed = $line.Trim()
+		if (-not $trimmed -or $trimmed.StartsWith("#")) { continue }
+
+		$parts = $trimmed.Split("=", 2)
+		if ($parts.Count -ne 2) { continue }
+
+		if ($parts[0].Trim() -eq $Key) {
+			return $parts[1].Trim()
+		}
+	}
+
+	return $null
+}
+
+$envPath = Join-Path (Split-Path $PSScriptRoot -Parent) ".env"
+$TEST_DB_URL = Get-DotEnvValue -EnvPath $envPath -Key "DATABASE_URL_TEST"
+if (-not $TEST_DB_URL) {
+	$TEST_DB_URL = "postgresql://sectormind:password@db:5432/sectormind_test_db"
+}
 
 
 # Validar si el contenedor está corriendo
@@ -48,14 +77,17 @@ function Execute-FilteredTests {
 		if ($line -match "FAILED") { Write-Host $line -ForegroundColor Red }
 	}
 
-	# Extraer métricas para el resumen
+	# Extraer métricas desde la línea de resumen de pytest
 	$passedCount = 0
 	$failedCount = 0
 	$errorCount = 0
 
-	if ($output -match "(\d+) passed") { $passedCount = [int]$matches[1] }
-	if ($output -match "(\d+) failed") { $failedCount = [int]$matches[1] }
-	if ($output -match "(\d+) error")  { $errorCount  = [int]$matches[1] }
+	$summaryLine = ($lines | Where-Object { $_ -match "=+.*(passed|failed|error|errors)" } | Select-Object -Last 1)
+	if ($summaryLine) {
+		if ($summaryLine -match "(\d+)\s+passed") { $passedCount = [int]$matches[1] }
+		if ($summaryLine -match "(\d+)\s+failed") { $failedCount = [int]$matches[1] }
+		if ($summaryLine -match "(\d+)\s+errors?") { $errorCount = [int]$matches[1] }
+	}
 
 	return @{ passed = $passedCount; failed = $failedCount; errors = $errorCount }
 }

@@ -15,6 +15,7 @@ import os
 import shutil
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 from werkzeug.security import generate_password_hash
 
 load_dotenv()
@@ -33,6 +34,39 @@ if not DATABASE_URL:
     raise ValueError("❌ ERROR: No se ha definido ninguna DATABASE_URL.\n\nPuedes usar:\n  - La variable de entorno DATABASE_URL para la base de datos principal (sectormind_db)\n  - O pasar la URL de la base de datos de tests (sectormind_test_db) como argumento al script.\n\nAmbas bases de datos tienen la misma estructura, pero datos independientes.")
 
 API_URL = os.getenv('API_URL_INTERNAL', 'http://127.0.0.1:5000')
+
+
+def ensure_database_exists():
+    parsed = urlparse(DATABASE_URL)
+    dbname = parsed.path.lstrip("/")
+    if not dbname:
+        print("    ❌ ERROR: No se pudo determinar el nombre de la BD.")
+        return False
+
+    admin_params = {
+        "user": parsed.username or os.getenv("POSTGRES_USER"),
+        "password": parsed.password or os.getenv("POSTGRES_PASSWORD"),
+        "host": parsed.hostname or "localhost",
+        "port": parsed.port or 5432,
+        "dbname": "postgres",
+    }
+
+    try:
+        admin_conn = psycopg2.connect(**admin_params)
+        admin_conn.autocommit = True
+        cursor = admin_conn.cursor()
+        cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (dbname,))
+        exists = cursor.fetchone()
+        if not exists:
+            print(f"    🧱 Creando base de datos '{dbname}'...")
+            cursor.execute(f'CREATE DATABASE "{dbname}"')
+            print("    ✅ Base de datos creada.")
+        cursor.close()
+        admin_conn.close()
+        return True
+    except Exception as e:
+        print(f"    ❌ ERROR al verificar/crear BD: {e}")
+        return False
 
 
 
@@ -526,6 +560,8 @@ def init_db():
     """🗄️ Reinicializa la BD PostgreSQL."""
     print(f"\n2️⃣  REINICIALIZANDO BASE DE DATOS POSTGRESQL...")
     try:
+        if not ensure_database_exists():
+            return False
         conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
         cursor = conn.cursor()
         
