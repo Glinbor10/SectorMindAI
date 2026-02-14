@@ -887,3 +887,23 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/
 
 **Frontend (Web Client):**
 - Interfaz SPA simulada con HTML5 + Vanilla JS + Tailwind CSS.
+
+
+---
+
+## [v0.0.1] - 2025-11-02 (Inicio del Proyecto)
+
+### 🎉 Commit Inicial
+
+- Definición del Proyecto: Planteamiento de la arquitectura para "Sector Mind AI".
+
+- Estructura de Directorios: Creación del esqueleto desacoplado:
+	- `backend/`: API y Lógica.
+	- `frontend/`: Interfaz de usuario.
+	- `database/`: Persistencia de datos.
+	- `rasa_model/`: Motor conversacional.
+
+- Configuración del Entorno:
+	- Creación de entorno virtual Python (`.venv`).
+	- Definición inicial de dependencias en `requirements.txt`.
+	- Creación del `README.md` original.

@@ -53,7 +53,7 @@ jobs:
         # Ejecuta el script de gestión de base de datos para crear tablas
         python -m backend.manage_db
         
-    - name: Run Backend Tests (75 tests)
+    - name: Run Backend Tests (92 tests)
       env:
         DATABASE_URL: postgresql://sectormind:password@localhost:5432/sectormind_db
       run: |
@@ -84,7 +84,7 @@ jobs:
         cd rasa_model
         rasa data validate
 
-    - name: Run Rasa Actions Tests (29 tests)
+    - name: Run Rasa Actions Tests (12 tests)
       run: |
         PYTHONPATH=. pytest rasa_model/tests/test_acciones.py -v
 
