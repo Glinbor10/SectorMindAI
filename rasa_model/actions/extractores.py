@@ -47,9 +47,22 @@ class ExtractorFechaHora:
                 mes = int(dia_match.group(2)) if dia_match.group(2) else hoy.month
                 try:
                     fecha_objetivo = datetime(hoy.year, mes, dia).date()
-                    if fecha_objetivo < hoy:
-                        fecha_objetivo = datetime(hoy.year + 1, mes, dia).date()
                     print(f"[DEBUG extraer_solo_fecha] Número día encontrado: {dia}/{mes} → {fecha_objetivo}")
+                except ValueError:
+                    # Try previous month
+                    mes_prev = hoy.month - 1 if hoy.month > 1 else 12
+                    year = hoy.year if hoy.month > 1 else hoy.year - 1
+                    try:
+                        fecha_objetivo = datetime(year, mes_prev, dia).date()
+                        print(f"[DEBUG extraer_solo_fecha] Número día encontrado (mes prev): {dia}/{mes_prev} → {fecha_objetivo}")
+                    except ValueError:
+                        fecha_objetivo = None
+            
+            # Ajustar a futuro si la fecha es pasada
+            if fecha_objetivo and fecha_objetivo < hoy:
+                try:
+                    fecha_objetivo = datetime(hoy.year + 1, fecha_objetivo.month, fecha_objetivo.day).date()
+                    print(f"[DEBUG extraer_solo_fecha] Fecha ajustada a futuro: {fecha_objetivo}")
                 except ValueError:
                     fecha_objetivo = None
             

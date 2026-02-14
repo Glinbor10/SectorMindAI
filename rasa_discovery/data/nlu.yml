@@ -22,7 +22,7 @@ nlu:
   examples: |
     - estoy en Gran Vía 123 Madrid
     - mi ubicación es Calle Mayor 10
-    - [Gran Vía Madrid](ubicacion_texto)
+    - desde [Gran Vía Madrid](ubicacion_texto)
     - [Calle Alcalá 50](ubicacion_texto)
     - vivo en [Madrid centro](ubicacion_texto)
     - me encuentro en [Barcelona](ubicacion_texto)
@@ -31,6 +31,15 @@ nlu:
     - [Valencia](ubicacion_texto)
     - [Bilbao](ubicacion_texto)
     - [Málaga](ubicacion_texto)
+    - desde [Sevilla](ubicacion_texto)
+    - salgo desde [Córdoba](ubicacion_texto)
+    - en [Algeciras](ubicacion_texto)
+    - calle tarfia 55
+    - gran via 123
+    - desde calle andalucia
+    - estoy en el centro
+    - en madrid
+    - sevilla centro
 
 - intent: buscar_negocio
   examples: |

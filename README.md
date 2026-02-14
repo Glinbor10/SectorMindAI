@@ -1,5 +1,5 @@
 ﻿
-# **Sector Mind AI (v0.7.3)**
+# **Sector Mind AI (v1.0.0)**
 ## 🐳 **¿Cómo funciona Docker en SectorMindAI?**
 
 SectorMindAI utiliza Docker y Docker Compose para orquestar todos los servicios necesarios (backend, base de datos, dos asistentes Rasa y sus servidores de acciones) de forma profesional, reproducible y persistente.
@@ -49,15 +49,26 @@ Docker Compose y los scripts PowerShell permiten levantar, detener, testear y ma
 
 ## 📋 **Estado del Proyecto**
 
-El proyecto ha alcanzado la versión **v0.7.3 (Fotos únicas para negocios de ejemplo + mejoras en Rasa Discovery)**.
-Sistema de reservas con IA contextual, geolocalización de negocios, búsqueda inteligente por distancia, dos modelos Rasa (Discovery 5006 y Model 5005), tarjetas de negocio clicables desde la home, selección enumerada de negocios con redirección automática, detección de disponibilidad para mañana y filtrado de citas por contexto de negocio, con 100+ tests automatizados desplegable en contenedores.
-
+El proyecto ha alcanzado la versión **v0.7.5 (Diversificación de Servicios en Datos de Muestra + Fallback Inteligente en Rasa)**.
+Sistema de reservas con IA contextual, geolocalización de negocios, búsqueda inteligente por distancia, dos modelos Rasa (Discovery 5006 y Model 5005), tarjetas de negocio clicables desde la home, selección enumerada de negocios con redirección automática, detección de disponibilidad para mañana, filtrado de citas por contexto de negocio, fallback inteligente en Rasa Model, y diversificación de servicios en datos de muestra, con 100+ tests automatizados desplegable en contenedores.
 
 ### 🎯 Funcionalidades Principales (Sistema Completo)
 
-#### 🆕 Novedades v0.7.3 (Enero 2026)
+#### 🆕 Novedades v0.7.5 (Enero 2026)
+- **Diversificación de servicios por negocio:** Los negocios de muestra ahora tienen diferente número de servicios (1-4) en lugar de todos tener exactamente 2, con servicios únicos por tipo de negocio.
+- **Fallback inteligente en Rasa Model:** El agente detecta automáticamente nombres de servicios mencionados directamente, mejorando la comprensión de intents.
+
+#### 🆕 Novedades v0.7.4 (Enero 2026)
 - **Fotos únicas para cada negocio de ejemplo:** Ahora cada negocio de muestra tiene una foto distinta asociada, mejorando la experiencia visual y la diferenciación en la interfaz.
 - **Mejoras en el modelo Rasa Discovery:** Mayor precisión en intents, mejor manejo de sinónimos y expresiones ambiguas, respuestas más naturales y relevantes en la búsqueda de negocios.
+
+#### 🚀 Próxima v1.0.0 (Chat de Voz Unificado)
+- **Chat de voz totalmente funcional:** Interfaz unificada que combina voz y texto en un solo historial de conversación continuo
+- **Botón de micrófono integrado:** Entrada de voz sin cambiar de modo, con historial compartido
+- **TTS opcional:** Síntesis de voz para respuestas del bot con toggle de activación
+- **Experiencia multimodal completa:** Voz funciona exactamente igual que texto
+
+#### Funcionalidades Existentes
 - **Doble asistente Rasa:** Discovery (5006) para hallar negocios por proximidad desde la home; Model (5005) para gestionar citas dentro del detalle de negocio.
 - **UI por rol:** Home de clientes con búsqueda y chat Discovery; propietarios solo ven "Tus Negocios" sin chat de clientes.
 - **IA Contextual por Tipo de Negocio:** Respuestas especializadas según contexto (dentista/peluquería/fisioterapia)
@@ -69,7 +80,7 @@ Sistema de reservas con IA contextual, geolocalización de negocios, búsqueda i
   - Distancias en km ordenadas automáticamente
   - Selección interactiva de ubicación con mapas Leaflet
 - **Reservas Automáticas End-to-End:** El agente IA completa reservas reales sin intervención manual
-- **IA Multimodal (Voz):** Reconocimiento de voz y síntesis (Web Speech API)
+- **IA Multimodal (Voz):** Reconocimiento de voz y síntesis (Web Speech API) - próximamente unificado
 - **Gestión de Archivos:** Sistema de subida de fotos de perfil con validaciones
 - **Detección Inteligente:** Matching fuzzy de servicios y consultas en tiempo real
 - **Interpretación NLU:** Procesamiento de fechas en lenguaje natural ("mañana", "el lunes")

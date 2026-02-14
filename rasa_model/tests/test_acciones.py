@@ -38,9 +38,9 @@ class TestExtractorFechas:
     
     def test_extraer_fecha_numero(self):
         """Test: Debe extraer número de día específico"""
-        horarios = {'2026-01-30': ['2026-01-30 10:00:00']}
+        horarios = {'2027-01-30': ['2027-01-30 10:00:00']}
         resultado = ExtractorFechaHora.extraer_solo_fecha("viernes 30", horarios)
-        assert resultado == '2026-01-30'
+        assert resultado == '2027-01-30'
     
     def test_extraer_fecha_no_disponible(self):
         """Test: Debe retornar None si la fecha no está disponible"""

@@ -1,15 +1,22 @@
 
-# 🧠 Arquitectura del Asistente Conversacional (Rasa) - Sector Mind AI (v0.7.2)
+# 🧠 Arquitectura del Asistente Conversacional (Rasa) - Sector Mind AI (v0.7.5)
 
-Este documento resume la arquitectura Rasa en v0.7.2. Para la descripción completa de la nueva separación de modelos (Rasa Discovery + Rasa Model) consulta [RASA_v0.7.md](RASA_v0.7.md).
+Este documento resume la arquitectura Rasa en v0.7.5. Para la descripción completa de la separación de modelos (Rasa Discovery + Rasa Model) y futuras mejoras consulta la documentación actualizada.
 
-## Resumen v0.7.2 (Modelos Actuales)
-- **Rasa Discovery (mejorado, puerto 5006):** Descubrimiento de negocios por ubicación y tipo de servicio con selección enumerada, redirección automática, detección de disponibilidad para mañana y geocodificación mejorada.
-- **Rasa Model (existente, puerto 5005):** Gestión completa de citas (reservar, cambiar, cancelar, consultar) para un negocio concreto con filtrado de citas por contexto de negocio.
+## Resumen v0.7.5 (Modelos Actuales)
+- **Rasa Discovery (puerto 5006):** Descubrimiento de negocios por ubicación y tipo de servicio con selección enumerada, redirección automática, detección de disponibilidad para mañana, geocodificación mejorada y fallback inteligente.
+- **Rasa Model (puerto 5005):** Gestión completa de citas (reservar, cambiar, cancelar, consultar) para un negocio concreto con filtrado de citas por contexto de negocio y fallback inteligente para nombres de servicios.
 - **Frontend:**
   - `index.html` usa Rasa Discovery (chat lateral sticky).
-  - `detalle.html` usa Rasa Model (chat principal).
+  - `detalle.html` usa Rasa Model (chat principal con voz integrada).
 - **Backend:** Ambos modelos consultan API Flask + PostgreSQL; Rasa Discovery llama a `/negocios?lat&lon`; Rasa Model usa endpoints de citas y servicios.
+
+## Próxima v1.0.0 - Chat de Voz Unificado
+- **Interfaz Unificada:** Chat único que combina voz y texto en un historial continuo
+- **Voz Integrada:** Botón de micrófono en el input de chat, sin modos separados
+- **Historial Compartido:** Conversaciones de voz y texto en el mismo flujo
+- **TTS Opcional:** Síntesis de voz para respuestas con control de usuario
+- **Experiencia Multimodal Completa:** Voz funciona exactamente igual que texto
 
 ---
 
