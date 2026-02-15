@@ -49,18 +49,8 @@ slots:
       - type: custom
 
 responses:
-  utter_ask_ubicacion_inicial:
-    - text: "👋 ¿Desde dónde sales para tu cita? Así te recomiendo negocios cerca."
-  utter_confirmar_ubicacion:
-    - text: "📍 He encontrado: **{ubicacion_display}**\n\n¿Es correcta esta ubicación? (Responde **sí** o **no**)"
-  utter_pedir_ubicacion_mas_precisa:
-    - text: "📍 Por favor, dame tu ubicación de forma más precisa: **Calle, número, municipio, ciudad** (Ejemplo: 'Calle Betis 25, Estepa, Sevilla')"
-  utter_saludo_con_ubicacion:
-    - text: "✅ Ubicación guardada. Dime qué necesitas (peluquería, dentista, fisio...) y te muestro opciones cerca."
   utter_goodbye:
     - text: "¡Hasta pronto! Vuelve cuando necesites encontrar un negocio."
-  utter_fallback:
-    - text: "¿Puedes ser más específico? Di tu **ciudad y provincia** (ej: Córdoba, Andalucía) o el **tipo de negocio** que buscas (peluquería, dentista, fisio...)."
 
 actions:
   - action_discovery_buscar_negocios

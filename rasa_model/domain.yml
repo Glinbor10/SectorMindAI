@@ -143,20 +143,8 @@ slots:
       - type: custom
 
 responses:
-    utter_ask_servicio:
-      - text: "¿Qué servicio quieres reservar?"
-
-    utter_ask_fecha:
-      - text: "¿Para qué día y hora quieres la cita?"
-
     utter_greet_con_negocio:
       - text: "¡Hola! Bienvenido a {negocio}. ¿Qué servicio necesitas?"
-
-    utter_greet:
-      - text: "¡Hola! ¿En qué puedo ayudarte hoy?"
-
-    utter_pedir_servicio:
-      - text: "Puedo ayudarte con: 📅 Reservar citas, 💰 Consultar precios y servicios, 🕒 Ver horarios de apertura, 📍 Información de ubicación, 📋 Ver tus citas pendientes. ¿Qué te gustaría hacer?"
 
     utter_goodbye:
       - text: "¡Hasta luego! Si necesitas algo más, aquí estaré."
@@ -165,22 +153,6 @@ responses:
       - text: "¡De nada! 😊 ¿Hay algo más en lo que pueda ayudarte?"
       - text: "¡Un placer ayudarte! ¿Necesitas algo más?"
       - text: "¡Para eso estoy! Si necesitas otra cosa, dime."
-    
-    utter_pedir_negocio:
-      - text: "¿Para qué negocio necesitas ayuda? (dentista, fisioterapia, peluqueria)"
-
-    utter_confirmacion:
-      - text: "✅ ¡Perfecto! Tu cita ha sido reservada correctamente."
-
-
-    utter_confirmar_cancelacion:
-      - text: "¿Seguro que quieres cancelar esta cita? Responde 'sí' para confirmar o 'no' para mantenerla."
-
-    utter_confirmacion_eliminada:
-      - text: "✅ Cita cancelada correctamente. Si quieres, puedo ayudarte a reservar una nueva."
-
-    utter_pedir_nueva_fecha:
-      - text: "¿Qué fecha y hora prefieres para reprogramar? (Ej.: 'mañana a las 10', 'el viernes por la tarde')"
 
 actions:
     - action_set_contexto

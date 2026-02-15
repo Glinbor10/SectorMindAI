@@ -63,6 +63,7 @@ class ActionFallbackInteligente(Action):
 
         flujo_activo = tracker.get_slot("flujo_activo")
         mensaje_usuario = tracker.latest_message.get('text', '').lower()
+        intent_nombre = (tracker.latest_message.get('intent') or {}).get('name')
 
         print(f"🔍 ActionFallbackInteligente - Mensaje: '{mensaje_usuario}', flujo_activo: {flujo_activo}")
 
@@ -106,6 +107,9 @@ class ActionFallbackInteligente(Action):
         if not negocio_id:
             dispatcher.utter_message(text="No he entendido bien. ¿Puedes repetirlo?")
             return []
+
+        if intent_nombre == "consultar_mis_citas":
+            return [FollowupAction("action_consultar_citas_usuario")]
 
         try:
             response = requests.get(f"{API_URL}/negocios/{negocio_id}/servicios", timeout=5)

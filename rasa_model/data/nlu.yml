@@ -203,3 +203,25 @@ nlu:
       - otros horarios
       - más fechas
       - otras alternativas
+
+  - intent: ver_historial_citas
+    examples: |
+      - quiero ver mi historial de citas
+      - ver historial de citas
+      - historial de reservas
+      - mis citas anteriores
+      - citas pasadas
+      - reservas anteriores
+      - quiero ver mis citas pasadas
+      - citas que ya tuve
+
+  - intent: informar_ubicacion
+    examples: |
+      - estoy en madrid
+      - me encuentro en el centro
+      - mi ubicacion es barcelona
+      - vivo en valencia
+      - estoy cerca de la estacion
+      - estoy en la calle mayor
+      - me puedes buscar en sevilla
+      - estoy por aqui

@@ -92,7 +92,7 @@ class ActionListarServicios(Action):
                 msg = "💇 Nuestros servicios:\n\n"
                 for serv in servicios:
                     precio = serv.get('precio', 0)
-                    duracion = serv.get('duracion', 0)
+                    duracion = serv.get('duracion_minutos', serv.get('duracion', 0))
                     msg += f"• {serv['nombre']} - {precio}€ ({duracion} min)\n"
                     if serv.get('descripcion'):
                         msg += f"  {serv['descripcion']}\n"

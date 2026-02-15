@@ -14,6 +14,7 @@ let isListening = false;
 let isVoiceMode = false; 
 let isSpeaking = false;
 let autoListen = false;
+let speechQueue = [];
 
 // --- FUNCIONES DE UI ---
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -139,6 +140,18 @@ window.onload = async () => {
     
     // 3. ESPERA DE RASA
     setupVoiceRecognition();
+    
+    // Precargar voces del sistema (algunas se cargan de forma asíncrona)
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => {
+                const voices = window.speechSynthesis.getVoices();
+                console.log(`🔊 ${voices.length} voces disponibles:`, voices.filter(v => v.lang.startsWith('es')).map(v => v.name));
+            };
+        }
+    }
+    
     await waitForRasaToBeReady(businessData.nombre);
 };
 
@@ -539,9 +552,14 @@ function toggleVoice() {
     if (isListening) {
         autoListen = false;
         recognition.stop();
+        window.speechSynthesis.cancel();
+        speechQueue = [];
+        isSpeaking = false;
     } else {
         autoListen = true;
         window.speechSynthesis.cancel();
+        speechQueue = [];
+        isSpeaking = false;
         startListening();
     }
 }
@@ -557,18 +575,66 @@ function startListening() {
 
 function speakText(text, onDone) {
     if (!('speechSynthesis' in window)) return;
+    const cleaned = (text || '')
+        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '')
+        .trim();
+    if (!cleaned) {
+        if (onDone) onDone();
+        return;
+    }
+    speechQueue.push({ text: cleaned, onDone });
+    if (isSpeaking) return;
+    playNextSpeech();
+}
+
+function playNextSpeech() {
+    if (!speechQueue.length) return;
+    const next = speechQueue.shift();
+    if (!next) return;
     if (isListening && recognition) {
         recognition.stop();
     }
     isSpeaking = true;
     window.speechSynthesis.cancel();
-    const cleaned = (text || '')
-        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '');
-    const utterance = new SpeechSynthesisUtterance(cleaned);
+    const utterance = new SpeechSynthesisUtterance(next.text);
     utterance.lang = 'es-ES';
+    
+    // Seleccionar la mejor voz en español disponible
+    const voices = window.speechSynthesis.getVoices();
+    const spanishVoices = voices.filter(v => v.lang.startsWith('es'));
+    
+    // Priorizar voces premium/neural (Google, Microsoft, Apple)
+    const premiumVoice = spanishVoices.find(v => 
+        v.name.includes('Google') || 
+        v.name.includes('Premium') || 
+        v.name.includes('Neural') ||
+        v.name.includes('Enhanced') ||
+        (v.name.includes('Microsoft') && v.name.includes('Online'))
+    );
+    
+    // Si no hay premium, elegir cualquier voz femenina española (suelen sonar mejor)
+    const femaleVoice = spanishVoices.find(v => 
+        v.name.includes('Female') || 
+        v.name.includes('Mónica') || 
+        v.name.includes('Paulina') ||
+        v.name.includes('Helena') ||
+        v.name.includes('Lucia')
+    );
+    
+    utterance.voice = premiumVoice || femaleVoice || spanishVoices[0] || null;
+    
+    // Ajustar parámetros para sonar más natural
+    utterance.rate = 1.05;  // Ligeramente más rápido que lo normal (más natural)
+    utterance.pitch = 1.0;  // Tono normal
+    utterance.volume = 1.0; // Volumen máximo
+    
     utterance.onend = () => {
         isSpeaking = false;
-        if (onDone) onDone();
+        if (next.onDone) next.onDone();
+        if (speechQueue.length) {
+            playNextSpeech();
+            return;
+        }
         if (isVoiceMode && autoListen) startListening();
     };
     window.speechSynthesis.speak(utterance);

@@ -121,10 +121,10 @@ class ActionDiscoveryBuscarNegocios(Action):
 
                 matched = False
                 try:
-                    # Buscar número en el mensaje (ej: "1", "el 1", "la 1", "número 1")
-                    match = re.search(r'\b(\d{1,2})\b', mensaje)
-                    if match:
-                        idx = int(match.group(1)) - 1
+                    # Buscar número en el mensaje (ej: "1", "el 1", "la cuatro", "número tres")
+                    numero_detectado = self._extraer_numero(mensaje)
+                    if numero_detectado is not None:
+                        idx = numero_detectado - 1
                         if 0 <= idx < len(opciones_negocio):
                             seleccionado = opciones_negocio[idx]
                             negocio_id = seleccionado.get("id")
@@ -437,6 +437,53 @@ class ActionDiscoveryBuscarNegocios(Action):
             return fuzz.token_set_ratio(a, b) >= 70
         except Exception:
             return False
+
+    def _extraer_numero(self, texto: str) -> Optional[int]:
+        """Extrae un número del texto, soportando dígitos y palabras en español (1-10)."""
+        texto_lower = texto.lower()
+        
+        # Primero intentar dígitos puros (1, 2, 3...)
+        match = re.search(r'\b(\d{1,2})\b', texto_lower)
+        if match:
+            try:
+                num = int(match.group(1))
+                if 1 <= num <= 10:
+                    return num
+            except ValueError:
+                pass
+        
+        # Mapeo de palabras españolas a números
+        palabras_a_numero = {
+            # Números cardinales
+            'uno': 1, 'una': 1,
+            'dos': 2,
+            'tres': 3,
+            'cuatro': 4,
+            'cinco': 5,
+            'seis': 6,
+            'siete': 7,
+            'ocho': 8,
+            'nueve': 9,
+            'diez': 10,
+            # Números ordinales
+            'primero': 1, 'primera': 1, 'primer': 1,
+            'segundo': 2, 'segunda': 2,
+            'tercero': 3, 'tercera': 3, 'tercer': 3,
+            'cuarto': 4, 'cuarta': 4,
+            'quinto': 5, 'quinta': 5,
+            'sexto': 6, 'sexta': 6,
+            'séptimo': 7, 'séptima': 7, 'septimo': 7, 'septima': 7,
+            'octavo': 8, 'octava': 8,
+            'noveno': 9, 'novena': 9,
+            'décimo': 10, 'décima': 10, 'decimo': 10, 'decima': 10,
+        }
+        
+        # Buscar palabras numéricas
+        for palabra, numero in palabras_a_numero.items():
+            if re.search(r'\b' + re.escape(palabra) + r'\b', texto_lower):
+                return numero
+        
+        return None
 
     def _obtener_tipos_bd(self) -> List[str]:
         """Obtiene el listado de tipos disponibles desde la API y los normaliza."""

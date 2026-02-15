@@ -47,10 +47,10 @@ rules:
         - intent: consultar_ubicacion
         - action: action_mostrar_ubicacion
 
-    - rule: Consultar mis citas
+    - rule: Informar ubicacion
       steps:
-        - intent: consultar_mis_citas
-        - action: action_consultar_citas_usuario
+        - intent: informar_ubicacion
+        - action: action_mostrar_ubicacion
 
     - rule: Ver historial citas
       steps:
@@ -118,4 +118,13 @@ rules:
     - rule: Inform routing
       steps:
         - intent: inform
+        - action: action_fallback_inteligente
+
+    # ============================================
+    # CONSULTAR MIS CITAS - Routing por flujo
+    # ============================================
+
+    - rule: Consultar mis citas routing
+      steps:
+        - intent: consultar_mis_citas
         - action: action_fallback_inteligente
