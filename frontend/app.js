@@ -575,9 +575,22 @@ function startListening() {
 
 function speakText(text, onDone) {
     if (!('speechSynthesis' in window)) return;
+    
     const cleaned = (text || '')
-        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '')
+        // Eliminar etiquetas HTML
+        .replace(/<[^>]*>/g, '')
+        // Eliminar emojis Unicode (rangos completos)
+        .replace(/[\u{1F300}-\u{1F9FF}\u{1FA00}-\u{1FAFF}]/gu, '') // Emojis y símbolos
+        .replace(/[\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '') // Dingbats y símbolos misc
+        .replace(/[\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}]/gu, '') // Símbolos técnicos y flechas
+        .replace(/[\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}]/gu, '') // Mahjong, cartas
+        .replace(/[\u{FE00}-\u{FE0F}\u{200D}\u{20E3}]/gu, '') // Variantes y modificadores
+        .replace(/[\u{E0020}-\u{E007F}]/gu, '') // Tags
+        .replace(/[\u{1F100}-\u{1F1FF}]/gu, '') // Símbolos alfanuméricos y banderas
+        // Símbolos comunes que quedan fuera: ✅ ❌ ⚠️ ✓ ✔ ✖ ✗ ⭐ 🎯 etc
+        .replace(/[✅❌⚠️✓✔✖✗⭐★☆♥♡🎯📅📍🔍🤖💬📞📧🏠🏢🏥🏪🏫🛑🚀]/g, '')
         .trim();
+    
     if (!cleaned) {
         if (onDone) onDone();
         return;
