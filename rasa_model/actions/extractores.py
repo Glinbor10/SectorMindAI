@@ -27,9 +27,29 @@ class ExtractorFechaHora:
         texto_lower = texto_fecha.lower().strip()
         hoy = datetime.now().date()
 
+        # Precalcular fechas disponibles para resolver expresiones ambiguas
+        fechas_disponibles = []
+        for fecha_str in sorted(horarios_disponibles.keys()):
+            try:
+                fechas_disponibles.append(datetime.strptime(fecha_str, '%Y-%m-%d').date())
+            except ValueError:
+                # Ignorar entradas mal formateadas para no romper el flujo
+                continue
+
         print(f"[DEBUG extraer_solo_fecha] Entrada: '{texto_fecha}', Hoy: {hoy}")
 
         fecha_objetivo = None
+        dia_numero_mencionado = None
+
+        dias_semana = {
+            'lunes': 0, 'martes': 1, 'miercoles': 2, 'miércoles': 2,
+            'jueves': 3, 'viernes': 4, 'sabado': 5, 'sábado': 5, 'domingo': 6
+        }
+        dia_semana_mencionado = None
+        for dia_nombre, dia_num in dias_semana.items():
+            if dia_nombre in texto_lower:
+                dia_semana_mencionado = dia_num
+                break
         
         # Casos simples
         if "hoy" in texto_lower:
@@ -44,17 +64,44 @@ class ExtractorFechaHora:
             
             if dia_match:
                 dia = int(dia_match.group(1))
+                dia_numero_mencionado = dia
                 mes = int(dia_match.group(2)) if dia_match.group(2) else hoy.month
+
+                # Si se menciona solo un número de día (ej: "30" o "viernes 30"),
+                # intentar primero casar con días disponibles reales para evitar
+                # devolver fechas no disponibles del mes actual.
+                if fechas_disponibles and dia_match.group(2) is None:
+                    candidatas_por_dia = [f for f in fechas_disponibles if f.day == dia]
+                    if candidatas_por_dia:
+                        futuras = [f for f in candidatas_por_dia if f >= hoy]
+                        fecha_objetivo = min(futuras) if futuras else min(candidatas_por_dia)
+                        print(f"[DEBUG extraer_solo_fecha] Número día resuelto por disponibilidad: {fecha_objetivo}")
+
+                # Si el usuario combina día de semana + número (ej: "viernes 30"),
+                # priorizar una fecha que exista realmente en horarios_disponibles.
+                if dia_semana_mencionado is not None and fechas_disponibles:
+                    candidatas = [
+                        f for f in fechas_disponibles
+                        if f.day == dia and f.weekday() == dia_semana_mencionado
+                    ]
+                    if candidatas:
+                        # Tomar la más próxima en el futuro; si no hay futuras, la primera disponible.
+                        futuras = [f for f in candidatas if f >= hoy]
+                        fecha_objetivo = min(futuras) if futuras else min(candidatas)
+                        print(f"[DEBUG extraer_solo_fecha] Día+semana resuelto por disponibilidad: {fecha_objetivo}")
+
                 try:
-                    fecha_objetivo = datetime(hoy.year, mes, dia).date()
-                    print(f"[DEBUG extraer_solo_fecha] Número día encontrado: {dia}/{mes} → {fecha_objetivo}")
+                    if fecha_objetivo is None:
+                        fecha_objetivo = datetime(hoy.year, mes, dia).date()
+                        print(f"[DEBUG extraer_solo_fecha] Número día encontrado: {dia}/{mes} → {fecha_objetivo}")
                 except ValueError:
                     # Try previous month
                     mes_prev = hoy.month - 1 if hoy.month > 1 else 12
                     year = hoy.year if hoy.month > 1 else hoy.year - 1
                     try:
-                        fecha_objetivo = datetime(year, mes_prev, dia).date()
-                        print(f"[DEBUG extraer_solo_fecha] Número día encontrado (mes prev): {dia}/{mes_prev} → {fecha_objetivo}")
+                        if fecha_objetivo is None:
+                            fecha_objetivo = datetime(year, mes_prev, dia).date()
+                            print(f"[DEBUG extraer_solo_fecha] Número día encontrado (mes prev): {dia}/{mes_prev} → {fecha_objetivo}")
                     except ValueError:
                         fecha_objetivo = None
             
@@ -67,24 +114,29 @@ class ExtractorFechaHora:
                     fecha_objetivo = None
             
             # SEGUNDO: Si no hay número, buscar día de la semana
-            if not fecha_objetivo:
-                dias_semana = {
-                    'lunes': 0, 'martes': 1, 'miercoles': 2, 'miércoles': 2,
-                    'jueves': 3, 'viernes': 4, 'sabado': 5, 'sábado': 5, 'domingo': 6
-                }
-                for dia_nombre, dia_num in dias_semana.items():
-                    if dia_nombre in texto_lower:
-                        dias_hasta = (dia_num - hoy.weekday()) % 7
-                        if dias_hasta == 0:
-                            dias_hasta = 7
-                        fecha_objetivo = hoy + timedelta(days=dias_hasta)
-                        print(f"[DEBUG extraer_solo_fecha] Día semana: {dia_nombre} → {fecha_objetivo}")
-                        break
+            if not fecha_objetivo and dia_semana_mencionado is not None:
+                # Si también hay número de día, intentar casar con fechas disponibles primero.
+                if dia_numero_mencionado is not None and fechas_disponibles:
+                    candidatas = [
+                        f for f in fechas_disponibles
+                        if f.day == dia_numero_mencionado and f.weekday() == dia_semana_mencionado
+                    ]
+                    if candidatas:
+                        futuras = [f for f in candidatas if f >= hoy]
+                        fecha_objetivo = min(futuras) if futuras else min(candidatas)
+                        print(f"[DEBUG extraer_solo_fecha] Día+semana por fallback disponibilidad: {fecha_objetivo}")
+
+                # Si solo hay día de semana, mantener comportamiento original (próxima ocurrencia)
+                if not fecha_objetivo:
+                    dias_hasta = (dia_semana_mencionado - hoy.weekday()) % 7
+                    if dias_hasta == 0:
+                        dias_hasta = 7
+                    fecha_objetivo = hoy + timedelta(days=dias_hasta)
+                    print(f"[DEBUG extraer_solo_fecha] Día semana: {dia_semana_mencionado} → {fecha_objetivo}")
 
         if not fecha_objetivo:
-            fechas_disponibles = sorted(horarios_disponibles.keys())
             if fechas_disponibles:
-                fecha_objetivo = datetime.strptime(fechas_disponibles[0], '%Y-%m-%d').date()
+                fecha_objetivo = fechas_disponibles[0]
                 print(f"[DEBUG extraer_solo_fecha] Primera disponible: {fecha_objetivo}")
 
         if not fecha_objetivo:
