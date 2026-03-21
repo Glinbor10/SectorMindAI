@@ -1,73 +1,35 @@
-# Scripts de Sector Mind AI
+# Scripts - SectorMindAI v1.0.0
 
-Esta carpeta contiene los scripts PowerShell para gestionar el proyecto Sector Mind AI.
+Scripts PowerShell oficiales para operar la plataforma en Docker.
 
-## 📋 Scripts Disponibles
+## Scripts disponibles
 
-### 🚀 start_docker.ps1
-Inicia todos los servicios Docker (backend, base de datos, Rasa, etc.).
+- `start_docker.ps1`:
+  inicia todos los servicios de la plataforma.
 
-```bash
+- `stop_docker.ps1`:
+  detiene la plataforma.
+
+- `train_rasa.ps1`:
+  entrena Rasa Model y Rasa Discovery.
+
+- `run_tests.ps1`:
+  ejecuta pruebas backend y Rasa en contenedores.
+
+- `manage_db.ps1`:
+  utilidades de base de datos.
+
+## Ejemplos
+
+```powershell
 .\scripts\start_docker.ps1
-```
-
-### 🛑 stop_docker.ps1
-Detiene y elimina todos los contenedores Docker.
-
-```bash
+.\scripts\run_tests.ps1
+.\scripts\run_tests.ps1 -RasaOnly
+.\scripts\train_rasa.ps1
 .\scripts\stop_docker.ps1
 ```
 
-### 🧪 run_tests.ps1
-Ejecuta los tests automatizados del proyecto.
+## Estado de proyecto
 
-**Opciones:**
-- **Por defecto**: Tests unitarios (backend + Rasa)
-  ```bash
-  .\scripts\run_tests.ps1
-  ```
-
-- **Tests de integración** (requiere internet):
-  ```bash
-  .\scripts\run_tests.ps1 -Integration
-  ```
-
-- **Solo backend**:
-  ```bash
-  .\scripts\run_tests.ps1 -BackendOnly
-  ```
-
-- **Solo Rasa**:
-  ```bash
-  .\scripts\run_tests.ps1 -RasaOnly
-  ```
-
-- **Con reporte de cobertura**:
-  ```bash
-  .\scripts\run_tests.ps1 -Coverage
-  ```
-
-- **Archivo específico**:
-  ```bash
-  .\scripts\run_tests.ps1 -TestFile "backend/tests/test_auth.py"
-  ```
-
-### 🤖 train_rasa.ps1
-Entrena los modelos de IA de Rasa (Discovery y Model).
-
-```bash
-.\scripts\train_rasa.ps1
-```
-
-### 🗄️ manage_db.ps1
-Gestiona la base de datos PostgreSQL (inicialización, reseteo, etc.).
-
-```bash
-.\scripts\manage_db.ps1
-```
-
-## 📝 Notas
-- Todos los scripts requieren que Docker esté instalado y corriendo
-- Los tests requieren que los contenedores estén activos
-- Ejecuta desde la raíz del proyecto usando rutas relativas (`.\scripts\nombre.ps1`)
-- En VS Code, puedes usar los botones de tareas para ejecutar algunos scripts automáticamente
+Version: 1.0.0 estable.
+Uso previsto de scripts: operacion y mantenimiento.
