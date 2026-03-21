@@ -4,7 +4,7 @@ Acciones principales de Rasa
 from typing import Any, Text, Dict, List
 from rasa_sdk import Action, Tracker
 from rasa_sdk.executor import CollectingDispatcher
-from rasa_sdk.events import SlotSet, FollowupAction
+from rasa_sdk.events import SlotSet
 from datetime import datetime, timedelta
 import requests
 import re
@@ -107,9 +107,6 @@ class ActionFallbackInteligente(Action):
         if not negocio_id:
             dispatcher.utter_message(text="No he entendido bien. ¿Puedes repetirlo?")
             return []
-
-        if intent_nombre == "consultar_mis_citas":
-            return [FollowupAction("action_consultar_citas_usuario")]
 
         try:
             response = requests.get(f"{API_URL}/negocios/{negocio_id}/servicios", timeout=5)

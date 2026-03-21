@@ -12,7 +12,6 @@ Ambas comparten exactamente la misma estructura y esquema, pero sus datos pueden
 import psycopg2
 import psycopg2.extras
 import os
-import shutil
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from urllib.parse import urlparse

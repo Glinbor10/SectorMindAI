@@ -1,8 +1,6 @@
 # backend/routes/auth.py
 # filepath: backend/routes/auth.py
-import os
-import uuid
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, jsonify, request
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from ..db import get_db_connection

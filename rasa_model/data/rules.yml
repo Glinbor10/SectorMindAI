@@ -57,6 +57,11 @@ rules:
         - intent: ver_historial_citas
         - action: action_consultar_citas_usuario
 
+    - rule: Consultar mis citas
+      steps:
+        - intent: consultar_mis_citas
+        - action: action_consultar_citas_usuario
+
     - rule: Cancelar cita
       steps:
         - intent: cancelar_cita
@@ -120,11 +125,3 @@ rules:
         - intent: inform
         - action: action_fallback_inteligente
 
-    # ============================================
-    # CONSULTAR MIS CITAS - Routing por flujo
-    # ============================================
-
-    - rule: Consultar mis citas routing
-      steps:
-        - intent: consultar_mis_citas
-        - action: action_fallback_inteligente

@@ -1,7 +1,4 @@
-import os
-import uuid
-from flask import Blueprint, jsonify, request, current_app
-from werkzeug.utils import secure_filename
+from flask import Blueprint, jsonify, request
 from ..db import get_db_connection
 
 usuarios_bp = Blueprint('usuarios', __name__, url_prefix='/usuarios')

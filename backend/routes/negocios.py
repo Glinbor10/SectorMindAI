@@ -1,8 +1,5 @@
-from flask import Blueprint, jsonify, request, current_app
-from ..db import get_db_connection
-
-import os
-import uuid 
+from flask import Blueprint, jsonify, request
+from ..db import get_db_connection 
 
 negocios_bp = Blueprint('negocios', __name__, url_prefix='/negocios')
 

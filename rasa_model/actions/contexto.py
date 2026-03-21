@@ -28,7 +28,6 @@ class ActionSetContexto(Action):
         # Estrategia 2: Extraer del mensaje JSON si viene como /greet{"negocio_id": X}
         if not negocio_id:
             mensaje = tracker.latest_message.get("text", "")
-            import json
             # Buscar JSON en el mensaje (e.g., /greet{"negocio_id": 5, ...})
             try:
                 # Extraer la parte entre { y }
