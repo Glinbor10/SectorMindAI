@@ -43,6 +43,7 @@
         let currentCategory = 'Todos';
         let currentSearchTerm = '';
         let discoverySenderId = null;
+        let deviceLocation = null;
 
         // === FUNCIONES DE AUTENTICACIÓN (PARA INDEX.HTML) ===
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -175,13 +176,10 @@
                             <input type="text" id="search-input" placeholder="Buscar..." class="w-full p-2 outline-none text-slate-700 placeholder:text-slate-400 bg-transparent text-base">
                         </div>
                         <div class="flex items-center gap-2">
-                            <div class="relative bg-white rounded-xl shadow flex items-center p-1 border border-slate-100 flex-1">
-                                <i data-lucide="map-pin" class="ml-2 text-slate-400 w-4 h-4"></i>
-                                <input type="text" id="location-input" placeholder="Ej: Gran Vía 123, Madrid / Solo: Madrid" class="w-full p-2 outline-none text-slate-700 placeholder:text-slate-400 bg-transparent text-sm">
-                            </div>
-                            <button onclick="searchNearLocation()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-indigo-700 transition shadow flex items-center gap-2 text-sm whitespace-nowrap">
-                                <i data-lucide="navigation" class="w-4 h-4"></i> Buscar cerca
+                            <button onclick="searchNearLocation(true)" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-medium hover:bg-indigo-700 transition shadow flex items-center gap-2 text-sm whitespace-nowrap">
+                                <i data-lucide="navigation" class="w-4 h-4"></i> Usar ubicación precisa
                             </button>
+                            <span id="device-location-status" class="text-xs text-slate-500">Ubicación no detectada</span>
                         </div>
                     </div>
                 </header>
@@ -410,8 +408,6 @@
             const containerVisuals = document.getElementById('discovery-voice-visuals');
             const containerVisualsContent = document.getElementById('discovery-voice-visuals-content');
             if (!containerChat || !containerVisuals) return;
-            const locInput = document.getElementById('location-input');
-            if (locInput) locInput.value = '';
             // Usar un sender distinto en cada recarga para no arrastrar slots previos
             discoverySenderId = (currentUser ? `cli-${currentUser.id}` : 'anon') + `-${Date.now()}`;
             containerChat.innerHTML = '';
@@ -420,6 +416,7 @@
             setVoicePanelFloating(false);
             discoveryVoiceGreeted = false;
             addDiscoveryMsg('bot', discoveryGreetingText);
+            await ensureDevicePreciseLocation(false, false);
             await checkDiscoveryRasaAvailability();
         }
 
@@ -474,28 +471,13 @@
         }
 
         function getDiscoveryMetadata() {
-            const locInput = document.getElementById('location-input');
-            const chatMessages = document.getElementById('discovery-chat-messages');
-            let savedLocation = null;
-            
-            // Buscar ubicación en los últimos mensajes del IA que contengan "Ubicación guardada:"
-            if (chatMessages) {
-                const allDivs = chatMessages.querySelectorAll('div');
-                for (let i = allDivs.length - 1; i >= 0; i--) {
-                    const text = allDivs[i].textContent || '';
-                    if (text.includes('Ubicación guardada:')) {
-                        const match = text.match(/Ubicación guardada: ([^\n]+)/);
-                        if (match) {
-                            savedLocation = match[1].trim();
-                            break;
-                        }
-                    }
-                }
-            }
-            
             return {
                 cliente_id: currentUser ? currentUser.id : null,
-                ubicacion_texto: savedLocation || (locInput?.value || '').trim() || null
+                geolocalizacion_disponible: !!navigator.geolocation,
+                ubicacion_lat: deviceLocation ? deviceLocation.lat : null,
+                ubicacion_lon: deviceLocation ? deviceLocation.lon : null,
+                ubicacion_precision_m: deviceLocation ? deviceLocation.accuracy : null,
+                ubicacion_origen: deviceLocation ? deviceLocation.source : null
             };
         }
 
@@ -514,7 +496,7 @@
                     if (t) t.remove();
                 }
                 if (!Array.isArray(data) || data.length === 0) {
-                    handleDiscoveryBotResponse('¿Puedes ser más específico? Di tu ciudad y provincia (ej: Córdoba, Andalucía) o una dirección más detallada.');
+                    handleDiscoveryBotResponse('No recibí respuesta útil. Pulsa "Usar ubicación precisa" y vuelve a pedir el tipo de negocio que necesitas.');
                     return;
                 }
                 data.forEach(r => { if (r.text) handleDiscoveryBotResponse(r.text); });
@@ -707,7 +689,7 @@
             initDiscoveryChat();
             updateUIIndex();
             window.updateRoleViews();
-            loadBusinesses();
+            searchNearLocation(false);
         }
 
         function updateUIIndex() {
@@ -755,107 +737,90 @@
                 grid.innerHTML = '<p class="text-red-500 col-span-full">Error al conectar.</p>'; 
             }
         }
-        
-        async function searchNearLocation() {
-            const locationInput = document.getElementById('location-input').value.trim();
-            
-            if (!locationInput) {
-                Swal.fire('Aviso', 'Por favor ingresa una ciudad o dirección', 'info');
-                return;
+
+        function updateDeviceLocationStatus(message, isOk = false) {
+            const status = document.getElementById('device-location-status');
+            if (!status) return;
+            status.textContent = message;
+            status.className = isOk ? 'text-xs text-green-700' : 'text-xs text-slate-500';
+        }
+
+        async function ensureDevicePreciseLocation(force = false, showFeedback = false) {
+            if (deviceLocation && !force) {
+                return deviceLocation;
             }
-            
-            Swal.fire({
-                title: 'Buscando ubicación...',
-                text: `Geocodificando: ${locationInput}`,
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
-            });
-            
-            try {
-                // Geocodificar la dirección ingresada
-                let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationInput)}&format=json&limit=3&accept-language=es`;
-                let res = await fetch(url, {
-                    headers: { 'User-Agent': 'SectorMindAI/1.0' }
+
+            if (!navigator.geolocation) {
+                deviceLocation = null;
+                updateDeviceLocationStatus('Este dispositivo no expone geolocalización');
+                return null;
+            }
+
+            if (showFeedback) {
+                Swal.fire({
+                    title: 'Obteniendo ubicación precisa...',
+                    text: 'En PC sin GPS se intentará por red (Wi-Fi/IP).',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
                 });
-                let data = await res.json();
-                
-                // Si no encuentra nada, intentar con solo la última parte (ciudad)
-                if (!data || data.length === 0) {
-                    const parts = locationInput.split(',').map(p => p.trim());
-                    if (parts.length > 1) {
-                        const city = parts[parts.length - 1];
-                        console.log(`⚠️ Dirección completa no encontrada. Intentando solo con: ${city}`);
-                        
-                        Swal.update({
-                            title: 'Buscando ubicación...',
-                            text: `Probando con: ${city}`
-                        });
-                        
-                        url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)},España&format=json&limit=3&accept-language=es`;
-                        res = await fetch(url, {
-                            headers: { 'User-Agent': 'SectorMindAI/1.0' }
-                        });
-                        data = await res.json();
-                    }
-                }
-                
-                if (data && data.length > 0) {
-                    // Si hay múltiples resultados, mostrar opciones
-                    if (data.length > 1) {
-                        Swal.close();
-                        
-                        const options = data.slice(0, 3).map((result, idx) => 
-                            `<button onclick="selectLocation(${result.lat}, ${result.lon}, '${result.display_name.replace(/'/g, "\\'")}')" class="w-full text-left p-3 mb-2 border border-slate-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition">${result.display_name}</button>`
-                        ).join('');
-                        
-                        Swal.fire({
-                            title: 'Selecciona una ubicación',
-                            html: `<div class="text-left">${options}</div>`,
-                            showConfirmButton: false,
-                            showCancelButton: true,
-                            cancelButtonText: 'Cancelar'
-                        });
-                    } else {
-                        const lat = parseFloat(data[0].lat);
-                        const lon = parseFloat(data[0].lon);
-                        
-                        Swal.close();
-                        await loadBusinesses(lat, lon);
-                        
-                        Swal.fire({
-                            title: '¡Búsqueda completada!',
-                            html: `<p>Mostrando negocios cerca de <strong>${data[0].display_name}</strong></p>`,
-                            icon: 'success',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                    }
-                } else {
-                    Swal.fire({
-                        title: 'Ubicación no encontrada',
-                        html: '<p>No se pudo encontrar esa ubicación.</p><p class="text-sm text-slate-500 mt-2">💡 Intenta con:</p><ul class="text-left text-sm text-slate-600 mt-2 ml-4 list-disc"><li>Solo el nombre de la ciudad: "Madrid", "Sevilla"</li><li>Ciudad y provincia: "Estepa, Sevilla"</li><li>Dirección más genérica</li></ul>',
-                        icon: 'error',
-                        confirmButtonColor: '#4f46e5'
+            }
+
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 12000,
+                        maximumAge: 30000
                     });
+                });
+
+                deviceLocation = {
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude,
+                    accuracy: position.coords.accuracy || null,
+                    source: position.coords.accuracy && position.coords.accuracy <= 80 ? 'gps' : 'network',
+                    updatedAt: Date.now()
+                };
+
+                const accuracyText = deviceLocation.accuracy ? `±${Math.round(deviceLocation.accuracy)}m` : 'precisión desconocida';
+                updateDeviceLocationStatus(`Ubicación detectada ${accuracyText}`, true);
+
+                if (showFeedback) {
+                    Swal.close();
                 }
-            } catch (err) {
-                console.error('Error al geocodificar:', err);
-                Swal.fire('Error', 'Error al buscar la ubicación', 'error');
+
+                return deviceLocation;
+            } catch (error) {
+                deviceLocation = null;
+                updateDeviceLocationStatus('No se pudo obtener ubicación del dispositivo');
+
+                if (showFeedback) {
+                    Swal.close();
+                    let detail = 'Habilita permiso de ubicación y vuelve a intentar.';
+                    if (error && error.code === 1) detail = 'Permiso de ubicación denegado.';
+                    if (error && error.code === 2) detail = 'Ubicación no disponible (habitual en PC sin GPS).';
+                    if (error && error.code === 3) detail = 'Tiempo de espera agotado al obtener ubicación.';
+                    Swal.fire('Sin ubicación precisa', detail, 'warning');
+                }
+
+                return null;
             }
         }
         
-        // Función auxiliar para seleccionar ubicación de múltiples resultados
-        async function selectLocation(lat, lon, displayName) {
-            Swal.close();
-            await loadBusinesses(lat, lon);
-            
-            Swal.fire({
-                title: '¡Búsqueda completada!',
-                html: `<p>Mostrando negocios cerca de <strong>${displayName}</strong></p>`,
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
-            });
+        async function searchNearLocation(showFeedback = false) {
+            const location = await ensureDevicePreciseLocation(true, showFeedback);
+
+            if (!location) {
+                await loadBusinesses();
+                return;
+            }
+
+            if (showFeedback) {
+                await openSearchLocationAdjustModal(location);
+                return;
+            }
+
+            await loadBusinesses(location.lat, location.lon);
         }
 
         async function loadMyBusinesses() {
@@ -1178,7 +1143,7 @@
         window.onload = () => {
             updateUIIndex();
             window.updateRoleViews();
-            loadBusinesses();
+            searchNearLocation(false);
             setupDiscoveryVoiceRecognition();
             initDiscoveryChat();
             // Inicializar iconos después de que todo esté cargado
@@ -1197,7 +1162,7 @@
         let discoveryVoiceTempVisuals = false;
         let discoveryVoicePanelHomeParent = null;
         let discoveryVoicePanelHomeNext = null;
-        const discoveryGreetingText = '👋 ¡Hola! ¿Desde dónde sales para tu cita? Así te recomiendo negocios cerca y te ayudo a encontrar lo que necesitas (**peluquería**, **dentista**, **fisio**...).';
+        const discoveryGreetingText = '👋 ¡Hola! Dime qué necesitas y te ayudo a encontrarlo (**peluquería**, **dentista**, **fisio**...).';
 
         function setupDiscoveryVoiceRecognition() {
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -1416,11 +1381,26 @@
         let selectedLat = null;
         let selectedLon = null;
         let currentMapMode = null;
+        let mapInitialLocation = null;
 
-        async function openMapModal(mode) {
+        async function openMapModal(mode, initialLocation = null) {
             currentMapMode = mode;
-            selectedLat = null;
-            selectedLon = null;
+            mapInitialLocation = initialLocation;
+            selectedLat = initialLocation ? initialLocation.lat : null;
+            selectedLon = initialLocation ? initialLocation.lon : null;
+
+            const title = document.getElementById('map-modal-title');
+            const subtitle = document.getElementById('map-modal-subtitle');
+            if (title && subtitle) {
+                if (mode === 'search') {
+                    title.textContent = 'Ajusta tu ubicación precisa';
+                    subtitle.textContent = 'Si la ubicación no es exacta, haz click en el mapa para corregirla';
+                } else {
+                    title.textContent = 'Selecciona la ubicación en el mapa';
+                    subtitle.textContent = 'Haz click en el mapa para marcar la ubicación del negocio';
+                }
+            }
+
             document.getElementById('map-modal').classList.remove('hidden');
             
             // Esperar a que el DOM se renderice
@@ -1435,6 +1415,13 @@
                 mapInstance.remove();
                 mapInstance = null;
             }
+            mapMarker = null;
+            mapInitialLocation = null;
+        }
+
+        function updateMapSelectedAddress(text) {
+            const node = document.getElementById('map-selected-address');
+            if (node) node.innerHTML = text;
         }
 
         async function initializeMap() {
@@ -1448,9 +1435,16 @@
                 attribution: '© OpenStreetMap contributors',
                 maxZoom: 19
             }).addTo(mapInstance);
+
+            if (currentMapMode === 'search' && mapInitialLocation) {
+                mapInstance.setView([mapInitialLocation.lat, mapInitialLocation.lon], 16);
+                mapMarker = L.marker([mapInitialLocation.lat, mapInitialLocation.lon]).addTo(mapInstance);
+                const accuracy = mapInitialLocation.accuracy ? ` (±${Math.round(mapInitialLocation.accuracy)}m)` : '';
+                updateMapSelectedAddress(`📍 <strong>Ubicación detectada</strong> ${mapInitialLocation.lat.toFixed(5)}, ${mapInitialLocation.lon.toFixed(5)}${accuracy}`);
+            }
             
             // Intentar obtener ubicación actual del usuario
-            if (navigator.geolocation) {
+            if (navigator.geolocation && currentMapMode !== 'search') {
                 Swal.fire({
                     title: 'Obteniendo tu ubicación...',
                     text: 'Para centrar el mapa más cerca de ti',
@@ -1516,11 +1510,11 @@
                         if (city) parts.push(city);
                         
                         const cleanAddress = parts.join(', ') || data.display_name;
-                        document.getElementById('map-selected-address').innerHTML = `📍 <strong>${cleanAddress}</strong> (${lat.toFixed(5)}, ${lon.toFixed(5)})`;
+                        updateMapSelectedAddress(`📍 <strong>${cleanAddress}</strong> (${lat.toFixed(5)}, ${lon.toFixed(5)})`);
                     }
                 } catch (err) {
                     console.error('Error en reverse geocoding:', err);
-                    document.getElementById('map-selected-address').innerHTML = `📍 <strong>Coordenadas: ${lat.toFixed(5)}, ${lon.toFixed(5)}</strong>`;
+                    updateMapSelectedAddress(`📍 <strong>Coordenadas: ${lat.toFixed(5)}, ${lon.toFixed(5)}</strong>`);
                 }
             });
         }
@@ -1564,6 +1558,16 @@
                         document.getElementById('edit-geocode-status').classList.remove('hidden');
                         document.getElementById('edit-geocode-error').classList.add('hidden');
                         document.getElementById('edit-coords-display').textContent = `${selectedLat.toFixed(5)}, ${selectedLon.toFixed(5)}`;
+                    } else if (currentMapMode === 'search') {
+                        deviceLocation = {
+                            lat: selectedLat,
+                            lon: selectedLon,
+                            accuracy: deviceLocation ? deviceLocation.accuracy : null,
+                            source: 'manual-adjust',
+                            updatedAt: Date.now()
+                        };
+                        updateDeviceLocationStatus('Ubicación ajustada manualmente', true);
+                        await loadBusinesses(selectedLat, selectedLon);
                     }
                     
                     closeMapModal();
@@ -1579,6 +1583,10 @@
                 console.error('Error:', err);
                 Swal.fire('Error', 'No se pudo obtener la dirección', 'error');
             }
+        }
+
+        async function openSearchLocationAdjustModal(location) {
+            await openMapModal('search', location);
         }
 
         // También inicializar iconos cuando el DOM esté listo
@@ -1730,8 +1738,8 @@
         <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
             <div class="sticky top-0 bg-white border-b border-slate-200 p-6 flex justify-between items-center">
                 <div>
-                    <h3 class="text-2xl font-bold text-slate-900">Selecciona la ubicación en el mapa</h3>
-                    <p class="text-xs text-slate-500 mt-1">Haz click en el mapa para marcar la ubicación del negocio</p>
+                    <h3 id="map-modal-title" class="text-2xl font-bold text-slate-900">Selecciona la ubicación en el mapa</h3>
+                    <p id="map-modal-subtitle" class="text-xs text-slate-500 mt-1">Haz click en el mapa para marcar la ubicación del negocio</p>
                 </div>
                 <button onclick="closeMapModal()" class="text-slate-400 hover:text-slate-600 transition">
                     <i data-lucide="x" class="w-6 h-6"></i>
