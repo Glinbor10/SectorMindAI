@@ -99,8 +99,8 @@ window.onload = async () => {
             const res = await fetch(`${API_URL}/negocios/${negocioId}`);
             if (res.ok) {
                 businessData = await res.json();
-                // Actualizar localStorage con el nuevo negocio
-                localStorage.setItem('selected_business', JSON.stringify(businessData));
+                // Persistir solo el ID para evitar exceder cuota de localStorage con fotos base64
+                localStorage.setItem('selected_business_id', String(negocioId));
                 console.log(`✅ Negocio cargado desde URL: ${businessData.nombre} (ID: ${negocioId})`);
             } else {
                 console.error('Failed to fetch business');
@@ -113,24 +113,48 @@ window.onload = async () => {
             return;
         }
     } else {
-        // Sin ID en URL, intentar cargar del localStorage
-        const storedBiz = localStorage.getItem('selected_business');
-        if (!storedBiz) { 
+        // Sin ID en URL, intentar cargar por ID desde storage
+        let storedBizId = localStorage.getItem('selected_business_id');
+        if (!storedBizId) {
+            // Compatibilidad hacia atras con formato antiguo (objeto completo)
+            const legacyStoredBiz = localStorage.getItem('selected_business');
+            if (legacyStoredBiz) {
+                try {
+                    const legacyBizObj = JSON.parse(legacyStoredBiz);
+                    if (legacyBizObj && legacyBizObj.id) {
+                        storedBizId = String(legacyBizObj.id);
+                        localStorage.setItem('selected_business_id', storedBizId);
+                    }
+                } catch (e) {
+                    localStorage.removeItem('selected_business');
+                }
+            }
+        }
+
+        if (!storedBizId) {
             console.error('No business selected');
             window.location.href = '/'; 
             return; 
         }
+
         try {
-            businessData = JSON.parse(storedBiz);
-            console.log(`✅ Negocio cargado desde localStorage: ${businessData.nombre} (ID: ${businessData.id})`);
+            const res = await fetch(`${API_URL}/negocios/${storedBizId}`);
+            if (!res.ok) {
+                console.error('Failed to fetch business from stored ID');
+                window.location.href = '/';
+                return;
+            }
+            businessData = await res.json();
+            console.log(`✅ Negocio cargado desde storage ID: ${businessData.nombre} (ID: ${storedBizId})`);
         } catch (e) {
-            console.error('Error parsing stored business data:', e);
+            console.error('Error loading business from stored ID:', e);
             window.location.href = '/';
             return;
         }
+
         if (!businessData || typeof businessData !== 'object' || !businessData.id) {
             console.error('Invalid business data:', businessData);
-            localStorage.removeItem('selected_business'); // Limpiar localStorage corrupto
+            localStorage.removeItem('selected_business_id');
             window.location.href = '/';
             return;
         }

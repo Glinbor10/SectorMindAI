@@ -25,10 +25,11 @@ def verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita_str, conn, c
     
     # 1. Obtener duración
     servicio_info = conn.execute(
-        'SELECT duracion_minutos FROM servicios WHERE id = %s', (servicio_id,)
+        'SELECT duracion_minutos FROM servicios WHERE id = %s AND negocio_id = %s',
+        (servicio_id, negocio_id)
     ).fetchone()
     if not servicio_info:
-        return False, "Servicio no válido."
+        return False, "Servicio no válido para este negocio."
 
     duracion_servicio = servicio_info['duracion_minutos']
     
@@ -142,7 +143,10 @@ def obtener_tramos_disponibles(negocio_id, servicio_id, fecha_solicitada, conn, 
         cita_id_excluir: ID de la cita a excluir (usado al editar una cita)
     """
     
-    servicio_info = conn.execute('SELECT duracion_minutos FROM servicios WHERE id = %s', (servicio_id,)).fetchone()
+    servicio_info = conn.execute(
+        'SELECT duracion_minutos FROM servicios WHERE id = %s AND negocio_id = %s',
+        (servicio_id, negocio_id)
+    ).fetchone()
     if not servicio_info: return {'error': 'Servicio no encontrado'}
     duracion_servicio = servicio_info['duracion_minutos']
 

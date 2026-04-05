@@ -1,10 +1,10 @@
-# Sector Mind AI (v1.0.0)
+# Sector Mind AI (v1.0.1)
 
 Plataforma de reservas inteligente con arquitectura de microservicios en Docker Compose, backend Flask + PostgreSQL y asistentes Rasa duales (Discovery + Model).
 
 ## Estado actual
 
-Version actual: v1.0.0 (estable)
+Version actual: v1.0.1 (estable)
 
 Politica de cambios:
 - No hay nuevas features planificadas en esta linea.

@@ -360,6 +360,44 @@ def test_post_citas_servicio_largo_sale_horario(client, usuario_cliente, propiet
     assert response.status_code == 409
 
 
+def test_post_citas_rechaza_servicio_de_otro_negocio(client, usuario_cliente, propietario_con_negocio, db_conn):
+    """POST /citas debe rechazar un servicio que no pertenece al negocio indicado."""
+    negocio_id = propietario_con_negocio['negocio_id']
+
+    cursor = db_conn.cursor()
+    # Segundo negocio con su servicio propio
+    email = f'prop_cross_{uuid.uuid4().hex[:8]}@test.com'
+    cursor.execute(
+        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Propietario Cross', email, 'hash', 'propietario')
+    )
+    prop2_id = cursor.fetchone()['id']
+    cursor.execute(
+        "INSERT INTO negocios (nombre, tipo_negocio, propietario_id, direccion) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Negocio Cross', 'estetica', prop2_id, 'Calle Cross 1')
+    )
+    negocio2_id = cursor.fetchone()['id']
+    cursor.execute(
+        "INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES (%s, %s, %s, %s) RETURNING id",
+        (negocio2_id, 'Maquillaje Profesional', 60.0, 60)
+    )
+    servicio_otro_negocio_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    payload = {
+        'negocio_id': negocio_id,
+        'servicio_id': servicio_otro_negocio_id,
+        'cliente_id': usuario_cliente,
+        'fecha_hora_cita': '2025-12-08 10:00:00'
+    }
+
+    response = client.post('/citas', data=json.dumps(payload), content_type='application/json')
+
+    assert response.status_code == 400
+    assert 'servicio no válido para este negocio' in response.get_json()['error'].lower()
+
+
 # ======================================================================
 # TESTS PARA POST /disponibilidad (Consultar disponibilidad)
 # ======================================================================
@@ -466,6 +504,42 @@ def test_post_disponibilidad_servicio_inexistente(client, propietario_con_negoci
     assert response.status_code in [400, 404]
 
 
+def test_post_disponibilidad_rechaza_servicio_de_otro_negocio(client, propietario_con_negocio, db_conn):
+    """POST /disponibilidad debe rechazar un servicio de otro negocio."""
+    negocio_id = propietario_con_negocio['negocio_id']
+
+    cursor = db_conn.cursor()
+    email = f'prop_disp_{uuid.uuid4().hex[:8]}@test.com'
+    cursor.execute(
+        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Propietario Disp', email, 'hash', 'propietario')
+    )
+    prop2_id = cursor.fetchone()['id']
+    cursor.execute(
+        "INSERT INTO negocios (nombre, tipo_negocio, propietario_id, direccion) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Negocio Disp', 'estetica', prop2_id, 'Calle Disp 1')
+    )
+    negocio2_id = cursor.fetchone()['id']
+    cursor.execute(
+        "INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES (%s, %s, %s, %s) RETURNING id",
+        (negocio2_id, 'Servicio Ajeno', 40.0, 45)
+    )
+    servicio_otro_negocio_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    payload = {
+        'negocio_id': negocio_id,
+        'servicio_id': servicio_otro_negocio_id,
+        'fecha': '2025-12-08'
+    }
+
+    response = client.post('/disponibilidad', data=json.dumps(payload), content_type='application/json')
+
+    assert response.status_code == 400
+    assert 'servicio' in response.get_json()['error'].lower()
+
+
 # ======================================================================
 # TESTS PARA DELETE /citas/<id> (Cancelar cita)
 # ======================================================================
@@ -502,6 +576,92 @@ def test_delete_cita_inexistente(client):
     response = client.delete('/citas/999999')
     
     assert response.status_code == 404
+
+
+def test_put_cita_rechaza_servicio_de_otro_negocio(client, usuario_cliente, propietario_con_negocio, db_conn):
+    """PUT /citas/{id} debe rechazar cambiar una cita a un servicio de otro negocio."""
+    negocio_id = propietario_con_negocio['negocio_id']
+    servicio_valido = propietario_con_negocio['servicio_id_1']
+
+    # Crear cita válida inicial
+    payload_create = {
+        'negocio_id': negocio_id,
+        'servicio_id': servicio_valido,
+        'cliente_id': usuario_cliente,
+        'fecha_hora_cita': '2025-12-08 10:00:00'
+    }
+    create_response = client.post('/citas', data=json.dumps(payload_create), content_type='application/json')
+    assert create_response.status_code == 201
+    cita_id = create_response.get_json()['id']
+
+    # Crear servicio de otro negocio
+    cursor = db_conn.cursor()
+    email = f'prop_put_{uuid.uuid4().hex[:8]}@test.com'
+    cursor.execute(
+        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Propietario PUT', email, 'hash', 'propietario')
+    )
+    prop2_id = cursor.fetchone()['id']
+    cursor.execute(
+        "INSERT INTO negocios (nombre, tipo_negocio, propietario_id, direccion) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Negocio PUT', 'estetica', prop2_id, 'Calle PUT 1')
+    )
+    negocio2_id = cursor.fetchone()['id']
+    cursor.execute(
+        "INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES (%s, %s, %s, %s) RETURNING id",
+        (negocio2_id, 'Servicio PUT Ajeno', 55.0, 30)
+    )
+    servicio_ajeno_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    payload_update = {
+        'servicio_id': servicio_ajeno_id,
+        'fecha_hora_cita': '2025-12-08 11:00:00'
+    }
+    response = client.put(f'/citas/{cita_id}', data=json.dumps(payload_update), content_type='application/json')
+
+    assert response.status_code == 400
+    assert 'servicio no válido para este negocio' in response.get_json()['error'].lower()
+
+
+def test_get_citas_marca_servicio_invalido_si_hay_dato_corrupto(client, usuario_cliente, propietario_con_negocio, db_conn):
+    """GET /citas no debe mostrar nombre de servicio ajeno cuando hay una cita corrupta histórica."""
+    negocio_id = propietario_con_negocio['negocio_id']
+
+    cursor = db_conn.cursor()
+    # Crear otro negocio + servicio para forzar inconsistencia histórica
+    email = f'prop_get_{uuid.uuid4().hex[:8]}@test.com'
+    cursor.execute(
+        "INSERT INTO usuarios (nombre, email, password_hash, rol) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Propietario GET', email, 'hash', 'propietario')
+    )
+    prop2_id = cursor.fetchone()['id']
+    cursor.execute(
+        "INSERT INTO negocios (nombre, tipo_negocio, propietario_id, direccion) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Negocio GET', 'estetica', prop2_id, 'Calle GET 1')
+    )
+    negocio2_id = cursor.fetchone()['id']
+    cursor.execute(
+        "INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES (%s, %s, %s, %s) RETURNING id",
+        (negocio2_id, 'Servicio Extrano', 70.0, 60)
+    )
+    servicio_ajeno_id = cursor.fetchone()['id']
+
+    # Insertar cita corrupta manualmente (simula datos históricos previos al fix)
+    cursor.execute(
+        "INSERT INTO citas (negocio_id, cliente_id, servicio_id, fecha_hora_cita, duracion_minutos, estado) VALUES (%s, %s, %s, %s, %s, %s)",
+        (negocio_id, usuario_cliente, servicio_ajeno_id, '2025-12-08 12:00:00', 60, 'confirmada')
+    )
+    db_conn.commit()
+    cursor.close()
+
+    response = client.get(f'/citas?negocio_id={negocio_id}')
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert len(data) >= 1
+    assert any(c['servicio_nombre'] == 'Servicio no válido para este negocio' for c in data)
 
 
 def test_post_disponibilidad_ignora_citas_canceladas(client, usuario_cliente, propietario_con_negocio, app, db_conn):

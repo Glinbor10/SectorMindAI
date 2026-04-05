@@ -31,13 +31,13 @@ def obtener_citas():
                 c.id, c.cliente_id, c.fecha_hora_cita, c.estado, c.duracion_minutos,
                 c.negocio_id, c.servicio_id,
                 n.nombre as negocio_nombre, n.tipo_negocio,
-                s.nombre as servicio_nombre, 
+                COALESCE(s.nombre, 'Servicio no válido para este negocio') as servicio_nombre,
                 s.precio,
                 u.nombre as cliente_nombre,
                 u.email as cliente_email
             FROM citas c
             JOIN negocios n ON c.negocio_id = n.id
-            JOIN servicios s ON c.servicio_id = s.id
+            LEFT JOIN servicios s ON c.servicio_id = s.id AND s.negocio_id = c.negocio_id
             JOIN usuarios u ON c.cliente_id = u.id
         '''
         
@@ -82,6 +82,14 @@ def crear_cita():
 
     conn = get_db_connection()
     try:
+        # Validar que el servicio pertenezca al negocio
+        servicio = conn.execute(
+            'SELECT duracion_minutos FROM servicios WHERE id = %s AND negocio_id = %s',
+            (servicio_id, negocio_id)
+        ).fetchone()
+        if not servicio:
+            return jsonify({'error': 'Servicio no válido para este negocio'}), 400
+
         # Validar disponibilidad
         es_valida, mensaje = verificar_solapamiento(negocio_id, servicio_id, fecha_hora_cita, conn)
         
@@ -93,15 +101,7 @@ def crear_cita():
             else:
                 return jsonify({'error': mensaje}), 400
 
-        # Obtener duración del servicio
-        servicio = conn.execute(
-            'SELECT duracion_minutos FROM servicios WHERE id = %s',
-            (servicio_id,)
-        ).fetchone()
-        
-        if not servicio:
-            return jsonify({'error': 'Servicio no válido'}), 400
-        
+        # Duración obtenida de la validación anterior
         duracion = servicio['duracion_minutos']
 
         # Crear cita
@@ -188,14 +188,14 @@ def modificar_cita(cita_id):
         if not es_valida:
             return jsonify({'error': mensaje}), 400
 
-        # Obtener duración
+        # Obtener duración validando que el servicio pertenezca al negocio de la cita
         servicio = conn.execute(
-            'SELECT duracion_minutos FROM servicios WHERE id = %s',
-            (servicio_id,)
+            'SELECT duracion_minutos FROM servicios WHERE id = %s AND negocio_id = %s',
+            (servicio_id, negocio_id)
         ).fetchone()
         
         if not servicio:
-            return jsonify({'error': 'Servicio no válido'}), 400
+            return jsonify({'error': 'Servicio no válido para este negocio'}), 400
 
         # Actualizar cita (incluir cliente_id si viene)
         cursor = conn.cursor()
