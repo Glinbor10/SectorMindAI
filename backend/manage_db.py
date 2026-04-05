@@ -684,7 +684,7 @@ def add_past_citas():
         
         cliente_id = result['id']
         
-        # Obtener primer negocio y 2 servicios
+        # Obtener primer negocio
         cursor.execute("SELECT id FROM negocios LIMIT 1")
         result = cursor.fetchone()
         if not result:
@@ -694,13 +694,21 @@ def add_past_citas():
         
         negocio_id = result['id']
         
-        cursor.execute("SELECT id, duracion_minutos FROM servicios LIMIT 2")
+        # Obtener servicios del negocio seleccionado (evita cruces negocio/servicio)
+        cursor.execute(
+            "SELECT id, duracion_minutos FROM servicios WHERE negocio_id = %s ORDER BY id LIMIT 2",
+            (negocio_id,)
+        )
         servicios = cursor.fetchall()
         
-        if len(servicios) < 2:
-            print("    ⚠️ Se necesitan al menos 2 servicios")
+        if len(servicios) == 0:
+            print(f"    ⚠️ El negocio {negocio_id} no tiene servicios")
             conn.close()
             return
+
+        # Si solo hay un servicio en el negocio, reutilizarlo para ambas citas
+        if len(servicios) == 1:
+            servicios = [servicios[0], servicios[0]]
         
         # Crear 2 citas pasadas
         fecha_pasada_1 = (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d 10:00:00')
