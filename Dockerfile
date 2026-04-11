@@ -35,5 +35,5 @@ COPY docs /app/docs
 # Expose Flask port
 EXPOSE 5000
 
-# Run Flask directly
-CMD ["python", "-m", "backend.app"]
+# Run backend with a production WSGI server and multiple workers for concurrency
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "8", "--threads", "8", "--timeout", "120", "backend.app:app"]

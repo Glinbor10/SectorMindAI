@@ -1,2 +1,2 @@
-# Arranca los contenedores Docker (usa caché automáticamente, reconstruye solo si hay cambios)
+# Arranca los contenedores Docker
 docker compose up -d

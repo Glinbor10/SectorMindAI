@@ -57,7 +57,7 @@ if ($null -eq $containerStatus -or $containerStatus.State -ne "running") {
 
 # Restaurar la base de datos de tests antes de correr los tests del backend
 Write-Host "[DB] Restaurando la base de datos de tests..." -ForegroundColor Yellow
-docker compose exec backend python backend/manage_db.py $TEST_DB_URL
+docker compose exec -T backend python backend/manage_db.py $TEST_DB_URL
 Write-Host "[DB] Base de datos de tests restaurada." -ForegroundColor Green
 
 # Función para procesar y mostrar solo PASSED/FAILED y extraer totales
@@ -68,7 +68,7 @@ function Execute-FilteredTests {
     
 	# Ejecutamos con -v para listar cada test individualmente
 	$fullCmd = if ($envVar) { "export $envVar && $command" } else { $command }
-	$output = docker compose exec backend sh -c "$fullCmd" 2>&1 | Out-String
+	$output = docker compose exec -T backend sh -c "$fullCmd" 2>&1 | Out-String
     
 	# Filtrar y mostrar solo líneas con PASSED o FAILED
 	$lines = $output -split "`n"
@@ -136,7 +136,7 @@ function Get-CoverageArgs {
 }
 
 if ($Coverage) {
-	docker compose exec backend sh -c "rm -f .coverage"
+	docker compose exec -T backend sh -c "rm -f .coverage"
 }
 
 # ====== EJECUCIÓN ======

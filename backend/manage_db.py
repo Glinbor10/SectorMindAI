@@ -83,6 +83,11 @@ def load_sample_photo_base64(filename):
         ext = filename.split('.')[-1].lower()
         mime = 'image/png' if ext == 'png' else 'image/jpeg'
         return f"data:{mime};base64," + base64.b64encode(data).decode('utf-8')
+
+
+def chunked(values, size):
+    for index in range(0, len(values), size):
+        yield values[index:index + size]
 PROPIETARIO_DATA = {
     "nombre": "Pedro Propietario",
     "email": "propietario@sectormind.com",
@@ -624,36 +629,66 @@ def populate_db():
         
         # --- CREAR NEGOCIOS ---
         print("    🏢 Insertando Negocios...")
-        created_negocios = []
-        
-        for negocio in NEGOCIOS:
-            cursor.execute(
-                "INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_base64, propietario_id, latitud, longitud) VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
-                (negocio["nombre"], negocio["tipo_negocio"], negocio["direccion"], negocio.get("descripcion"), negocio.get("foto_base64"), prop_id, negocio.get("latitud"), negocio.get("longitud"))
+        negocio_rows = [
+            (
+                negocio["nombre"],
+                negocio["tipo_negocio"],
+                negocio["direccion"],
+                negocio.get("descripcion"),
+                negocio.get("foto_base64"),
+                prop_id,
+                negocio.get("latitud"),
+                negocio.get("longitud"),
             )
-            new_id = cursor.fetchone()['id']
-            created_negocios.append({"id": new_id, **negocio})
-            print(f"       ✅ {negocio['nombre']} (ID: {new_id}) - 📍 {negocio.get('latitud', 'N/A')}, {negocio.get('longitud', 'N/A')}")
+            for negocio in NEGOCIOS
+        ]
+        created_negocios = []
+        negocio_start = 0
+        for batch in chunked(negocio_rows, 5):
+            negocio_batch = NEGOCIOS[negocio_start:negocio_start + 5]
+            negocio_start += 5
+            returned_rows = psycopg2.extras.execute_values(
+                cursor,
+                """
+                    INSERT INTO negocios (nombre, tipo_negocio, direccion, descripcion, foto_base64, propietario_id, latitud, longitud)
+                    VALUES %s
+                    RETURNING id, nombre, latitud, longitud
+                """,
+                batch,
+                fetch=True,
+            )
+            for row in returned_rows:
+                negocio_data = next(negocio for negocio in negocio_batch if negocio["nombre"] == row["nombre"])
+                created_negocios.append({"id": row["id"], **negocio_data})
+                print(f"       ✅ {row['nombre']} (ID: {row['id']}) - 📍 {row.get('latitud', 'N/A')}, {row.get('longitud', 'N/A')}")
         
         # --- INSERTAR HORARIOS Y SERVICIOS ---
         if created_negocios:
             print("    ⏰ Insertando horarios y servicios...")
+            horario_rows = []
+            servicio_rows = []
             for negocio in created_negocios:
                 neg_id = negocio["id"]
-                
-                # Insertar horarios
+
                 for h in negocio.get("horarios", []):
-                    cursor.execute(
-                        "INSERT INTO horarios_negocio (negocio_id, dia_semana, hora_apertura, hora_cierre) VALUES (%s, %s, %s, %s)",
-                        (neg_id, h["dia_semana"], h["hora_apertura"], h["hora_cierre"])
-                    )
-                
-                # Insertar servicios
+                    horario_rows.append((neg_id, h["dia_semana"], h["hora_apertura"], h["hora_cierre"]))
+
                 for s in negocio.get("servicios", []):
-                    cursor.execute(
-                        "INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES (%s, %s, %s, %s)",
-                        (neg_id, s["nombre"], s["precio"], s["duracion_minutos"])
-                    )
+                    servicio_rows.append((neg_id, s["nombre"], s["precio"], s["duracion_minutos"]))
+
+            if horario_rows:
+                psycopg2.extras.execute_values(
+                    cursor,
+                    "INSERT INTO horarios_negocio (negocio_id, dia_semana, hora_apertura, hora_cierre) VALUES %s",
+                    horario_rows,
+                )
+
+            if servicio_rows:
+                psycopg2.extras.execute_values(
+                    cursor,
+                    "INSERT INTO servicios (negocio_id, nombre, precio, duracion_minutos) VALUES %s",
+                    servicio_rows,
+                )
             
             print("       ✅ Horarios y servicios insertados.")
         

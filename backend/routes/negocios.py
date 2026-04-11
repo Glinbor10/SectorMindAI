@@ -23,7 +23,8 @@ def listar_negocios():
             user_lon = float(user_lon)
             
             query = """
-                SELECT n.*, u.nombre as propietario_nombre,
+                SELECT n.id, n.nombre, n.tipo_negocio, n.direccion, n.descripcion, n.foto_base64,
+                       n.propietario_id, n.latitud, n.longitud, n.created_at,
                 CASE 
                     WHEN n.latitud IS NOT NULL AND n.longitud IS NOT NULL
                     THEN 6371 * acos(
@@ -33,17 +34,16 @@ def listar_negocios():
                     )
                     ELSE NULL
                 END as distancia_km
-                FROM negocios n 
-                JOIN usuarios u ON n.propietario_id = u.id
+                FROM negocios n
             """
             params = [user_lat, user_lon, user_lat]
         except (ValueError, TypeError):
             return jsonify({'error': 'Coordenadas inválidas'}), 400
     else:
         query = """
-            SELECT n.*, u.nombre as propietario_nombre 
-            FROM negocios n 
-            JOIN usuarios u ON n.propietario_id = u.id
+            SELECT n.id, n.nombre, n.tipo_negocio, n.direccion, n.descripcion, n.foto_base64,
+                   n.propietario_id, n.latitud, n.longitud, n.created_at
+            FROM negocios n
         """
         params = []
     
@@ -73,9 +73,9 @@ def listar_negocios():
 def obtener_negocio(negocio_id):
     conn = get_db_connection()
     query = """
-        SELECT n.*, u.nombre as propietario_nombre 
-        FROM negocios n 
-        JOIN usuarios u ON n.propietario_id = u.id
+        SELECT n.id, n.nombre, n.tipo_negocio, n.direccion, n.descripcion, n.foto_base64,
+               n.propietario_id, n.latitud, n.longitud, n.created_at
+        FROM negocios n
         WHERE n.id = %s
     """
     negocio = conn.execute(query, (negocio_id,)).fetchone()
