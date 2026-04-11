@@ -41,10 +41,28 @@ Scripts oficiales:
 
 La validacion se ejecuta dentro de contenedores para asegurar paridad de entorno.
 
-Suite principal:
-- backend/tests
+**Cobertura de código:**
+- Backend (routes, lógica, modelos): **85%** (961/1126 statements)
+- Rasa actions: ~40% (integración de librería externa, cobertura parcial)
+
+**Suite principal:**
+- backend/tests: 124 tests ✅
+  - test_auth.py
+  - test_basic.py
+  - test_citas.py
+  - test_geolocalizacion.py
+  - test_logic.py
+  - test_negocios.py
+  - test_nominatim_integration.py
+  - test_usuarios.py
 - rasa_model/tests/test_acciones.py
 - rasa_model/tests/test_llm_fallback_actions.py (si aplica en la rama actual)
+
+**Ejecución:**
+- `run_tests.ps1 -BackendOnly -Coverage`: mide solo backend
+- `run_tests.ps1 -RasaOnly`: tests de acciones Rasa
+- `run_tests.ps1`: todas las suites
+- `run_tests.ps1 -Coverage`: reporte HTML detallado
 
 ## Cierre de ciclo funcional
 

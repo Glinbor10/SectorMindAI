@@ -208,7 +208,7 @@ Release GitHub: sin tag publico confirmado.
 Release GitHub: publicado como tag `v0.3.0`.
 
 ### Added
-- Sistema integral de testing y calidad (123 tests, 82% cobertura global).
+- Sistema integral de testing y calidad (124 tests, 85% cobertura backend).
 - Mejoras en IA y custom actions de Rasa.
 
 ### Changed

@@ -853,3 +853,223 @@ def test_eliminar_negocio_con_servicios(client, negocio_con_servicios):
 
     assert negocio is None
     assert len(servicios) == 0
+
+
+def test_listar_negocios_coordenadas_invalidas_devuelve_400(client):
+    response = client.get('/negocios/?lat=abc&lon=-3.7')
+    assert response.status_code == 400
+    assert 'Coordenadas inválidas' in response.get_json()['error']
+
+
+def test_listar_negocios_propietario_id_invalido_devuelve_400(client):
+    response = client.get('/negocios/?propietario_id=no-num')
+    assert response.status_code == 400
+    assert 'propietario_id inválido' in response.get_json()['error']
+
+
+def test_obtener_negocio_formatea_horarios_texto(client, propietario, app, db_conn):
+    cursor = db_conn.cursor()
+    cursor.execute(
+        "INSERT INTO negocios (nombre, tipo_negocio, propietario_id, direccion) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Negocio Horarios Texto', 'peluqueria', propietario, 'Calle Horarios')
+    )
+    neg_id = cursor.fetchone()['id']
+
+    cursor.execute(
+        "INSERT INTO horarios_negocio (negocio_id, dia_semana, hora_apertura, hora_cierre) VALUES (%s, %s, %s, %s)",
+        (neg_id, 0, '09:00:00', '13:00:00')
+    )
+    cursor.execute(
+        "INSERT INTO horarios_negocio (negocio_id, dia_semana, hora_apertura, hora_cierre) VALUES (%s, %s, %s, %s)",
+        (neg_id, 0, '16:00:00', '20:00:00')
+    )
+    db_conn.commit()
+    cursor.close()
+
+    response = client.get(f'/negocios/{neg_id}')
+    assert response.status_code == 200
+    horarios = response.get_json()['horarios']
+    assert 'Lunes: 09:00 - 13:00' in horarios
+    assert 'y 16:00 - 20:00' in horarios
+
+
+def test_crear_negocio_multipart_con_foto_coordenadas_y_horarios(client, propietario):
+    data = {
+        'nombre': 'Negocio Multipart',
+        'tipo_negocio': 'peluqueria',
+        'direccion': 'Calle Multipart 1',
+        'descripcion': 'Creado con multipart',
+        'propietario_id': str(propietario),
+        'latitud': '40.4168',
+        'longitud': '-3.7038',
+        'dias_apertura': json.dumps([0, 1]),
+        'horarios': json.dumps([{'apertura': '09:00:00', 'cierre': '13:00:00'}]),
+        'foto': (BytesIO(b'fake-image-bytes'), 'negocio.png')
+    }
+
+    response = client.post('/negocios/', data=data, content_type='multipart/form-data')
+    assert response.status_code == 201
+    body = response.get_json()
+    assert 'id' in body
+    assert 'con horarios' in body['message']
+
+
+def test_crear_negocio_multipart_dias_apertura_json_invalido(client, propietario):
+    data = {
+        'nombre': 'Negocio Multipart Error',
+        'direccion': 'Calle Error 2',
+        'propietario_id': str(propietario),
+        'dias_apertura': '[0,',
+        'horarios': json.dumps([{'apertura': '09:00:00', 'cierre': '13:00:00'}])
+    }
+    response = client.post('/negocios/', data=data, content_type='multipart/form-data')
+    assert response.status_code == 400
+    assert 'dias_apertura debe ser un array JSON válido' in response.get_json()['error']
+
+
+def test_crear_negocio_multipart_horarios_json_invalido(client, propietario):
+    data = {
+        'nombre': 'Negocio Multipart Error Horarios',
+        'direccion': 'Calle Error 3',
+        'propietario_id': str(propietario),
+        'dias_apertura': json.dumps([0]),
+        'horarios': '[{]'
+    }
+    response = client.post('/negocios/', data=data, content_type='multipart/form-data')
+    assert response.status_code == 400
+    assert 'horarios debe ser un array JSON válido' in response.get_json()['error']
+
+
+def test_crear_negocio_propietario_invalido(client):
+    payload = {
+        'nombre': 'Negocio Propietario Invalido',
+        'tipo_negocio': 'general',
+        'direccion': 'Calle 123',
+        'propietario_id': 'NaN'
+    }
+    response = client.post('/negocios/', data=json.dumps(payload), content_type='application/json')
+    assert response.status_code == 400
+    assert 'propietario_id inválido' in response.get_json()['error']
+
+
+def test_crear_negocio_coordenadas_tipo_invalido_no_rompe(client, propietario):
+    payload = {
+        'nombre': 'Negocio Coord Texto',
+        'tipo_negocio': 'general',
+        'direccion': 'Calle Coord',
+        'propietario_id': propietario,
+        'latitud': 'texto',
+        'longitud': 'otro'
+    }
+    response = client.post('/negocios/', data=json.dumps(payload), content_type='application/json')
+    assert response.status_code == 201
+
+
+def test_actualizar_negocio_latitud_invalida(client, negocio_con_servicios):
+    neg_id = negocio_con_servicios['negocio_id']
+    payload = {'latitud': 'abc'}
+    response = client.put(f'/negocios/{neg_id}', data=json.dumps(payload), content_type='application/json')
+    assert response.status_code == 400
+    assert 'Latitud inválida' in response.get_json()['error']
+
+
+def test_actualizar_negocio_longitud_invalida(client, negocio_con_servicios):
+    neg_id = negocio_con_servicios['negocio_id']
+    payload = {'longitud': 'xyz'}
+    response = client.put(f'/negocios/{neg_id}', data=json.dumps(payload), content_type='application/json')
+    assert response.status_code == 400
+    assert 'Longitud inválida' in response.get_json()['error']
+
+
+def test_actualizar_horarios_negocio_exitoso(client, propietario, app, db_conn):
+    cursor = db_conn.cursor()
+    cursor.execute(
+        "INSERT INTO negocios (nombre, tipo_negocio, propietario_id, direccion) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Negocio Horarios Update', 'peluqueria', propietario, 'Calle Horarios 99')
+    )
+    neg_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    payload = {
+        'dias_apertura': [1, 2],
+        'horarios': [
+            {'apertura': '09:00:00', 'cierre': '12:00:00'},
+            {'apertura': '16:00:00', 'cierre': '19:00:00'}
+        ]
+    }
+    response = client.put(f'/negocios/{neg_id}/horarios', data=json.dumps(payload), content_type='application/json')
+    assert response.status_code == 200
+    assert 'Horarios actualizados exitosamente' in response.get_json()['message']
+
+
+def test_actualizar_horarios_negocio_requiere_datos(client, negocio_con_servicios):
+    neg_id = negocio_con_servicios['negocio_id']
+    response = client.put(f'/negocios/{neg_id}/horarios', data=json.dumps({}), content_type='application/json')
+    assert response.status_code == 400
+    assert 'Debes especificar horarios y dias_apertura' in response.get_json()['error']
+
+
+def test_actualizar_horarios_negocio_valida_tipos(client, negocio_con_servicios):
+    neg_id = negocio_con_servicios['negocio_id']
+
+    payload_dias = {'dias_apertura': 'lunes', 'horarios': [{'apertura': '09:00:00', 'cierre': '13:00:00'}]}
+    res_dias = client.put(f'/negocios/{neg_id}/horarios', data=json.dumps(payload_dias), content_type='application/json')
+    assert res_dias.status_code == 400
+    assert 'dias_apertura debe ser una lista' in res_dias.get_json()['error']
+
+    payload_horarios = {'dias_apertura': [0], 'horarios': '09-13'}
+    res_horarios = client.put(f'/negocios/{neg_id}/horarios', data=json.dumps(payload_horarios), content_type='application/json')
+    assert res_horarios.status_code == 400
+    assert 'horarios debe ser una lista' in res_horarios.get_json()['error']
+
+
+def test_crear_servicio_valida_campos_numericos(client, propietario, app, db_conn):
+    cursor = db_conn.cursor()
+    cursor.execute(
+        "INSERT INTO negocios (nombre, tipo_negocio, propietario_id, direccion) VALUES (%s, %s, %s, %s) RETURNING id",
+        ('Negocio Numeric Test', 'peluqueria', propietario, 'Calle Num')
+    )
+    neg_id = cursor.fetchone()['id']
+    db_conn.commit()
+    cursor.close()
+
+    payload_no_numerico = {
+        'nombre': 'Servicio X',
+        'precio': 'abc',
+        'duracion_minutos': 'yy',
+        'propietario_id': propietario
+    }
+    res_no_num = client.post(f'/negocios/{neg_id}/servicios', data=json.dumps(payload_no_numerico), content_type='application/json')
+    assert res_no_num.status_code == 400
+    assert 'Precio y duración deben ser numéricos' in res_no_num.get_json()['error']
+
+    payload_precio_cero = {
+        'nombre': 'Servicio Y',
+        'precio': 0,
+        'duracion_minutos': 30,
+        'propietario_id': propietario
+    }
+    res_precio = client.post(f'/negocios/{neg_id}/servicios', data=json.dumps(payload_precio_cero), content_type='application/json')
+    assert res_precio.status_code == 400
+    assert 'El precio debe ser mayor que cero' in res_precio.get_json()['error']
+
+    payload_duracion_cero = {
+        'nombre': 'Servicio Z',
+        'precio': 10,
+        'duracion_minutos': 0,
+        'propietario_id': propietario
+    }
+    res_duracion = client.post(f'/negocios/{neg_id}/servicios', data=json.dumps(payload_duracion_cero), content_type='application/json')
+    assert res_duracion.status_code == 400
+    assert 'Faltan datos obligatorios' in res_duracion.get_json()['error']
+
+    payload_duracion_negativa = {
+        'nombre': 'Servicio W',
+        'precio': 10,
+        'duracion_minutos': -10,
+        'propietario_id': propietario
+    }
+    res_duracion_neg = client.post(f'/negocios/{neg_id}/servicios', data=json.dumps(payload_duracion_negativa), content_type='application/json')
+    assert res_duracion_neg.status_code == 400
+    assert 'La duración debe ser mayor que cero' in res_duracion_neg.get_json()['error']

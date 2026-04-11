@@ -92,40 +92,95 @@ function Execute-FilteredTests {
 	return @{ passed = $passedCount; failed = $failedCount; errors = $errorCount }
 }
 
-$runBackend = $true
-$runRasa = $true
-if ($BackendOnly) { $runRasa = $false }
-if ($RasaOnly) { $runBackend = $false }
-
-# ====== EJECUCIÓN ======
-$backendRes = $null
-$rasaRes = $null
-
-if ($runBackend) {
-	if ($Integration) {
-		# Ejecutar SOLO tests de integración con APIs externas
-		Write-Host "[INFO] Ejecutando tests de integración (requieren internet)..." -ForegroundColor Yellow
-		$pytestCmd = "python -m pytest backend/tests/ -m integration -v"
-	} else {
-		# Ejecutar tests normales (EXCLUYENDO integración)
-		$pytestCmd = "python -m pytest backend/tests/ -m 'not integration' -v"
-	}
-	if ($Coverage) { $pytestCmd += " --cov=backend --cov-report=html --cov-report=term" }
-	if ($TestFile) { $pytestCmd += " $TestFile" }
-	$backendRes = Execute-FilteredTests -title "BACKEND" -command $pytestCmd -envVar "DATABASE_URL=$TEST_DB_URL"
+$selectedSuites = @()
+if ($Integration) {
+	$selectedSuites = @("integration")
+} elseif ($BackendOnly) {
+	$selectedSuites = @("backend")
+} elseif ($RasaOnly) {
+	$selectedSuites = @("rasa")
+} else {
+	$selectedSuites = @("backend", "integration", "rasa")
 }
 
-if ($runRasa) {
-	# Tests unitarios de acciones
-	$rasaCmd = "python -m pytest rasa_model/tests/test_acciones.py -v --tb=short"
-	$rasaRes = Execute-FilteredTests -title "RASA ACCIONES" -command $rasaCmd
-	
-	# Tests de stories deshabilitados (no son útiles para validar funcionalidad real)
-	# # Tests de stories (conversaciones)
-	# Write-Host "`n[RASA STORIES] Ejecutando tests de conversación..." -ForegroundColor Cyan
-	# $storiesOutput = docker compose exec rasa rasa test --stories tests/test_stories.yml --out results/ 2>&1 | Out-String
-	# ...
-	# $rasaStoriesRes = @{ passed = $storiesPassed; failed = $storiesFailed; errors = 0 }
+function Get-CoverageArgs {
+	param(
+		[string[]]$Suites,
+		[bool]$IsFinalRun
+	)
+
+	if (-not $Coverage) {
+		return ""
+	}
+
+	$targets = @()
+	if ($Suites -contains "backend" -or $Suites -contains "integration") {
+		$targets += "--cov=backend"
+	}
+	if ($Suites -contains "rasa") {
+		$targets += "--cov=rasa_model/actions"
+	}
+
+	if ($targets.Count -eq 0) {
+		return ""
+	}
+
+	$args = ($targets -join " ") + " --cov-append --cov-config=backend/.coveragerc"
+	if ($IsFinalRun) {
+		$args += " --cov-report=html --cov-report=term"
+	} else {
+		$args += " --cov-report=term"
+	}
+
+	return $args
+}
+
+if ($Coverage) {
+	docker compose exec backend sh -c "rm -f .coverage"
+}
+
+# ====== EJECUCIÓN ======
+$backendUnitRes = $null
+$integrationRes = $null
+$rasaRes = $null
+$totalPassed = 0
+$totalFailed = 0
+$totalErrors = 0
+
+for ($index = 0; $index -lt $selectedSuites.Count; $index++) {
+	$suite = $selectedSuites[$index]
+	$isFinalRun = ($index -eq $selectedSuites.Count - 1)
+	$coverageArgs = Get-CoverageArgs -Suites $selectedSuites -IsFinalRun $isFinalRun
+
+	switch ($suite) {
+		"backend" {
+			$pytestCmd = "python -m pytest backend/tests/ -m 'not integration' -v"
+			if ($coverageArgs) { $pytestCmd += " $coverageArgs" }
+			if ($TestFile) { $pytestCmd += " $TestFile" }
+			$backendUnitRes = Execute-FilteredTests -title "BACKEND UNIT" -command $pytestCmd -envVar "DATABASE_URL=$TEST_DB_URL"
+			$totalPassed += $backendUnitRes.passed
+			$totalFailed += $backendUnitRes.failed
+			$totalErrors += $backendUnitRes.errors
+		}
+		"integration" {
+			Write-Host "[INFO] Ejecutando tests de integración (requieren internet)..." -ForegroundColor Yellow
+			$pytestCmd = "python -m pytest backend/tests/ -m integration -v"
+			if ($coverageArgs) { $pytestCmd += " $coverageArgs" }
+			if ($TestFile) { $pytestCmd += " $TestFile" }
+			$integrationRes = Execute-FilteredTests -title "BACKEND INTEGRATION" -command $pytestCmd -envVar "DATABASE_URL=$TEST_DB_URL"
+			$totalPassed += $integrationRes.passed
+			$totalFailed += $integrationRes.failed
+			$totalErrors += $integrationRes.errors
+		}
+		"rasa" {
+			$rasaCmd = "python -m pytest rasa_model/tests/test_acciones.py -v --tb=short"
+			if ($coverageArgs) { $rasaCmd += " $coverageArgs" }
+			$rasaRes = Execute-FilteredTests -title "RASA ACCIONES" -command $rasaCmd
+			$totalPassed += $rasaRes.passed
+			$totalFailed += $rasaRes.failed
+			$totalErrors += $rasaRes.errors
+		}
+	}
 }
 
 # ====== RESUMEN FINAL ======
@@ -137,12 +192,20 @@ if ($Integration) {
 }
 Write-Host "========================================" -ForegroundColor Yellow
 
-if ($null -ne $backendRes) {
-	$bStatus = if ($backendRes.failed -eq 0 -and $backendRes.errors -eq 0) { "OK" } else { "FAIL" }
-	Write-Host "BACKEND [$bStatus]:" -ForegroundColor Cyan
-	Write-Host "  - Pasados: $($backendRes.passed)" -ForegroundColor Green
-	Write-Host "  - Fallados: $($backendRes.failed)" -ForegroundColor Red
-	if ($backendRes.errors -gt 0) { Write-Host "  - Errores: $($backendRes.errors)" -ForegroundColor Magenta }
+if ($null -ne $backendUnitRes) {
+	$bStatus = if ($backendUnitRes.failed -eq 0 -and $backendUnitRes.errors -eq 0) { "OK" } else { "FAIL" }
+	Write-Host "BACKEND UNIT [$bStatus]:" -ForegroundColor Cyan
+	Write-Host "  - Pasados: $($backendUnitRes.passed)" -ForegroundColor Green
+	Write-Host "  - Fallados: $($backendUnitRes.failed)" -ForegroundColor Red
+	if ($backendUnitRes.errors -gt 0) { Write-Host "  - Errores: $($backendUnitRes.errors)" -ForegroundColor Magenta }
+}
+
+if ($null -ne $integrationRes) {
+	$iStatus = if ($integrationRes.failed -eq 0 -and $integrationRes.errors -eq 0) { "OK" } else { "FAIL" }
+	Write-Host "`nBACKEND INTEGRATION [$iStatus]:" -ForegroundColor Cyan
+	Write-Host "  - Pasados: $($integrationRes.passed)" -ForegroundColor Green
+	Write-Host "  - Fallados: $($integrationRes.failed)" -ForegroundColor Red
+	if ($integrationRes.errors -gt 0) { Write-Host "  - Errores: $($integrationRes.errors)" -ForegroundColor Magenta }
 }
 
 if ($null -ne $rasaRes) {
@@ -151,6 +214,14 @@ if ($null -ne $rasaRes) {
 	Write-Host "  - Pasados: $($rasaRes.passed)" -ForegroundColor Green
 	Write-Host "  - Fallados: $($rasaRes.failed)" -ForegroundColor Red
 	if ($rasaRes.errors -gt 0) { Write-Host "  - Errores: $($rasaRes.errors)" -ForegroundColor Magenta }
+}
+
+if ($selectedSuites.Count -gt 1) {
+	$overallStatus = if ($totalFailed -eq 0 -and $totalErrors -eq 0) { "OK" } else { "FAIL" }
+	Write-Host "`nTOTAL [$overallStatus]:" -ForegroundColor Cyan
+	Write-Host "  - Pasados: $totalPassed" -ForegroundColor Green
+	Write-Host "  - Fallados: $totalFailed" -ForegroundColor Red
+	if ($totalErrors -gt 0) { Write-Host "  - Errores: $totalErrors" -ForegroundColor Magenta }
 }
 
 # Tests de stories deshabilitados
@@ -166,6 +237,16 @@ Write-Host "`n----------------------------------------" -ForegroundColor Yellow
 
 if ($Coverage) {
 	Write-Host "`n[COVERAGE] REPORTE DE COBERTURA:" -ForegroundColor Yellow
+	$coverageLabel = if ($BackendOnly) { "Cobertura backend" } else { "Cobertura global" }
+	$coverageHtmlPath = Join-Path (Split-Path $PSScriptRoot -Parent) "htmlcov/index.html"
+	if (Test-Path $coverageHtmlPath) {
+		$htmlContent = Get-Content $coverageHtmlPath -Raw
+		$coverageMatch = [regex]::Match($htmlContent, '<span class="pc_cov">\s*([^<]+)\s*</span>')
+		if ($coverageMatch.Success) {
+			$coveragePct = $coverageMatch.Groups[1].Value.Trim()
+			Write-Host ("   {0}: {1}" -f $coverageLabel, $coveragePct) -ForegroundColor Green
+		}
+	}
 	Write-Host "   HTML Report generado en: htmlcov/index.html" -ForegroundColor Cyan
 	Write-Host "   Abre el archivo en tu navegador para ver detalles." -ForegroundColor Gray
 }

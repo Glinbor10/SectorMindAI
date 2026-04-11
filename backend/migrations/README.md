@@ -19,7 +19,6 @@ docker compose exec backend python -m backend.migrations.migrate
 ## Reglas
 
 - Las migraciones se aplican en orden alfanumerico.
-- Se registran en `schema_migrations`.
 - Solo PostgreSQL es entorno objetivo.
 
 ## Estado

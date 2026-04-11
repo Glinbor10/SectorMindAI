@@ -34,6 +34,7 @@ services:
       - ./backend:/app/backend
       - ./frontend:/app/frontend
       - ./rasa_model:/app/rasa_model
+      - ./htmlcov:/app/htmlcov
     depends_on:
       db:
         condition: service_healthy

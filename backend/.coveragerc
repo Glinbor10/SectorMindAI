@@ -1,0 +1,10 @@
+[run]
+branch = True
+
+[report]
+omit =
+    */tests/*
+    */migrations/*
+    */manage_db.py
+    */__init__.py
+    */conftest.py

@@ -204,7 +204,8 @@ class ExtractorFechaHora:
         # Si no encontró en texto, buscar números
         if hora is None:
             # Buscar hora:minuto o hora minuto (con : o espacio como separador)
-            hora_match = re.search(r'\b([0-9]|1[0-9]|2[0-3])(?:[:|\s](\d{2}))?\b', texto_lower)
+            # Acepta formatos con cero inicial como 09:45.
+            hora_match = re.search(r'\b((?:[01]?\d|2[0-3]))(?:[:\s](\d{2}))?\b', texto_lower)
             if hora_match:
                 hora = int(hora_match.group(1))
                 if hora_match.group(2):
