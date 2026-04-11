@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from ..db import get_db_connection 
+from ..perf import medir_tiempo
 
 negocios_bp = Blueprint('negocios', __name__, url_prefix='/negocios')
 
@@ -7,6 +8,7 @@ negocios_bp = Blueprint('negocios', __name__, url_prefix='/negocios')
 
 # 1. LISTAR NEGOCIOS
 @negocios_bp.route('/', methods=['GET'])
+@medir_tiempo('GET /negocios/')
 def listar_negocios():
     propietario_id = request.args.get('propietario_id')
     user_lat = request.args.get('lat')  # Latitud del usuario

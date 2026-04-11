@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request
 from datetime import datetime, date, time
 from ..db import get_db_connection
 from ..logic import obtener_tramos_disponibles, verificar_solapamiento
+from ..perf import medir_tiempo
 
 
 citas_bp = Blueprint('citas', __name__)
@@ -127,6 +128,7 @@ def crear_cita():
 
 
 @citas_bp.route('/disponibilidad', methods=['POST'])
+@medir_tiempo('POST /disponibilidad')
 def consultar_disponibilidad():
     """POST /disponibilidad - Consulta tramos disponibles (PostgreSQL)."""
     data = request.get_json()
