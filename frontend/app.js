@@ -341,8 +341,13 @@ async function sendToRasa(msg, hidden = false, typingElementId = null) {
         }
         
         // Construir payload con metadatos para Rasa
+        // Evita contaminación de contexto entre negocios: un tracker por usuario+negocio.
+        const senderId = currentUser
+            ? `${currentUser.id}_biz_${businessData && businessData.id ? businessData.id : 'na'}`
+            : `anonimo_biz_${businessData && businessData.id ? businessData.id : 'na'}`;
+
         const payload = { 
-            sender: currentUser ? currentUser.id.toString() : "anonimo", 
+            sender: senderId,
             message: msg,
             metadata: {
                 cliente_id: currentUser ? currentUser.id : null,

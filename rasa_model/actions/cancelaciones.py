@@ -20,14 +20,23 @@ class ActionCancelarCita(Action):
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
         cliente_id = tracker.get_slot("cliente_id")
+        negocio_id = tracker.get_slot("negocio_id")
+        if not negocio_id:
+            metadata = tracker.latest_message.get("metadata", {}) or {}
+            negocio_id = metadata.get("negocio_id")
+
         if not cliente_id:
             dispatcher.utter_message(text="Por favor, inicia sesión primero para cancelar una cita.")
+            return limpiar_flujo()
+
+        if not negocio_id:
+            dispatcher.utter_message(text="No pude identificar el negocio actual. Recarga la página del negocio e inténtalo de nuevo.")
             return limpiar_flujo()
 
         try:
             response = requests.get(
                 f"{API_URL}/citas",
-                params={"cliente_id": cliente_id},
+                params={"cliente_id": cliente_id, "negocio_id": negocio_id},
                 timeout=5
             )
             

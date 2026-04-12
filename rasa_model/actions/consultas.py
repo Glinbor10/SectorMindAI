@@ -26,6 +26,9 @@ class ActionConsultarCitasUsuario(Action):
             return []
 
         negocio_id = tracker.get_slot("negocio_id")
+        if not negocio_id:
+            metadata = tracker.latest_message.get("metadata", {}) or {}
+            negocio_id = metadata.get("negocio_id")
 
         try:
             params = {"cliente_id": cliente_id}

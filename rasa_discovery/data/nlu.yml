@@ -11,12 +11,21 @@ nlu:
     - buenas tardes
     - holi
     - ey
+    - hola buenas
+    - muy buenas
+    - buenas noches
+    - hola de nuevo
 
 - intent: goodbye
   examples: |
     - adiós
     - hasta luego
     - nos vemos
+    - chao
+    - bye
+    - hasta pronto
+    - me voy
+    - hablamos luego
 
 - intent: buscar_negocio
   examples: |
@@ -40,21 +49,4 @@ nlu:
     - todos los tipos
     - ver todos cerca
 
-- intent: nlu_fallback
-  examples: |
-    - blablabla
-    - asdfgh
-    - qwertyui
-    - no entiendo nada
-    - hola123???
-    - xkcd
-    - prueba random
-    - lorum ipsum
-    - ......
-    - $$$
-    - no era eso
-    - no me has entendido
-    - esto no tiene sentido
-    - te hablo en chino
-    - ajsdkljasd
-    - me equivoqué
+

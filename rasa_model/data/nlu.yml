@@ -8,6 +8,11 @@ nlu:
       - qué tal
       - buenas tardes
       - hola buenas
+      - holaa
+      - muy buenas
+      - buenas noches
+      - hey buenas
+      - hola qué tal
 
   - intent: goodbye
     examples: |
@@ -16,6 +21,11 @@ nlu:
       - chao
       - bye
       - nos vemos
+      - hasta pronto
+      - me voy
+      - hablamos luego
+      - me despido
+      - gracias, hasta luego
 
   - intent: thanks
     examples: |
@@ -32,6 +42,11 @@ nlu:
       - entendido gracias
       - thank you
       - thanks
+      - gracias por la ayuda
+      - mil gracias de verdad
+      - gracias crack
+      - genial, gracias
+      - vale, muchas gracias
       
   - intent: bot_challenge
     examples: |
@@ -114,6 +129,11 @@ nlu:
       - correcto
       - claro
       - vale
+      - ok
+      - perfecto
+      - de acuerdo
+      - así es
+      - exacto
 
   - intent: deny
     examples: |
@@ -122,6 +142,11 @@ nlu:
       - en realidad no
       - no gracias
       - mejor no
+      - nop
+      - para nada
+      - negativo
+      - no quiero
+      - déjalo
 
   - intent: reservar_servicio
     examples: |
@@ -161,6 +186,11 @@ nlu:
       - qué servicios tienen
       - qué tratamientos
       - qué ofrecen
+      - lista de servicios
+      - qué puedo hacerme
+      - qué tipos de tratamiento tenéis
+      - quiero ver los servicios disponibles
+      - qué opciones de servicio hay
 
   - intent: consultar_ubicacion
     examples: |
@@ -170,20 +200,6 @@ nlu:
       - cómo llegar
       - ubicación
 
-  - intent: nlu_fallback
-    examples: |
-      - blablabla
-      - asdfgh
-      - qwertyui
-      - no entiendo
-      - no era eso
-      - no me has entendido
-      - esto no tiene sentido
-      - ????
-      - 123456
-      - hola123???
-      - ajsdkljasd
-      - lorum ipsum
 
   - intent: cambiar_horario
     examples: |
@@ -210,6 +226,11 @@ nlu:
       - información general
       - qué hacen
       - sobre el negocio
+      - de qué va este sitio
+      - qué tipo de negocio es
+      - dame información general del local
+      - quiénes sois
+      - quiero saber sobre vosotros
 
   - intent: pedir_mas_opciones
     examples: |
