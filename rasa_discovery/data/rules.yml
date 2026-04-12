@@ -6,8 +6,6 @@ rules:
       - intent: greet
       - action: action_discovery_buscar_negocios
 
-  # Cuando el usuario ya está en la conversación, el action decidirá si pedir ubicación o continuar
-
   - rule: Despedirse
     steps:
       - intent: goodbye

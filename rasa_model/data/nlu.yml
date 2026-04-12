@@ -170,6 +170,21 @@ nlu:
       - cómo llegar
       - ubicación
 
+  - intent: nlu_fallback
+    examples: |
+      - blablabla
+      - asdfgh
+      - qwertyui
+      - no entiendo
+      - no era eso
+      - no me has entendido
+      - esto no tiene sentido
+      - ????
+      - 123456
+      - hola123???
+      - ajsdkljasd
+      - lorum ipsum
+
   - intent: cambiar_horario
     examples: |
       - cambiar mi cita
@@ -214,14 +229,3 @@ nlu:
       - reservas anteriores
       - quiero ver mis citas pasadas
       - citas que ya tuve
-
-  - intent: informar_ubicacion
-    examples: |
-      - estoy en madrid
-      - me encuentro en el centro
-      - mi ubicacion es barcelona
-      - vivo en valencia
-      - estoy cerca de la estacion
-      - estoy en la calle mayor
-      - me puedes buscar en sevilla
-      - estoy por aqui

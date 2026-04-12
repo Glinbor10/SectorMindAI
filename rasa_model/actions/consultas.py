@@ -7,6 +7,7 @@ from rasa_sdk.executor import CollectingDispatcher
 from rasa_sdk.events import SlotSet
 from datetime import datetime
 import requests
+from fuzzywuzzy import fuzz
 
 from .utils import limpiar_flujo, API_URL
 
@@ -88,6 +89,12 @@ class ActionListarServicios(Action):
                 if not servicios:
                     dispatcher.utter_message(text="No hay servicios disponibles.")
                     return []
+
+                # Si el usuario ya dijo un servicio concreto, derivar al flujo de reserva.
+                mensaje_usuario = (tracker.latest_message.get("text") or "").strip().lower()
+                if self._contiene_servicio_especifico(mensaje_usuario, servicios):
+                    from .contexto import ActionNormalizarServicio
+                    return ActionNormalizarServicio().run(dispatcher, tracker, domain)
                 
                 msg = "💇 Nuestros servicios:\n\n"
                 for serv in servicios:
@@ -107,6 +114,25 @@ class ActionListarServicios(Action):
             print(f"Error listando servicios: {e}")
             dispatcher.utter_message(text="Hubo un problema consultando los servicios.")
             return []
+
+    def _contiene_servicio_especifico(self, mensaje: str, servicios: List[Dict[str, Any]]) -> bool:
+        if not mensaje:
+            return False
+
+        for servicio in servicios:
+            nombre = (servicio.get("nombre") or "").lower().strip()
+            if not nombre:
+                continue
+
+            # Coincidencia exacta o por inclusión de frase.
+            if nombre in mensaje or mensaje in nombre:
+                return True
+
+            # Coincidencia difusa para pequeñas variaciones/acentos.
+            if fuzz.token_set_ratio(mensaje, nombre) >= 75:
+                return True
+
+        return False
 
 
 class ActionMostrarHorarios(Action):

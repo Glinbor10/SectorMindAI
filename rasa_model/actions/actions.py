@@ -13,6 +13,7 @@ from fuzzywuzzy import fuzz
 
 from .utils import limpiar_flujo, obtener_horarios_disponibles, formatear_horarios_display, API_URL, build_availability_hours_payload
 from .extractores import ExtractorFechaHora
+from .contexto import ActionNormalizarServicio
 
 
 # ============================================================
@@ -64,6 +65,8 @@ class ActionFallbackInteligente(Action):
         flujo_activo = tracker.get_slot("flujo_activo")
         mensaje_usuario = tracker.latest_message.get('text', '').lower()
         intent_nombre = (tracker.latest_message.get('intent') or {}).get('name')
+        palabras_usuario = [p for p in re.findall(r"\w+", mensaje_usuario) if p]
+        es_texto_corto = 1 <= len(palabras_usuario) <= 3
 
         print(f"🔍 ActionFallbackInteligente - Mensaje: '{mensaje_usuario}', flujo_activo: {flujo_activo}")
 
@@ -103,6 +106,12 @@ class ActionFallbackInteligente(Action):
         # PRIORIDAD 2: Sin flujo activo - detectar servicio
         # ============================================
         negocio_id = tracker.get_slot("negocio_id")
+
+        # Caso solicitado: si llega una palabra/frase corta sin intención clara,
+        # intentar directamente resolverla como nombre de servicio.
+        if intent_nombre == "nlu_fallback" and es_texto_corto and negocio_id:
+            print("   → Fallback corto: delegando en ActionNormalizarServicio")
+            return ActionNormalizarServicio().run(dispatcher, tracker, domain)
         
         if not negocio_id:
             dispatcher.utter_message(text="No he entendido bien. ¿Puedes repetirlo?")

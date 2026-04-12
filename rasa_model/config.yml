@@ -10,18 +10,24 @@ pipeline:
 - name: CountVectorsFeaturizer
 - name: CountVectorsFeaturizer
   analyzer: char_wb
-  min_ngram: 1
-  max_ngram: 4
+  min_ngram: 2
+  max_ngram: 5
 - name: DIETClassifier
-  epochs: 100
+  epochs: 60
+  random_seed: 42
+  model_confidence: softmax
+  ranking_length: 10
   constrain_similarities: true
 - name: EntitySynonymMapper
 - name: ResponseSelector
-  epochs: 100
+  epochs: 60
+  random_seed: 42
+  model_confidence: softmax
+  ranking_length: 5
   constrain_similarities: true
 - name: FallbackClassifier
-  threshold: 0.3
-  ambiguity_threshold: 0.1
+  threshold: 0.5
+  ambiguity_threshold: 0.05
 
 policies:
 # Las reglas para decidir qué responder
@@ -29,9 +35,10 @@ policies:
 - name: RulePolicy
 - name: UnexpecTEDIntentPolicy
   max_history: 5
-  epochs: 100
+  epochs: 60
 - name: TEDPolicy
   max_history: 5
-  epochs: 100
+  epochs: 60
+  random_seed: 42
   constrain_similarities: true
 assistant_id: 20251128-194455-unsolvable-marlin
