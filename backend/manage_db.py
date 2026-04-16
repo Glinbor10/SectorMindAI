@@ -88,13 +88,30 @@ def load_sample_photo_base64(filename):
 def chunked(values, size):
     for index in range(0, len(values), size):
         yield values[index:index + size]
-PROPIETARIO_DATA = {
-    "nombre": "Pedro Propietario",
-    "email": "propietario@sectormind.com",
-    "password": "p",
-    "rol": "propietario",
-    # "foto_perfil_url" eliminado, solo se usa foto_perfil_base64
-    "foto_perfil_base64": load_sample_photo_base64('propietario.jpg')
+PROPIETARIOS_DATA = [
+    {
+        "nombre": "Pedro Propietario",
+        "email": "propietario@sectormind.com",
+        "password": "p",
+        "rol": "propietario",
+        # "foto_perfil_url" eliminado, solo se usa foto_perfil_base64
+        "foto_perfil_base64": load_sample_photo_base64('propietario.jpg')
+    },
+    {
+        "nombre": "Paula Propietaria",
+        "email": "propietaria2@sectormind.com",
+        "password": "p2",
+        "rol": "propietario",
+        "foto_perfil_base64": load_sample_photo_base64('peluqueria.jpg')
+    }
+]
+
+ADMIN_DATA = {
+    "nombre": "Alicia Admin",
+    "email": "admin@sectormind.com",
+    "password": "a",
+    "rol": "admin",
+    "foto_perfil_base64": load_sample_photo_base64('dentista.jpg')
 }
 
 
@@ -607,15 +624,34 @@ def populate_db():
         conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
         cursor = conn.cursor()
         
-        # --- CREAR PROPIETARIO ---
-        print(f"    👤 Insertando Propietario...")
-        hashed_prop_password = generate_password_hash(PROPIETARIO_DATA['password'])
+        # --- CREAR PROPIETARIOS ---
+        print(f"    👤 Insertando Propietarios...")
+        propietarios_ids = []
+        for propietario in PROPIETARIOS_DATA:
+            hashed_prop_password = generate_password_hash(propietario['password'])
+            cursor.execute(
+                "INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_base64) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+                (
+                    propietario['nombre'],
+                    propietario['email'],
+                    hashed_prop_password,
+                    propietario['rol'],
+                    propietario['foto_perfil_base64']
+                )
+            )
+            prop_id = cursor.fetchone()['id']
+            propietarios_ids.append(prop_id)
+            print(f"       ✅ {propietario['nombre']} (ID: {prop_id})")
+
+        # --- CREAR ADMIN ---
+        print(f"    👤 Insertando Admin...")
+        hashed_admin_password = generate_password_hash(ADMIN_DATA['password'])
         cursor.execute(
             "INSERT INTO usuarios (nombre, email, password_hash, rol, foto_perfil_base64) VALUES (%s, %s, %s, %s, %s) RETURNING id",
-            (PROPIETARIO_DATA['nombre'], PROPIETARIO_DATA['email'], hashed_prop_password, PROPIETARIO_DATA['rol'], PROPIETARIO_DATA['foto_perfil_base64'])
+            (ADMIN_DATA['nombre'], ADMIN_DATA['email'], hashed_admin_password, ADMIN_DATA['rol'], ADMIN_DATA['foto_perfil_base64'])
         )
-        prop_id = cursor.fetchone()['id']
-        print(f"       ✅ {PROPIETARIO_DATA['nombre']} (ID: {prop_id})")
+        admin_id = cursor.fetchone()['id']
+        print(f"       ✅ {ADMIN_DATA['nombre']} (ID: {admin_id})")
         
         # --- CREAR CLIENTE ---
         print(f"    👤 Insertando Cliente...")
@@ -629,19 +665,24 @@ def populate_db():
         
         # --- CREAR NEGOCIOS ---
         print("    🏢 Insertando Negocios...")
-        negocio_rows = [
-            (
-                negocio["nombre"],
-                negocio["tipo_negocio"],
-                negocio["direccion"],
-                negocio.get("descripcion"),
-                negocio.get("foto_base64"),
-                prop_id,
-                negocio.get("latitud"),
-                negocio.get("longitud"),
+        # Repartir negocios al 50% entre los dos propietarios
+        midpoint = len(NEGOCIOS) // 2
+        negocio_rows = []
+        for idx, negocio in enumerate(NEGOCIOS):
+            owner_idx = 0 if idx < midpoint else 1
+            owner_id = propietarios_ids[owner_idx] if len(propietarios_ids) > owner_idx else propietarios_ids[0]
+            negocio_rows.append(
+                (
+                    negocio["nombre"],
+                    negocio["tipo_negocio"],
+                    negocio["direccion"],
+                    negocio.get("descripcion"),
+                    negocio.get("foto_base64"),
+                    owner_id,
+                    negocio.get("latitud"),
+                    negocio.get("longitud"),
+                )
             )
-            for negocio in NEGOCIOS
-        ]
         created_negocios = []
         negocio_start = 0
         for batch in chunked(negocio_rows, 5):
@@ -780,7 +821,9 @@ def main():
         populate_db()
         add_past_citas()
         print("\n✨ ¡SISTEMA RESTAURADO COMPLETAMENTE! ✨")
-        print(f"   → Propietario: {PROPIETARIO_DATA['email']}")
+        print(f"   → Propietario 1: {PROPIETARIOS_DATA[0]['email']}")
+        print(f"   → Propietario 2: {PROPIETARIOS_DATA[1]['email']}")
+        print(f"   → Admin:         {ADMIN_DATA['email']}")
         print(f"   → Cliente:     {CLIENTE_DATA['email']}")
     else:
         print("\n❌ No se pudo inicializar la base de datos.")

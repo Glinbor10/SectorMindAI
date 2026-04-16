@@ -343,16 +343,17 @@
         // Variables globales para coordenadas temporales
         let currentCoords = null;
 
-        // Ocultar chat Discovery para propietarios y mostrar solo su vista
+        // Ocultar chat Discovery para propietarios/admin y mostrar vista de gestión
         window.updateRoleViews = function() {
             const clienteView = document.getElementById('cliente-view');
             const propietarioView = document.getElementById('propietario-view');
+            const role = currentUser && currentUser.rol ? currentUser.rol.toLowerCase() : null;
             
-            if (currentUser && currentUser.rol === 'propietario') {
+            if (role === 'propietario' || role === 'admin') {
                 if (clienteView) clienteView.classList.add('hidden');
                 if (propietarioView) propietarioView.classList.remove('hidden');
-                console.log('👔 Modo Propietario activado');
-                // Cargar negocios del propietario
+                console.log(role === 'admin' ? '🛡️ Modo Admin activado' : '👔 Modo Propietario activado');
+                // Cargar negocios del propietario o todos (admin)
                 if (typeof loadMyBusinesses === 'function') {
                     loadMyBusinesses();
                 }
@@ -855,12 +856,16 @@
         async function loadMyBusinesses() {
             const container = document.getElementById('negocios-container');
             try {
-                const res = await fetch(`${API_URL}/negocios?propietario_id=${currentUser.id}`);
+                const isAdmin = currentUser && currentUser.rol && currentUser.rol.toLowerCase() === 'admin';
+                const endpoint = isAdmin
+                    ? `${API_URL}/negocios/`
+                    : `${API_URL}/negocios/?propietario_id=${currentUser.id}`;
+                const res = await fetch(endpoint);
                 const negocios = await res.json();
                 
                 container.innerHTML = '';
                 if (negocios.length === 0) {
-                    container.innerHTML = `<div class="text-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed col-span-full"><i data-lucide="building" class="w-12 h-12 text-slate-300 mx-auto mb-4"></i><p class="text-slate-500 mb-4">No tienes negocios registrados.</p><button onclick="openCreateBusinessModal()" class="text-indigo-600 font-bold hover:underline">Crear tu primer negocio</button></div>`;
+                    container.innerHTML = `<div class="text-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed col-span-full"><i data-lucide="building" class="w-12 h-12 text-slate-300 mx-auto mb-4"></i><p class="text-slate-500 mb-4">${isAdmin ? 'No hay negocios registrados.' : 'No tienes negocios registrados.'}</p><button onclick="openCreateBusinessModal()" class="text-indigo-600 font-bold hover:underline">Crear negocio</button></div>`;
                 } else {
                     negocios.forEach(negocio => {
                         const card = document.createElement('div');
@@ -1034,7 +1039,8 @@
 
             if (result.isConfirmed) {
                 try {
-                    const res = await fetch(`${API_URL}/negocios/${id}?propietario_id=${currentUser.id}`, {
+                    const role = currentUser && currentUser.rol ? currentUser.rol.toLowerCase() : 'propietario';
+                    const res = await fetch(`${API_URL}/negocios/${id}?propietario_id=${currentUser.id}&requester_role=${role}`, {
                         method: 'DELETE'
                     });
                     if (res.ok) {

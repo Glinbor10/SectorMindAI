@@ -29,4 +29,4 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "[RASA] Entrenamiento y evaluación completados en ambos modelos."
-Write-Host "[RASA] Revisa results/intent_report.json en ambas carpetas para métricas de validación cruzada."
+Write-Host "[RASA] Revisa results/intent_report.json en ambas carpetas para métricas de validación cruzada

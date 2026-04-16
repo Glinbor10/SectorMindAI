@@ -520,7 +520,8 @@
                     });
                     if (result.isConfirmed) {
                         try {
-                            const res = await fetch(`${API_URL}/negocios/${currentBusinessId}?propietario_id=${currentUser.id}`, {
+                            const role = currentUser && currentUser.rol ? currentUser.rol.toLowerCase() : 'propietario';
+                            const res = await fetch(`${API_URL}/negocios/${currentBusinessId}?propietario_id=${currentUser.id}&requester_role=${role}`, {
                                 method: 'DELETE'
                             });
                             if (res.ok) {
@@ -924,7 +925,8 @@
                 nombre: document.getElementById('service-name').value,
                 precio: parseFloat(document.getElementById('service-price').value),
                 duracion_minutos: parseInt(document.getElementById('service-duration').value),
-                propietario_id: currentUser.id
+                propietario_id: currentUser.id,
+                requester_role: currentUser && currentUser.rol ? currentUser.rol.toLowerCase() : 'propietario'
             };
 
             try {
@@ -1083,7 +1085,8 @@
                 nombre: document.getElementById('edit-service-name').value,
                 precio: parseFloat(document.getElementById('edit-service-price').value),
                 duracion_minutos: parseInt(document.getElementById('edit-service-duration').value),
-                propietario_id: currentUser.id
+                propietario_id: currentUser.id,
+                requester_role: currentUser && currentUser.rol ? currentUser.rol.toLowerCase() : 'propietario'
             };
 
             try {
@@ -1119,7 +1122,8 @@
 
             if (result.isConfirmed) {
                 try {
-                    const res = await fetch(`${API_URL}/negocios/${currentBusinessId}/servicios/${id}?propietario_id=${currentUser.id}`, {
+                    const role = currentUser && currentUser.rol ? currentUser.rol.toLowerCase() : 'propietario';
+                    const res = await fetch(`${API_URL}/negocios/${currentBusinessId}/servicios/${id}?propietario_id=${currentUser.id}&requester_role=${role}`, {
                         method: 'DELETE'
                     });
                     if (res.ok) {

@@ -251,13 +251,14 @@ function logout() {
     localStorage.removeItem('sector_mind_user');
     window.location.href = '/';
 }
-// Redirige a la principal si el usuario es propietario (al cargar o tras login/register)
+// Redirige a la principal si el usuario es propietario/admin (al cargar o tras login/register)
 function redirectIfPropietario() {
     let user = null;
     try {
         user = JSON.parse(localStorage.getItem('sector_mind_user'));
     } catch {}
-    if (user && user.rol && user.rol.toLowerCase() === 'propietario') {
+    const role = user && user.rol ? user.rol.toLowerCase() : null;
+    if (role === 'propietario' || role === 'admin') {
         window.location.href = '/index.html';
     }
 }

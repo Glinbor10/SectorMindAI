@@ -5,6 +5,31 @@ from ..perf import medir_tiempo
 negocios_bp = Blueprint('negocios', __name__, url_prefix='/negocios')
 
 
+def _parse_int(value):
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
+
+
+def _requester_is_admin(conn, requester_id, requester_role):
+    if requester_id is None or (requester_role or '').lower() != 'admin':
+        return False
+    user = conn.execute('SELECT rol FROM usuarios WHERE id = %s', (requester_id,)).fetchone()
+    return bool(user and (user.get('rol') or '').lower() == 'admin')
+
+
+def _can_manage_business(conn, negocio_id, requester_id, requester_role):
+    negocio = conn.execute('SELECT propietario_id FROM negocios WHERE id = %s', (negocio_id,)).fetchone()
+    if not negocio:
+        return False, None
+
+    if _requester_is_admin(conn, requester_id, requester_role):
+        return True, negocio
+
+    return bool(requester_id is not None and negocio['propietario_id'] == requester_id), negocio
+
+
 
 # 1. LISTAR NEGOCIOS
 @negocios_bp.route('/', methods=['GET'])
@@ -410,7 +435,8 @@ def crear_servicio(negocio_id):
     nombre = data.get('nombre')
     precio = data.get('precio')
     duracion_minutos = data.get('duracion_minutos')
-    propietario_id = data.get('propietario_id')  # Para verificar permisos
+    requester_id = data.get('propietario_id') or data.get('requester_id')
+    requester_role = (data.get('requester_role') or 'propietario').lower()
 
     if not (nombre and precio is not None and duracion_minutos):
         return jsonify({'error': 'Faltan datos obligatorios'}), 400
@@ -426,16 +452,15 @@ def crear_servicio(negocio_id):
     if duracion_minutos <= 0:
         return jsonify({'error': 'La duración debe ser mayor que cero'}), 400
 
-    try:
-        propietario_id = int(propietario_id)
-    except (ValueError, TypeError):
-        return jsonify({'error': 'propietario_id inválido'}), 400
+    requester_id = _parse_int(requester_id)
+    if requester_id is None:
+        return jsonify({'error': 'requester_id inválido'}), 400
 
     conn = get_db_connection()
     try:
-        # Verificar que el negocio pertenece al propietario
-        negocio = conn.execute("SELECT propietario_id FROM negocios WHERE id = %s", (negocio_id,)).fetchone()
-        if not negocio or negocio['propietario_id'] != propietario_id:
+        # Verificar permisos: propietario de ese negocio o admin global
+        can_manage, _ = _can_manage_business(conn, negocio_id, requester_id, requester_role)
+        if not can_manage:
             return jsonify({'error': 'No tienes permisos para este negocio'}), 403
 
         cursor = conn.execute(
@@ -457,7 +482,8 @@ def actualizar_servicio(negocio_id, servicio_id):
     nombre = data.get('nombre')
     precio = data.get('precio')
     duracion_minutos = data.get('duracion_minutos')
-    propietario_id = data.get('propietario_id')
+    requester_id = data.get('propietario_id') or data.get('requester_id')
+    requester_role = (data.get('requester_role') or 'propietario').lower()
 
     if not any([nombre, precio is not None, duracion_minutos]):
         return jsonify({'error': 'No hay datos para actualizar'}), 400
@@ -478,16 +504,15 @@ def actualizar_servicio(negocio_id, servicio_id):
         if duracion_minutos <= 0:
             return jsonify({'error': 'La duración debe ser mayor que cero'}), 400
 
-    try:
-        propietario_id = int(propietario_id)
-    except (ValueError, TypeError):
-        return jsonify({'error': 'propietario_id inválido'}), 400
+    requester_id = _parse_int(requester_id)
+    if requester_id is None:
+        return jsonify({'error': 'requester_id inválido'}), 400
 
     conn = get_db_connection()
     try:
-        # Verificar permisos
-        negocio = conn.execute("SELECT propietario_id FROM negocios WHERE id = %s", (negocio_id,)).fetchone()
-        if not negocio or negocio['propietario_id'] != propietario_id:
+        # Verificar permisos: propietario de ese negocio o admin global
+        can_manage, _ = _can_manage_business(conn, negocio_id, requester_id, requester_role)
+        if not can_manage:
             return jsonify({'error': 'No tienes permisos para este negocio'}), 403
 
         # Verificar que el servicio pertenece al negocio
@@ -524,21 +549,21 @@ def actualizar_servicio(negocio_id, servicio_id):
 # 9. ELIMINAR SERVICIO
 @negocios_bp.route('/<int:negocio_id>/servicios/<int:servicio_id>', methods=['DELETE'])
 def eliminar_servicio(negocio_id, servicio_id):
-    propietario_id = request.args.get('propietario_id')
+    requester_id = request.args.get('propietario_id') or request.args.get('requester_id')
+    requester_role = (request.args.get('requester_role') or 'propietario').lower()
 
-    if not propietario_id:
-        return jsonify({'error': 'Falta propietario_id'}), 400
+    if not requester_id:
+        return jsonify({'error': 'Falta requester_id'}), 400
 
-    try:
-        propietario_id = int(propietario_id)
-    except ValueError:
-        return jsonify({'error': 'propietario_id inválido'}), 400
+    requester_id = _parse_int(requester_id)
+    if requester_id is None:
+        return jsonify({'error': 'requester_id inválido'}), 400
 
     conn = get_db_connection()
     try:
-        # Verificar permisos
-        negocio = conn.execute("SELECT propietario_id FROM negocios WHERE id = %s", (negocio_id,)).fetchone()
-        if not negocio or negocio['propietario_id'] != propietario_id:
+        # Verificar permisos: propietario de ese negocio o admin global
+        can_manage, _ = _can_manage_business(conn, negocio_id, requester_id, requester_role)
+        if not can_manage:
             return jsonify({'error': 'No tienes permisos para este negocio'}), 403
 
         # Verificar que el servicio pertenece al negocio
@@ -561,15 +586,15 @@ def eliminar_servicio(negocio_id, servicio_id):
 # 10. ELIMINAR NEGOCIO
 @negocios_bp.route('/<int:negocio_id>', methods=['DELETE'])
 def eliminar_negocio(negocio_id):
-    propietario_id = request.args.get('propietario_id')
+    requester_id = request.args.get('propietario_id') or request.args.get('requester_id')
+    requester_role = (request.args.get('requester_role') or 'propietario').lower()
 
-    if not propietario_id:
-        return jsonify({'error': 'Falta propietario_id'}), 400
+    if not requester_id:
+        return jsonify({'error': 'Falta requester_id'}), 400
 
-    try:
-        propietario_id = int(propietario_id)
-    except ValueError:
-        return jsonify({'error': 'propietario_id inválido'}), 400
+    requester_id = _parse_int(requester_id)
+    if requester_id is None:
+        return jsonify({'error': 'requester_id inválido'}), 400
 
     conn = get_db_connection()
     try:
@@ -578,8 +603,9 @@ def eliminar_negocio(negocio_id):
         if not negocio:
             return jsonify({'error': 'Negocio no encontrado'}), 404
 
-        # Verificar permisos
-        if negocio['propietario_id'] != propietario_id:
+        # Verificar permisos: propietario de ese negocio o admin global
+        can_manage, _ = _can_manage_business(conn, negocio_id, requester_id, requester_role)
+        if not can_manage:
             return jsonify({'error': 'No tienes permisos para este negocio'}), 403
 
         # Eliminar el negocio (las tablas relacionadas se eliminarán automáticamente por CASCADE)
