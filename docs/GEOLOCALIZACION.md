@@ -5,15 +5,16 @@ Permitir que el cliente encuentre negocios cercanos con distancia estimada y ord
 
 ## Flujo funcional
 
-1. El usuario comparte ubicacion desde frontend.
-2. Se consulta backend con `lat` y `lon`.
-3. PostgreSQL calcula distancia con formula Haversine.
-4. Se retornan negocios ordenados por distancia.
+1. El usuario comparte su ubicación desde el frontend a través de la Web Geolocation API (método primario).
+2. Opcionalmente, el usuario puede ajustar manualmente su ubicación en un mapa interactivo (OpenStreetMap) para mayor precisión.
+3. Se consulta al backend con las coordenadas `lat` y `lon` finales.
+4. PostgreSQL calcula la distancia con la fórmula de Haversine.
+5. Se retornan los negocios ordenados por distancia.
 
 ## Stack tecnico
 
 - Frontend: geolocation API del navegador
-- Geocodificacion: Nominatim (OpenStreetMap)
+- Geocodificación y mapas: OpenStreetMap (a través de Leaflet y Nominatim para el ajuste manual)
 - Backend: Flask
 - DB: PostgreSQL
 
