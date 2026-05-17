@@ -19,6 +19,12 @@ La plataforma combina:
 
 El repositorio incluye datos de ejemplo y utilidades para levantar un entorno de desarrollo y ejecutar pruebas automatizadas.
 
+## Demostración en Video
+
+Puedes ver una demostración de la aplicación en el siguiente video:
+
+[Ver video de demostración](https://drive.google.com/file/d/1EqFygkhmut2kG2bySK1g0IpKr9qihfvy/view?usp=sharing)
+
 ## Contenido / Estructura
 
 - `backend/` : Código del servidor Flask, gestión de base de datos y tests.
